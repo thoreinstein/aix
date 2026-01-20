@@ -1,0 +1,59 @@
+minimum_pre_commit_version: "3.2.0"
+
+repos:
+  # golangci-lint (local hooks to support git worktrees)
+  - repo: local
+    hooks:
+      - id: golangci-lint
+        name: golangci-lint
+        entry: sh -c 'GOFLAGS=-buildvcs=false golangci-lint run --timeout=5m'
+        language: system
+        types: [go]
+        pass_filenames: false
+      - id: golangci-lint-fmt
+        name: golangci-lint fmt
+        entry: sh -c 'GOFLAGS=-buildvcs=false golangci-lint fmt'
+        language: system
+        types: [go]
+        pass_filenames: false
+
+  # Go module maintenance
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-mod-tidy
+
+  # Go build and test
+  - repo: local
+    hooks:
+      - id: go-build
+        name: go build
+        entry: go build -buildvcs=false -o /dev/null .
+        language: system
+        pass_filenames: false
+        types: [go]
+
+  # General file hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-case-conflict
+
+  # GitHub Actions linting
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.9
+    hooks:
+      - id: actionlint
+
+  # GitHub Actions security scanning
+  - repo: https://github.com/woodruffw/zizmor-pre-commit
+    rev: v1.18.0
+    hooks:
+      - id: zizmor
+        args: ["--min-severity=medium"]
