@@ -28,7 +28,7 @@ repos:
     hooks:
       - id: go-build
         name: go build
-        entry: go build -buildvcs=false -o /dev/null .
+        entry: go build -buildvcs=false -o /dev/null ./cmd/aix
         language: system
         pass_filenames: false
         types: [go]
