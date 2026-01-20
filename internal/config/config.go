@@ -2,6 +2,8 @@
 package config
 
 import (
+	"path/filepath"
+
 	"github.com/spf13/viper"
 
 	"github.com/thoreinstein/aix/internal/paths"
@@ -18,8 +20,8 @@ func Init() {
 	viper.SetConfigType("yaml")
 
 	// Search paths (in order of precedence)
-	viper.AddConfigPath(".")                                // Current directory
-	viper.AddConfigPath(paths.ConfigHome() + "/" + AppName) // XDG config home
+	viper.AddConfigPath(".") // Current directory
+	viper.AddConfigPath(filepath.Join(paths.ConfigHome(), AppName))
 
 	// Environment variable support
 	viper.SetEnvPrefix("AIX")
