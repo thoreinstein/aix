@@ -522,7 +522,7 @@ type Platform interface {
     // Identity
     Name() string
     DisplayName() string
-    
+
     // Path resolution
     GlobalConfigDir() string
     ProjectConfigDir(projectRoot string) string
@@ -530,31 +530,31 @@ type Platform interface {
     CommandDir() string
     MCPConfigPath() string
     InstructionsPath(projectRoot string) string
-    
+
     // Installation
     InstallSkill(s *skill.Skill) error
     UninstallSkill(name string) error
     ListSkills() ([]*skill.Skill, error)
-    
+
     InstallCommand(c *command.Command) error
     UninstallCommand(name string) error
     ListCommands() ([]*command.Command, error)
-    
+
     // MCP management
     ConfigureMCP(server *mcp.Server) error
     RemoveMCP(name string) error
     ListMCP() ([]*mcp.Server, error)
     EnableMCP(name string) error
     DisableMCP(name string) error
-    
+
     // Translation
     TranslateVariables(content string) string
     TranslateConfig(config map[string]any) ([]byte, error)
-    
+
     // Validation
     ValidateSkill(s *skill.Skill) error
     ValidateCommand(c *command.Command) error
-    
+
     // Status
     IsAvailable() bool
     Version() (string, error)
@@ -577,19 +577,19 @@ type Skill struct {
     Author      string    `yaml:"author"`
     License     string    `yaml:"license,omitempty"`
     Repository  string    `yaml:"repository,omitempty"`
-    
+
     // Tool permissions
     Tools       []string  `yaml:"tools"`
-    
+
     // Activation triggers
     Triggers    []string  `yaml:"triggers,omitempty"`
-    
+
     // Dependencies
     Requires    []string  `yaml:"requires,omitempty"`
-    
+
     // Content
     Instructions string   `yaml:"-"` // Markdown body
-    
+
     // Installation metadata
     InstalledAt time.Time `yaml:"-"`
     SourcePath  string    `yaml:"-"`
@@ -630,10 +630,10 @@ type Server struct {
     Transport Transport         `yaml:"transport"`
     Env       map[string]string `yaml:"env,omitempty"`
     Headers   map[string]string `yaml:"headers,omitempty"`   // For SSE
-    
+
     // Platform enablement
     Platforms []string          `yaml:"platforms"` // ["all"], ["claude", "opencode"], etc.
-    
+
     // Status
     Enabled   bool              `yaml:"-"`
 }
@@ -680,7 +680,7 @@ registries:
 skills:
   # Where to install skills by default
   install_scope: global  # global or project
-  
+
   # Default tool permissions for new skills
   default_tools:
     - Read
@@ -742,7 +742,7 @@ func Translate(content string, from, to VariableStyle) string {
     if from == to {
         return content
     }
-    
+
     result := content
     for canonical, styles := range VariableMap {
         fromPattern := styles[from]
@@ -842,7 +842,7 @@ func NewValidator(strict bool) *Validator {
 // Validate validates a skill
 func (v *Validator) Validate(s *Skill) []error {
     var errs []error
-    
+
     // Required fields
     if s.Name == "" {
         errs = append(errs, ErrMissingName)
@@ -850,19 +850,19 @@ func (v *Validator) Validate(s *Skill) []error {
     if s.Description == "" {
         errs = append(errs, ErrMissingDescription)
     }
-    
+
     // Tool permissions
     for _, tool := range s.Tools {
         if err := v.validateTool(tool); err != nil {
             errs = append(errs, fmt.Errorf("tool %q: %w", tool, err))
         }
     }
-    
+
     // Version format (semver)
     if s.Version != "" && !isValidSemver(s.Version) {
         errs = append(errs, fmt.Errorf("invalid version format: %s", s.Version))
     }
-    
+
     return errs
 }
 
@@ -871,14 +871,14 @@ func (v *Validator) validateTool(tool string) error {
     if matches == nil {
         return ErrInvalidToolSyntax
     }
-    
+
     baseTool := matches[1]
     if !KnownTools[baseTool] {
         if v.strict {
             return fmt.Errorf("%w: %s", ErrUnknownTool, baseTool)
         }
     }
-    
+
     return nil
 }
 ```
@@ -1182,7 +1182,7 @@ $ aix skill install github.com/example/code-review-skill
 Installing skill: code-review
   Source: github.com/example/code-review-skill
   Version: 1.2.0
-  
+
 Validating skill...
   ✓ Required fields present
   ✓ Tool permissions valid: Bash(git:*), Read, Glob, Grep
@@ -1228,7 +1228,7 @@ Changes to apply:
   claude (CLAUDE.md):
     + 12 lines (includes expanded)
     ~ 3 lines (platform conditionals resolved)
-  
+
   gemini (GEMINI.md):
     + 12 lines (includes expanded)
     ~ 5 lines (variables translated: $ARGUMENTS → {{argument}})
