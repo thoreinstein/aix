@@ -9,7 +9,7 @@ before:
 
 builds:
   - id: aix
-    main: .
+    main: cmd/aix/main.go
     binary: aix
     env:
       - CGO_ENABLED=0
