@@ -1,0 +1,162 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+project_name: aix
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: aix
+    main: .
+    binary: aix
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/thoreinstein/aix/cmd.Version={{.Version}}
+      - -X github.com/thoreinstein/aix/cmd.Commit={{.Commit}}
+      - -X github.com/thoreinstein/aix/cmd.Date={{.Date}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      # Windows ARM64 is less common and harder to cross-compile
+      - goos: windows
+        goarch: arm64
+
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - README.md
+      - LICENSE*
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+# Keyless signing with Sigstore (no secrets required)
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    output: true
+    signature: "${artifact}.bundle"
+    args:
+      - sign-blob
+      - "--yes"
+      - "--bundle=${signature}"
+      - "${artifact}"
+
+# Generate Software Bill of Materials for supply chain transparency
+sboms:
+  - artifacts: archive
+    documents:
+      - "${artifact}.sbom.json"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Other
+      order: 999
+
+homebrew_casks:
+  - name: aix
+    repository:
+      owner: thoreinstein
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Casks
+    homepage: https://github.com/thoreinstein/aix
+    description: "A tool for managing, creating and sharing agent skills, commands and hooks"
+    license: "MIT"
+
+    # CLI binaries (replaces install: block)
+    binaries:
+      - aix
+
+    # Auto-remove macOS quarantine on install
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/aix"]
+          end
+
+    # URL verification for brew audit
+    url:
+      verified: "github.com/thoreinstein/aix/"
+
+release:
+  github:
+    owner: thoreinstein
+    name: aix
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## aix {{ .Version }}
+
+    **Homebrew Installation (Recommended):**
+    ```bash
+    brew install thoreinstein/tap/aix
+    aix version  # Should output: aix version {{ .Version }}
+    ```
+
+    **Manual Download:**
+    Download the appropriate archive below for your platform, extract it, and move the `aix` binary to your PATH.
+
+    Note: Homebrew installation automatically handles macOS code signing. Manual downloads work without additional configuration.
+
+    ### Verifying Release Signatures
+
+    All releases are signed with [keyless Sigstore](https://www.sigstore.dev/). To verify:
+
+    ```bash
+    # Install cosign: https://docs.sigstore.dev/cosign/system_config/installation/
+    cosign verify-blob \
+      --bundle checksums.txt.bundle \
+      --certificate-identity 'https://github.com/thoreinstein/aix/.github/workflows/release.yml@refs/tags/{{ .Tag }}' \
+      --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+      checksums.txt
+    ```
+  footer: |
+    **Full Changelog**: https://github.com/thoreinstein/aix/compare/{{ .PreviousTag }}...{{ .Tag }}
+  name_template: "v{{ .Version }}"
