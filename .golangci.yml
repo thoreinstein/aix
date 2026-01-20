@@ -1,0 +1,100 @@
+version: "2"
+run:
+  tests: true
+linters:
+  default: none
+  enable:
+    - bidichk
+    - bodyclose
+    - copyloopvar
+    - depguard
+    - errcheck
+    - gocritic
+    - gomodguard
+    - gosec
+    - govet
+    - ineffassign
+    - intrange
+    - misspell
+    - nilerr
+    - nolintlint
+    - perfsprint
+    - prealloc
+    - staticcheck
+    - unused
+    - usetesting
+    - whitespace
+  settings:
+    govet:
+      disable:
+        - fieldalignment
+        - shadow
+      enable-all: true
+    gocritic:
+      disabled-checks:
+        - assignOp
+        - exitAfterDefer
+        - appendAssign
+        - ifElseChain
+        - valSwap
+    usetesting:
+      os-create-temp: true
+      os-mkdir-temp: true
+      os-temp-dir: true
+      os-chdir: true
+      context-background: true
+      context-todo: true
+    depguard:
+      rules:
+        main:
+          list-mode: lax
+          deny:
+            - pkg: "io/ioutil"
+              desc: "Use io and os packages instead"
+            - pkg: "github.com/pkg/errors"
+              desc: "Use standard library errors package with fmt.Errorf"
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      # URLs can't all be constants...
+      - path: (.+)\.go$
+        text: G107 # Potential HTTP request made with variable url
+      ## FIXMEs below
+      - path: (.+)\.go$
+        text: G102 # Bind to all network interfaces
+      - path: (.+)\.go$
+        text: G115 # integer overflow conversion uint64 -> int
+      # G204 removed - use targeted //nolint:gosec comments instead
+      - path: (.+)\.go$
+        text: G306 # Expect WriteFile permissions to be 0600 or less
+      - path: (.+)\.go$
+        text: G402 # TLS InsecureSkipVerify set true
+      - path: (.+)\.go$
+        text: G404 # Insecure Random Number Source
+issues:
+  max-same-issues: 0
+  max-issues-per-linter: 0
+formatters:
+  enable:
+    - gofmt
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/thoreinstein/aix)
+      custom-order: true
+  exclusions:
+    paths:
+      - ".*mock.*\\.go$"
+      - ".*/mocks/.*\\.go$"
+      - "mock_.*\\.go$"
+      - ".*_mock\\.go$"
+      - ".*_Mock\\.go$"
+      - ".*Mock.*\\.go$"
