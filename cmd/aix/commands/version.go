@@ -4,8 +4,15 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+)
 
-	"github.com/thoreinstein/aix/cmd"
+var (
+	// Version is the semantic version of the build.
+	Version = "dev"
+	// Commit is the git commit SHA of the build.
+	Commit = "none"
+	// Date is the build date.
+	Date = "unknown"
 )
 
 func init() {
@@ -17,8 +24,8 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version information",
 	Long:  `Print the version, commit, and build date of aix.`,
 	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Printf("aix version %s\n", cmd.Version)
-		fmt.Printf("  commit: %s\n", cmd.Commit)
-		fmt.Printf("  built:  %s\n", cmd.Date)
+		fmt.Printf("aix version %s\n", Version)
+		fmt.Printf("  commit: %s\n", Commit)
+		fmt.Printf("  built:  %s\n", Date)
 	},
 }
