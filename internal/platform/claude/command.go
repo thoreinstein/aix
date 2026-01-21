@@ -1,7 +1,6 @@
 package claude
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -9,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
 
 // Sentinel errors for command operations.
@@ -161,59 +160,16 @@ func (m *CommandManager) Uninstall(name string) error {
 // Supports optional YAML frontmatter delimited by "---".
 // If no frontmatter is present, the entire content is treated as Instructions.
 func parseCommandFile(data []byte) (*Command, error) {
-	content := string(data)
 	cmd := &Command{}
 
-	// Check for frontmatter
-	if strings.HasPrefix(content, "---\n") || strings.HasPrefix(content, "---\r\n") {
-		frontmatter, body, found := extractFrontmatter(content)
-		if found {
-			if err := yaml.Unmarshal([]byte(frontmatter), cmd); err != nil {
-				return nil, fmt.Errorf("parsing frontmatter: %w", err)
-			}
-			cmd.Instructions = strings.TrimSpace(body)
-			return cmd, nil
-		}
+	// Parse with optional frontmatter
+	body, err := frontmatter.Parse(bytes.NewReader(data), cmd)
+	if err != nil {
+		return nil, fmt.Errorf("parsing frontmatter: %w", err)
 	}
 
-	// No frontmatter: entire content is instructions
-	cmd.Instructions = strings.TrimSpace(content)
+	cmd.Instructions = strings.TrimSpace(string(body))
 	return cmd, nil
-}
-
-// extractFrontmatter extracts YAML frontmatter from markdown content.
-// Returns the frontmatter content (without delimiters), the body content, and whether frontmatter was found.
-func extractFrontmatter(content string) (frontmatter, body string, found bool) {
-	scanner := bufio.NewScanner(strings.NewReader(content))
-
-	// Must start with ---
-	if !scanner.Scan() {
-		return "", content, false
-	}
-	if strings.TrimSpace(scanner.Text()) != "---" {
-		return "", content, false
-	}
-
-	// Read until closing ---
-	var frontmatterBuf bytes.Buffer
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.TrimSpace(line) == "---" {
-			// Found closing delimiter
-			// Rest is body
-			var bodyBuf bytes.Buffer
-			for scanner.Scan() {
-				bodyBuf.WriteString(scanner.Text())
-				bodyBuf.WriteString("\n")
-			}
-			return frontmatterBuf.String(), bodyBuf.String(), true
-		}
-		frontmatterBuf.WriteString(line)
-		frontmatterBuf.WriteString("\n")
-	}
-
-	// No closing delimiter found
-	return "", content, false
 }
 
 // formatCommandFile formats a Command as a markdown file with optional frontmatter.

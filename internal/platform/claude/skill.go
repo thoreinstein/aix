@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
 
 // Sentinel errors for skill operations.
@@ -169,38 +171,16 @@ func (m *SkillManager) Uninstall(name string) error {
 //
 //	Instructions go here as the body content.
 func parseSkillFile(data []byte) (*Skill, error) {
-	content := string(data)
-
-	// Check for frontmatter delimiter
-	if !strings.HasPrefix(content, "---") {
-		return nil, errors.New("missing frontmatter delimiter")
-	}
-
-	// Find the end of frontmatter
-	rest := content[3:] // Skip initial "---"
-	endIdx := strings.Index(rest, "\n---")
-	if endIdx == -1 {
-		return nil, errors.New("missing closing frontmatter delimiter")
-	}
-
-	// Extract frontmatter YAML
-	frontmatter := strings.TrimSpace(rest[:endIdx])
-
-	// Extract body content (everything after second ---)
-	body := ""
-	afterFrontmatter := rest[endIdx+4:] // Skip "\n---"
-	if len(afterFrontmatter) > 0 {
-		body = strings.TrimSpace(afterFrontmatter)
-	}
-
-	// Parse YAML frontmatter
 	var skill Skill
-	if err := yaml.Unmarshal([]byte(frontmatter), &skill); err != nil {
+
+	// Skills require frontmatter, so use MustParse
+	body, err := frontmatter.MustParse(bytes.NewReader(data), &skill)
+	if err != nil {
 		return nil, fmt.Errorf("parsing frontmatter: %w", err)
 	}
 
-	// Set body content
-	skill.Instructions = body
+	// Set body content, trimming leading/trailing whitespace
+	skill.Instructions = strings.TrimSpace(string(body))
 
 	return &skill, nil
 }
