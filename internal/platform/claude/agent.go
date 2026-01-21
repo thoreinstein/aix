@@ -63,10 +63,20 @@ func (m *AgentManager) List() ([]*Agent, error) {
 		}
 
 		name := strings.TrimSuffix(entry.Name(), ".md")
-		agent, err := m.Get(name)
+		agentPath := m.paths.AgentPath(name)
+
+		f, err := os.Open(agentPath)
 		if err != nil {
-			return nil, fmt.Errorf("reading agent %q: %w", name, err)
+			return nil, fmt.Errorf("opening agent file %q: %w", name, err)
 		}
+
+		agent := &Agent{Name: name}
+		if err := frontmatter.ParseHeader(f, agent); err != nil {
+			f.Close()
+			return nil, fmt.Errorf("parsing agent header %q: %w", name, err)
+		}
+		f.Close()
+
 		agents = append(agents, agent)
 	}
 
