@@ -62,9 +62,10 @@ Examples:
 }
 
 // skillNameRegex validates skill names per the Agent Skills Specification.
-// Must consist of lowercase alphanumeric segments separated by single hyphens.
-// No leading, trailing, or consecutive hyphens are allowed.
-var skillNameRegex = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+// Must start with a lowercase letter, followed by lowercase alphanumeric characters,
+// optionally followed by hyphen-separated segments. No leading, trailing, or
+// consecutive hyphens are allowed.
+var skillNameRegex = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
 
 // skillNameSanitizer matches characters that are not allowed in a skill name.
 var skillNameSanitizer = regexp.MustCompile(`[^a-z0-9-]+`)
