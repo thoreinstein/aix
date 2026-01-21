@@ -92,7 +92,7 @@ func runConfigGet(_ *cobra.Command, args []string) error {
 	val := viper.Get(key)
 
 	switch v := val.(type) {
-	case []interface{}:
+	case []any:
 		// Array values - print one per line
 		for _, item := range v {
 			fmt.Println(item)
@@ -161,7 +161,7 @@ func runConfigSet(_ *cobra.Command, args []string) error {
 
 func runConfigList(_ *cobra.Command, _ []string) error {
 	// Build config structure from viper
-	cfg := map[string]interface{}{
+	cfg := map[string]any{
 		"version":           viper.GetInt("version"),
 		"default_platforms": viper.GetStringSlice("default_platforms"),
 	}
@@ -205,7 +205,7 @@ func runConfigEdit(_ *cobra.Command, _ []string) error {
 // parsePlatforms splits a comma-separated string into a slice of platform names.
 func parsePlatforms(s string) []string {
 	var platforms []string
-	for _, p := range strings.Split(s, ",") {
+	for p := range strings.SplitSeq(s, ",") {
 		p = strings.TrimSpace(p)
 		if p != "" {
 			platforms = append(platforms, p)
@@ -219,7 +219,7 @@ func writeConfig() error {
 	configPath := filepath.Join(paths.ConfigHome(), config.AppName, "config.yaml")
 
 	// Build config structure
-	cfg := map[string]interface{}{
+	cfg := map[string]any{
 		"version":           viper.GetInt("version"),
 		"default_platforms": viper.GetStringSlice("default_platforms"),
 	}

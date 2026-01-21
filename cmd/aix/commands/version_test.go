@@ -31,11 +31,9 @@ func captureStdout(t *testing.T, fn func()) string {
 	// Capture output in goroutine
 	var buf bytes.Buffer
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_, _ = io.Copy(&buf, r)
-	}()
+	})
 
 	// Run the function
 	fn()

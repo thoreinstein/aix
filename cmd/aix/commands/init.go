@@ -115,7 +115,7 @@ func detectPlatforms() []string {
 // Invalid platform names are silently filtered out.
 func parsePlatformList(s string) []string {
 	var platforms []string
-	for _, p := range strings.Split(s, ",") {
+	for p := range strings.SplitSeq(s, ",") {
 		p = strings.TrimSpace(p)
 		if paths.ValidPlatform(p) {
 			platforms = append(platforms, p)
