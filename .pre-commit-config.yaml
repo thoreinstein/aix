@@ -1,6 +1,16 @@
 minimum_pre_commit_version: "3.2.0"
 
 repos:
+  # Beads issue tracker sync
+  - repo: local
+    hooks:
+      - id: beads-sync
+        name: beads sync
+        entry: bd hooks run pre-commit
+        language: system
+        pass_filenames: false
+        always_run: true
+
   # golangci-lint (local hooks to support git worktrees)
   - repo: local
     hooks:
