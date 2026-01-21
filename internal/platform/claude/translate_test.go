@@ -293,7 +293,7 @@ func TestVarPattern(t *testing.T) {
 		{
 			name:    "does not match numbers",
 			input:   "$VAR123",
-			matches: []string{"$VAR"},
+			matches: nil,
 		},
 		{
 			name:    "matches at word boundary",
