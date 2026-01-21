@@ -32,7 +32,4 @@ Examples:
 
   # Show command details
   aix command show review`,
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		return cmd.Help()
-	},
 }
