@@ -561,7 +561,10 @@ func TestFormatCommandFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := formatCommandFile(tt.cmd)
+			result, err := formatCommandFile(tt.cmd)
+			if err != nil {
+				t.Fatalf("formatCommandFile() error = %v", err)
+			}
 
 			for _, want := range tt.wantContain {
 				if !containsSubstring(result, want) {

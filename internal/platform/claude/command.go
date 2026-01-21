@@ -124,7 +124,10 @@ func (m *CommandManager) Install(c *Command) error {
 		return fmt.Errorf("creating commands directory: %w", err)
 	}
 
-	content := formatCommandFile(c)
+	content, err := formatCommandFile(c)
+	if err != nil {
+		return fmt.Errorf("formatting command content: %w", err)
+	}
 
 	cmdPath := m.paths.CommandPath(c.Name)
 	if err := os.WriteFile(cmdPath, []byte(content), 0o644); err != nil {
@@ -174,24 +177,26 @@ func parseCommandFile(data []byte) (*Command, error) {
 
 // formatCommandFile formats a Command as a markdown file with optional frontmatter.
 // Includes frontmatter only if Description is non-empty.
-func formatCommandFile(c *Command) string {
-	var buf bytes.Buffer
-
+func formatCommandFile(c *Command) (string, error) {
 	// Only include frontmatter if there's metadata to write
-	if c.Description != "" {
-		buf.WriteString("---\n")
-		buf.WriteString("description: ")
-		buf.WriteString(c.Description)
-		buf.WriteString("\n")
-		buf.WriteString("---\n\n")
+	if c.Description == "" {
+		res := c.Instructions
+		if !strings.HasSuffix(res, "\n") {
+			res += "\n"
+		}
+		return res, nil
 	}
 
-	buf.WriteString(c.Instructions)
-
-	// Ensure file ends with newline
-	if !strings.HasSuffix(c.Instructions, "\n") {
-		buf.WriteString("\n")
+	meta := struct {
+		Description string `yaml:"description"`
+	}{
+		Description: c.Description,
 	}
 
-	return buf.String()
+	data, err := frontmatter.Format(meta, c.Instructions)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
 }
