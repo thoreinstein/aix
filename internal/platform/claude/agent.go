@@ -119,7 +119,10 @@ func (m *AgentManager) Install(a *Agent) error {
 		return fmt.Errorf("creating agents directory: %w", err)
 	}
 
-	content := formatAgentContent(a)
+	content, err := formatAgentContent(a)
+	if err != nil {
+		return fmt.Errorf("formatting agent content: %w", err)
+	}
 	agentPath := m.paths.AgentPath(a.Name)
 
 	if err := os.WriteFile(agentPath, []byte(content), 0o644); err != nil {
@@ -167,25 +170,28 @@ func parseAgentContent(data []byte) (*Agent, error) {
 
 // formatAgentContent formats an agent as markdown with optional frontmatter.
 // Only includes frontmatter if Description is set.
-func formatAgentContent(a *Agent) string {
-	var buf bytes.Buffer
-
+func formatAgentContent(a *Agent) (string, error) {
 	// Only include frontmatter if there's a description
-	if a.Description != "" {
-		buf.WriteString("---\n")
-		buf.WriteString("description: ")
-		buf.WriteString(a.Description)
-		buf.WriteString("\n---\n\n")
+	if a.Description == "" {
+		res := a.Instructions
+		if !strings.HasSuffix(res, "\n") {
+			res += "\n"
+		}
+		return res, nil
 	}
 
-	buf.WriteString(a.Instructions)
-
-	// Ensure trailing newline
-	if !strings.HasSuffix(buf.String(), "\n") {
-		buf.WriteString("\n")
+	meta := struct {
+		Description string `yaml:"description"`
+	}{
+		Description: a.Description,
 	}
 
-	return buf.String()
+	data, err := frontmatter.Format(meta, a.Instructions)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
 }
 
 // AgentDir returns the agents directory path.

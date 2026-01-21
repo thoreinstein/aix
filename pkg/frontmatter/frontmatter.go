@@ -6,6 +6,7 @@ package frontmatter
 import (
 	"bytes"
 	"io"
+	"strings"
 
 	"github.com/adrg/frontmatter"
 	"gopkg.in/yaml.v3"
@@ -28,19 +29,20 @@ func MustParse[T any](r io.Reader, matter *T) (body []byte, err error) {
 // The matter struct is serialized to YAML and wrapped in "---" delimiters,
 // followed by the body content.
 func Format(matter any, body string) ([]byte, error) {
-	yamlData, err := yaml.Marshal(matter)
-	if err != nil {
+	var buf bytes.Buffer
+	buf.WriteString("---\n")
+
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(matter); err != nil {
 		return nil, err
 	}
 
-	var buf bytes.Buffer
-	buf.WriteString("---\n")
-	buf.Write(yamlData)
 	buf.WriteString("---\n")
 	if body != "" {
 		buf.WriteString("\n")
 		buf.WriteString(body)
-		if len(body) > 0 && body[len(body)-1] != '\n' {
+		if !strings.HasSuffix(body, "\n") {
 			buf.WriteString("\n")
 		}
 	}
