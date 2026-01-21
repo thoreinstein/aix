@@ -216,3 +216,74 @@ func TestSkillInfoFields(t *testing.T) {
 		t.Errorf("SkillInfo.Source = %q, want %q", info.Source, "local")
 	}
 }
+
+func TestCommandInfoFields(t *testing.T) {
+	// Test CommandInfo struct initialization
+	info := CommandInfo{
+		Name:        "test-command",
+		Description: "A test command",
+		Source:      "installed",
+	}
+
+	if info.Name != "test-command" {
+		t.Errorf("CommandInfo.Name = %q, want %q", info.Name, "test-command")
+	}
+	if info.Description != "A test command" {
+		t.Errorf("CommandInfo.Description = %q, want %q", info.Description, "A test command")
+	}
+	if info.Source != "installed" {
+		t.Errorf("CommandInfo.Source = %q, want %q", info.Source, "installed")
+	}
+}
+
+func TestClaudeAdapter_InstallCommand_WrongType(t *testing.T) {
+	p, err := NewPlatform("claude")
+	if err != nil {
+		t.Fatalf("NewPlatform(claude) unexpected error: %v", err)
+	}
+
+	// Try to install with wrong type (string instead of *claude.Command)
+	err = p.InstallCommand("not a command")
+	if err == nil {
+		t.Error("InstallCommand with wrong type expected error, got nil")
+	}
+}
+
+func TestOpencodeAdapter_InstallCommand_WrongType(t *testing.T) {
+	p, err := NewPlatform("opencode")
+	if err != nil {
+		t.Fatalf("NewPlatform(opencode) unexpected error: %v", err)
+	}
+
+	// Try to install with wrong type (string instead of *opencode.Command)
+	err = p.InstallCommand("not a command")
+	if err == nil {
+		t.Error("InstallCommand with wrong type expected error, got nil")
+	}
+}
+
+func TestClaudeAdapter_CommandDir(t *testing.T) {
+	p, err := NewPlatform("claude")
+	if err != nil {
+		t.Fatalf("NewPlatform(claude) unexpected error: %v", err)
+	}
+
+	// CommandDir should return a non-empty string
+	dir := p.CommandDir()
+	if dir == "" {
+		t.Error("CommandDir() returned empty string")
+	}
+}
+
+func TestOpencodeAdapter_CommandDir(t *testing.T) {
+	p, err := NewPlatform("opencode")
+	if err != nil {
+		t.Fatalf("NewPlatform(opencode) unexpected error: %v", err)
+	}
+
+	// CommandDir should return a non-empty string
+	dir := p.CommandDir()
+	if dir == "" {
+		t.Error("CommandDir() returned empty string")
+	}
+}

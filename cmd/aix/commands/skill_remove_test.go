@@ -14,6 +14,7 @@ type mockPlatform struct {
 	name         string
 	displayName  string
 	skills       map[string]any
+	commands     map[string]any
 	uninstallErr error
 }
 
@@ -46,6 +47,31 @@ func (m *mockPlatform) GetSkill(name string) (any, error) {
 		return nil, errors.New("skill not found")
 	}
 	return skill, nil
+}
+
+func (m *mockPlatform) CommandDir() string { return "/mock/commands" }
+
+func (m *mockPlatform) InstallCommand(_ any) error { return nil }
+
+func (m *mockPlatform) UninstallCommand(name string) error {
+	delete(m.commands, name)
+	return nil
+}
+
+func (m *mockPlatform) ListCommands() ([]cli.CommandInfo, error) {
+	commands := make([]cli.CommandInfo, 0, len(m.commands))
+	for name := range m.commands {
+		commands = append(commands, cli.CommandInfo{Name: name})
+	}
+	return commands, nil
+}
+
+func (m *mockPlatform) GetCommand(name string) (any, error) {
+	cmd, ok := m.commands[name]
+	if !ok {
+		return nil, errors.New("command not found")
+	}
+	return cmd, nil
 }
 
 func TestFindPlatformsWithSkill(t *testing.T) {
