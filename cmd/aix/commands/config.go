@@ -1,0 +1,243 @@
+package commands
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
+
+	"github.com/thoreinstein/aix/internal/config"
+	"github.com/thoreinstein/aix/internal/paths"
+)
+
+func init() {
+	configCmd.AddCommand(configGetCmd)
+	configCmd.AddCommand(configSetCmd)
+	configCmd.AddCommand(configListCmd)
+	configCmd.AddCommand(configEditCmd)
+	rootCmd.AddCommand(configCmd)
+}
+
+var configCmd = &cobra.Command{
+	Use:   "config",
+	Short: "Manage aix configuration",
+	Long: `Manage aix configuration stored in ~/.config/aix/config.yaml.
+
+Without a subcommand, lists all configuration values.`,
+	RunE: runConfigList,
+}
+
+var configGetCmd = &cobra.Command{
+	Use:   "get <key>",
+	Short: "Get a configuration value",
+	Long: `Get a single configuration value by key.
+
+Supports dot notation for nested keys. Array values are printed one per line.
+
+Examples:
+  aix config get version
+  aix config get default_platforms`,
+	Args: cobra.ExactArgs(1),
+	RunE: runConfigGet,
+}
+
+var configSetCmd = &cobra.Command{
+	Use:   "set <key> <value>",
+	Short: "Set a configuration value",
+	Long: `Set a configuration value.
+
+For array values like default_platforms, use comma-separated values.
+Platform names are validated against supported platforms.
+
+Examples:
+  aix config set version 2
+  aix config set default_platforms claude,opencode`,
+	Args: cobra.ExactArgs(2),
+	RunE: runConfigSet,
+}
+
+var configListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all configuration",
+	Long:  `List all configuration values in YAML format.`,
+	RunE:  runConfigList,
+}
+
+var configEditCmd = &cobra.Command{
+	Use:   "edit",
+	Short: "Open configuration in $EDITOR",
+	Long: `Open the configuration file in your default editor.
+
+Uses $EDITOR environment variable, or falls back to vi.
+If no configuration file exists, prints an error suggesting to run 'aix init'.`,
+	RunE: runConfigEdit,
+}
+
+func runConfigGet(_ *cobra.Command, args []string) error {
+	key := args[0]
+
+	// Check if value exists
+	if !viper.IsSet(key) {
+		fmt.Println("not set")
+		return nil
+	}
+
+	// Get the value and determine its type
+	val := viper.Get(key)
+
+	switch v := val.(type) {
+	case []interface{}:
+		// Array values - print one per line
+		for _, item := range v {
+			fmt.Println(item)
+		}
+	case []string:
+		// String slice - print one per line
+		for _, item := range v {
+			fmt.Println(item)
+		}
+	default:
+		// Scalar values
+		fmt.Println(viper.GetString(key))
+	}
+
+	return nil
+}
+
+func runConfigSet(_ *cobra.Command, args []string) error {
+	key := args[0]
+	value := args[1]
+
+	// Handle special keys
+	switch key {
+	case "default_platforms":
+		platforms := parsePlatforms(value)
+		if len(platforms) == 0 {
+			return errors.New("no valid platforms specified")
+		}
+
+		// Validate all platforms
+		var invalid []string
+		for _, p := range platforms {
+			if !paths.ValidPlatform(p) {
+				invalid = append(invalid, p)
+			}
+		}
+		if len(invalid) > 0 {
+			return fmt.Errorf("invalid platform(s): %s (valid: %s)",
+				strings.Join(invalid, ", "),
+				strings.Join(paths.Platforms(), ", "))
+		}
+
+		viper.Set(key, platforms)
+		if err := writeConfig(); err != nil {
+			return err
+		}
+		fmt.Printf("Set %s = %v\n", key, platforms)
+
+	case "version":
+		viper.Set(key, value)
+		if err := writeConfig(); err != nil {
+			return err
+		}
+		fmt.Printf("Set %s = %s\n", key, value)
+
+	default:
+		viper.Set(key, value)
+		if err := writeConfig(); err != nil {
+			return err
+		}
+		fmt.Printf("Set %s = %s\n", key, value)
+	}
+
+	return nil
+}
+
+func runConfigList(_ *cobra.Command, _ []string) error {
+	// Build config structure from viper
+	cfg := map[string]interface{}{
+		"version":           viper.GetInt("version"),
+		"default_platforms": viper.GetStringSlice("default_platforms"),
+	}
+
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("marshaling config: %w", err)
+	}
+
+	fmt.Print(string(data))
+	return nil
+}
+
+func runConfigEdit(_ *cobra.Command, _ []string) error {
+	configPath := filepath.Join(paths.ConfigHome(), config.AppName, "config.yaml")
+
+	// Check if config file exists
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return fmt.Errorf("config file not found at %s\nRun 'aix init' to create it", configPath)
+	}
+
+	// Get editor from environment
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "vi"
+	}
+
+	// Launch editor
+	cmd := exec.Command(editor, configPath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("running editor: %w", err)
+	}
+
+	return nil
+}
+
+// parsePlatforms splits a comma-separated string into a slice of platform names.
+func parsePlatforms(s string) []string {
+	var platforms []string
+	for _, p := range strings.Split(s, ",") {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			platforms = append(platforms, p)
+		}
+	}
+	return platforms
+}
+
+// writeConfig writes the current viper configuration to the config file.
+func writeConfig() error {
+	configPath := filepath.Join(paths.ConfigHome(), config.AppName, "config.yaml")
+
+	// Build config structure
+	cfg := map[string]interface{}{
+		"version":           viper.GetInt("version"),
+		"default_platforms": viper.GetStringSlice("default_platforms"),
+	}
+
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("marshaling config: %w", err)
+	}
+
+	// Ensure directory exists
+	configDir := filepath.Dir(configPath)
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		return fmt.Errorf("creating config directory: %w", err)
+	}
+
+	if err := os.WriteFile(configPath, data, 0o644); err != nil {
+		return fmt.Errorf("writing config file: %w", err)
+	}
+
+	return nil
+}
