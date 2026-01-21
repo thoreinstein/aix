@@ -34,6 +34,19 @@ type SkillInfo struct {
 	Source string
 }
 
+// CommandInfo provides a simplified view of a command for CLI display.
+// This is a platform-agnostic representation used for listing.
+type CommandInfo struct {
+	// Name is the command's identifier (used as /name in the interface).
+	Name string
+
+	// Description explains what the command does.
+	Description string
+
+	// Source indicates where the command came from: file path or "installed".
+	Source string
+}
+
 // Platform defines the interface that platform adapters must implement
 // for CLI operations. This is the consumer interface used by CLI commands.
 type Platform interface {
@@ -62,6 +75,23 @@ type Platform interface {
 	// GetSkill retrieves a skill by name.
 	// Returns the platform-specific skill type.
 	GetSkill(name string) (any, error)
+
+	// CommandDir returns the commands directory for the platform.
+	CommandDir() string
+
+	// InstallCommand installs a slash command to the platform.
+	// The cmd parameter is platform-specific.
+	InstallCommand(cmd any) error
+
+	// UninstallCommand removes a command by name.
+	UninstallCommand(name string) error
+
+	// ListCommands returns information about all installed commands.
+	ListCommands() ([]CommandInfo, error)
+
+	// GetCommand retrieves a command by name.
+	// Returns the platform-specific command type.
+	GetCommand(name string) (any, error)
 }
 
 // claudeAdapter wraps ClaudePlatform to implement the Platform interface.
@@ -118,6 +148,43 @@ func (a *claudeAdapter) SkillDir() string {
 	return a.p.SkillDir()
 }
 
+func (a *claudeAdapter) CommandDir() string {
+	return a.p.CommandDir()
+}
+
+func (a *claudeAdapter) InstallCommand(cmd any) error {
+	c, ok := cmd.(*claude.Command)
+	if !ok {
+		return fmt.Errorf("expected *claude.Command, got %T", cmd)
+	}
+	return a.p.InstallCommand(c)
+}
+
+func (a *claudeAdapter) UninstallCommand(name string) error {
+	return a.p.UninstallCommand(name)
+}
+
+func (a *claudeAdapter) ListCommands() ([]CommandInfo, error) {
+	commands, err := a.p.ListCommands()
+	if err != nil {
+		return nil, err
+	}
+
+	infos := make([]CommandInfo, len(commands))
+	for i, c := range commands {
+		infos[i] = CommandInfo{
+			Name:        c.Name,
+			Description: c.Description,
+			Source:      "installed",
+		}
+	}
+	return infos, nil
+}
+
+func (a *claudeAdapter) GetCommand(name string) (any, error) {
+	return a.p.GetCommand(name)
+}
+
 // opencodeAdapter wraps OpenCodePlatform to implement the Platform interface.
 type opencodeAdapter struct {
 	p *opencode.OpenCodePlatform
@@ -170,6 +237,43 @@ func (a *opencodeAdapter) GetSkill(name string) (any, error) {
 
 func (a *opencodeAdapter) SkillDir() string {
 	return a.p.SkillDir()
+}
+
+func (a *opencodeAdapter) CommandDir() string {
+	return a.p.CommandDir()
+}
+
+func (a *opencodeAdapter) InstallCommand(cmd any) error {
+	c, ok := cmd.(*opencode.Command)
+	if !ok {
+		return fmt.Errorf("expected *opencode.Command, got %T", cmd)
+	}
+	return a.p.InstallCommand(c)
+}
+
+func (a *opencodeAdapter) UninstallCommand(name string) error {
+	return a.p.UninstallCommand(name)
+}
+
+func (a *opencodeAdapter) ListCommands() ([]CommandInfo, error) {
+	commands, err := a.p.ListCommands()
+	if err != nil {
+		return nil, err
+	}
+
+	infos := make([]CommandInfo, len(commands))
+	for i, c := range commands {
+		infos[i] = CommandInfo{
+			Name:        c.Name,
+			Description: c.Description,
+			Source:      "installed",
+		}
+	}
+	return infos, nil
+}
+
+func (a *opencodeAdapter) GetCommand(name string) (any, error) {
+	return a.p.GetCommand(name)
 }
 
 // NewPlatform creates a Platform adapter for the given platform name.
