@@ -2,6 +2,10 @@ package claude
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // MCPServer represents an MCP (Model Context Protocol) server configuration.
@@ -19,7 +23,7 @@ type MCPServer struct {
 	// URL is the server endpoint for HTTP/SSE transport.
 	URL string `json:"url,omitempty"`
 
-	// Transport specifies the protocol: "stdio" (default) or "sse".
+	// Transport specifies the server transport type.
 	Transport string `json:"transport,omitempty"`
 
 	// Env contains environment variables passed to the server process.
@@ -90,6 +94,42 @@ func (c *MCPConfig) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// ToolList is a list of allowed tools.
+// It supports unmarshaling from both a space-delimited string and a list of strings.
+type ToolList []string
+
+// UnmarshalYAML implements yaml.Unmarshaler.
+func (t *ToolList) UnmarshalYAML(value *yaml.Node) error {
+	var multi []string
+	if err := value.Decode(&multi); err == nil {
+		*t = multi
+		return nil
+	}
+
+	var single string
+	if err := value.Decode(&single); err == nil {
+		if single == "" {
+			*t = nil
+			return nil
+		}
+		// Split space-delimited string
+		for part := range strings.SplitSeq(single, " ") {
+			part = strings.TrimSpace(part)
+			if part != "" {
+				*t = append(*t, part)
+			}
+		}
+		return nil
+	}
+
+	return fmt.Errorf("allowed-tools must be a string or list of strings, got %s", value.Tag)
+}
+
+// String returns the space-delimited string representation.
+func (t ToolList) String() string {
+	return strings.Join(t, " ")
+}
+
 // Skill represents a skill definition per the Agent Skills Specification.
 // Skills are markdown files with YAML frontmatter that define reusable capabilities.
 // See: https://agentskills.io/specification
@@ -111,9 +151,9 @@ type Skill struct {
 	// Metadata contains optional key-value pairs like author, version, repository.
 	Metadata map[string]string `yaml:"metadata,omitempty" json:"metadata,omitempty"`
 
-	// AllowedTools is a space-delimited string of tool permissions (optional).
-	// E.g., "Read Write Bash(git:*) Glob"
-	AllowedTools string `yaml:"allowed-tools,omitempty" json:"allowed-tools,omitempty"`
+	// AllowedTools lists the tool permissions required by this skill.
+	// Can be a space-delimited string or a list of strings.
+	AllowedTools ToolList `yaml:"allowed-tools,omitempty" json:"allowed-tools,omitempty"`
 
 	// Instructions contains the skill's markdown body content.
 	// This field is not part of the YAML frontmatter.

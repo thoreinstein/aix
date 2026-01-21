@@ -90,6 +90,15 @@ func outputSkillsJSON(w io.Writer, platforms []cli.Platform) error {
 	return enc.Encode(output)
 }
 
+// ANSI color codes
+const (
+	colorReset = "\033[0m"
+	colorBold  = "\033[1m"
+	colorCyan  = "\033[36m"
+	colorGreen = "\033[32m"
+	colorGray  = "\033[90m"
+)
+
 // outputSkillsTabular outputs skills in tabular format grouped by platform.
 func outputSkillsTabular(w io.Writer, platforms []cli.Platform) error {
 	hasSkills := false
@@ -109,17 +118,21 @@ func outputSkillsTabular(w io.Writer, platforms []cli.Platform) error {
 			fmt.Fprintln(w)
 		}
 
-		fmt.Fprintf(w, "Platform: %s\n", p.DisplayName())
+		// Platform header
+		fmt.Fprintf(w, "%sPlatform: %s%s\n", colorCyan+colorBold, p.DisplayName(), colorReset)
 
 		if len(skills) == 0 {
-			fmt.Fprintln(w, "  (no skills installed)")
+			fmt.Fprintf(w, "  %s(no skills installed)%s\n", colorGray, colorReset)
 			continue
 		}
 
 		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(tw, "  NAME\tDESCRIPTION")
+		// Table headers
+		fmt.Fprintf(tw, "  %sNAME%s\t%sDESCRIPTION%s\n", colorBold, colorReset, colorBold, colorReset)
+
 		for _, s := range skills {
-			fmt.Fprintf(tw, "  %s\t%s\n", s.Name, s.Description)
+			desc := truncate(s.Description, 80)
+			fmt.Fprintf(tw, "  %s%s%s\t%s\n", colorGreen, s.Name, colorReset, desc)
 		}
 		tw.Flush()
 	}
@@ -130,4 +143,16 @@ func outputSkillsTabular(w io.Writer, platforms []cli.Platform) error {
 	}
 
 	return nil
+}
+
+// truncate shortens a string to maxLen runes, adding "..." if truncated.
+func truncate(s string, maxLen int) string {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
+		return s
+	}
+	if maxLen < 3 {
+		return string(runes[:maxLen])
+	}
+	return string(runes[:maxLen-3]) + "..."
 }

@@ -56,8 +56,8 @@ func (v *Validator) Validate(s *claude.Skill) []error {
 	errs = append(errs, v.validateName(s.Name)...)
 	errs = append(errs, v.validateDescription(s.Description)...)
 
-	if v.strict && s.AllowedTools != "" {
-		errs = append(errs, v.validateAllowedTools(s.AllowedTools)...)
+	if v.strict && len(s.AllowedTools) > 0 {
+		errs = append(errs, v.validateAllowedTools(s.AllowedTools.String())...)
 	}
 
 	if len(errs) == 0 {
