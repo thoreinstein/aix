@@ -3,7 +3,19 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
+
+	"github.com/thoreinstein/aix/internal/config"
 )
+
+func init() {
+	cobra.OnInitialize(initConfig)
+}
+
+func initConfig() {
+	config.Init()
+	// Ignore load errors - defaults will be used if no config file
+	_ = config.Load()
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "aix",
