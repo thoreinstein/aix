@@ -22,8 +22,10 @@ var supportedVars = map[string]struct{}{
 // varPattern matches variable syntax: $ followed by 2+ uppercase letters/underscores.
 // Uses negative lookahead simulation via atomic group behavior - the pattern stops matching
 // when it hits lowercase letters (thanks to the character class).
-// Examples: $ARGUMENTS matches, $VAR matches in "$VAR123", $Arguments doesn't match.
-var varPattern = regexp.MustCompile(`\$[A-Z][A-Z_]+`)
+// We include a word boundary \b to ensure we match complete variable names and not
+// partial prefixes (e.g. $ARGUMENTS123 should not match $ARGUMENTS).
+// Examples: $ARGUMENTS matches, $VAR matches in "$VAR123" (no match), $Arguments doesn't match.
+var varPattern = regexp.MustCompile(`\$[A-Z][A-Z_]+\b`)
 
 // ErrUnsupportedVariable indicates content contains variables not supported by Claude Code.
 var ErrUnsupportedVariable = errors.New("unsupported variable")
