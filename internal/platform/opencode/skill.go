@@ -203,15 +203,15 @@ func parseSkillFile(data []byte) (*Skill, error) {
 func formatSkillFile(s *Skill) ([]byte, error) {
 	// Build frontmatter struct (only include non-empty optional fields)
 	meta := struct {
-		Name          string            `yaml:"name"`
-		Description   string            `yaml:"description"`
-		Version       string            `yaml:"version,omitempty"`
-		Author        string            `yaml:"author,omitempty"`
-		Tools         []string          `yaml:"tools,omitempty"`
-		AllowedTools  []string          `yaml:"allowed_tools,omitempty"`
-		Triggers      []string          `yaml:"triggers,omitempty"`
-		Compatibility map[string]string `yaml:"compatibility,omitempty"`
-		Metadata      map[string]any    `yaml:"metadata,omitempty"`
+		Name          string           `yaml:"name"`
+		Description   string           `yaml:"description"`
+		Version       string           `yaml:"version,omitempty"`
+		Author        string           `yaml:"author,omitempty"`
+		Tools         []string         `yaml:"tools,omitempty"`
+		AllowedTools  []string         `yaml:"allowed_tools,omitempty"`
+		Triggers      []string         `yaml:"triggers,omitempty"`
+		Compatibility CompatibilityMap `yaml:"compatibility,omitempty"`
+		Metadata      map[string]any   `yaml:"metadata,omitempty"`
 	}{
 		Name:          s.Name,
 		Description:   s.Description,

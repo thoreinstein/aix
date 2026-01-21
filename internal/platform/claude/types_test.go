@@ -246,7 +246,7 @@ func TestSkill_YAMLRoundTrip(t *testing.T) {
 			skill: &Skill{
 				Name:          "search",
 				Description:   "Search the codebase",
-				AllowedTools:  "Read Grep Glob",
+				AllowedTools:  ToolList{"Read", "Grep", "Glob"},
 				Compatibility: []string{"claude-code", "opencode"},
 			},
 		},
@@ -258,7 +258,7 @@ func TestSkill_YAMLRoundTrip(t *testing.T) {
 				License:       "MIT",
 				Compatibility: []string{"claude-code"},
 				Metadata:      map[string]string{"version": "2.1.0", "author": "test-author"},
-				AllowedTools:  "Bash Read Write",
+				AllowedTools:  ToolList{"Bash", "Read", "Write"},
 				// Instructions is not serialized
 			},
 		},

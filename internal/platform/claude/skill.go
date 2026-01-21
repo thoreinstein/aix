@@ -214,7 +214,7 @@ func formatSkillFile(s *Skill) ([]byte, error) {
 		License:       s.License,
 		Compatibility: s.Compatibility,
 		Metadata:      s.Metadata,
-		AllowedTools:  s.AllowedTools,
+		AllowedTools:  s.AllowedTools.String(),
 	}
 
 	return frontmatter.Format(meta, s.Instructions)

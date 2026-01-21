@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -91,8 +92,9 @@ func TestParser_ParseBytes(t *testing.T) {
 				if len(s.Compatibility) != 2 {
 					t.Errorf("Compatibility len = %d, want 2", len(s.Compatibility))
 				}
-				if s.AllowedTools != "Read Write Bash(git:*)" {
-					t.Errorf("AllowedTools = %q, want %q", s.AllowedTools, "Read Write Bash(git:*)")
+				expectedTools := claude.ToolList{"Read", "Write", "Bash(git:*)"}
+				if !reflect.DeepEqual(s.AllowedTools, expectedTools) {
+					t.Errorf("AllowedTools = %q, want %q", s.AllowedTools, expectedTools)
 				}
 				if s.Metadata["author"] != "Test Author" {
 					t.Errorf("Metadata[author] = %q, want %q", s.Metadata["author"], "Test Author")
@@ -152,7 +154,7 @@ func TestParser_ParseBytes(t *testing.T) {
 			name:        "body only, no frontmatter",
 			input:       validSkillBodyOnly,
 			wantErr:     true,
-			errContains: "not found",
+			errContains: "missing frontmatter",
 		},
 		{
 			name:        "malformed YAML",
@@ -164,7 +166,7 @@ func TestParser_ParseBytes(t *testing.T) {
 			name:        "empty file",
 			input:       emptyFile,
 			wantErr:     true,
-			errContains: "not found",
+			errContains: "missing frontmatter",
 		},
 		{
 			name:        "unclosed frontmatter",

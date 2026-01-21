@@ -49,14 +49,14 @@ func (p *OpenCodePaths) BaseDir() string {
 	}
 }
 
-// SkillDir returns the skill directory.
-// Returns <base>/skill/ (singular, not "skills")
+// SkillDir returns the skills directory.
+// Returns <base>/skills/
 func (p *OpenCodePaths) SkillDir() string {
 	base := p.BaseDir()
 	if base == "" {
 		return ""
 	}
-	return filepath.Join(base, "skill")
+	return filepath.Join(base, "skills")
 }
 
 // CommandDir returns the commands directory.
@@ -69,14 +69,14 @@ func (p *OpenCodePaths) CommandDir() string {
 	return filepath.Join(base, "commands")
 }
 
-// AgentDir returns the agent directory.
-// Returns <base>/agent/ (singular, not "agents")
+// AgentDir returns the agents directory.
+// Returns <base>/agents/
 func (p *OpenCodePaths) AgentDir() string {
 	base := p.BaseDir()
 	if base == "" {
 		return ""
 	}
-	return filepath.Join(base, "agent")
+	return filepath.Join(base, "agents")
 }
 
 // MCPConfigPath returns the path to the MCP servers configuration file.

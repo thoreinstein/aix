@@ -400,7 +400,7 @@ Invoke with /security-scan to begin analysis.
 
 	// Step 3: Parse tool permissions
 	tp := toolperm.New()
-	perms, err := tp.Parse(skill.AllowedTools)
+	perms, err := tp.Parse(skill.AllowedTools.String())
 	if err != nil {
 		t.Fatalf("tool permission parse failed: %v", err)
 	}
