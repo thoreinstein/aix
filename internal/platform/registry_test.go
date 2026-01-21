@@ -7,30 +7,6 @@ import (
 	"github.com/thoreinstein/aix/internal/paths"
 )
 
-// mockPlatform is a test implementation of the Platform interface.
-type mockPlatform struct {
-	name            string
-	globalConfigDir string
-	mcpConfigPath   string
-	instructionFile string
-}
-
-func (m *mockPlatform) Name() string                { return m.name }
-func (m *mockPlatform) GlobalConfigDir() string     { return m.globalConfigDir }
-func (m *mockPlatform) MCPConfigPath() string       { return m.mcpConfigPath }
-func (m *mockPlatform) InstructionFilename() string { return m.instructionFile }
-
-// newMockPlatform creates a mock platform with the given name.
-// Uses paths package to get realistic config values.
-func newMockPlatform(name string) *mockPlatform {
-	return &mockPlatform{
-		name:            name,
-		globalConfigDir: paths.GlobalConfigDir(name),
-		mcpConfigPath:   paths.MCPConfigPath(name),
-		instructionFile: paths.InstructionFilename(name),
-	}
-}
-
 func TestNewRegistry(t *testing.T) {
 	r := NewRegistry()
 	if r == nil {
@@ -40,10 +16,6 @@ func TestNewRegistry(t *testing.T) {
 	// Should be empty
 	if got := r.All(); got != nil {
 		t.Errorf("NewRegistry().All() = %v, want nil", got)
-	}
-
-	if got := r.Names(); got != nil {
-		t.Errorf("NewRegistry().Names() = %v, want nil", got)
 	}
 }
 
@@ -61,17 +33,15 @@ func TestRegistry_Register_Success(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := NewRegistry()
-			p := newMockPlatform(tt.platform)
 
-			err := r.Register(p)
+			err := r.Register(tt.platform)
 			if err != nil {
 				t.Errorf("Register(%q) error = %v, want nil", tt.platform, err)
 			}
 
 			// Verify it was registered
-			got := r.Get(tt.platform)
-			if got != p {
-				t.Errorf("Get(%q) = %v, want %v", tt.platform, got, p)
+			if !r.Get(tt.platform) {
+				t.Errorf("Get(%q) = false, want true", tt.platform)
 			}
 		})
 	}
@@ -92,9 +62,8 @@ func TestRegistry_Register_InvalidName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := NewRegistry()
-			p := &mockPlatform{name: tt.platform}
 
-			err := r.Register(p)
+			err := r.Register(tt.platform)
 			if err != ErrInvalidPlatformName {
 				t.Errorf("Register(%q) error = %v, want %v", tt.platform, err, ErrInvalidPlatformName)
 			}
@@ -104,65 +73,50 @@ func TestRegistry_Register_InvalidName(t *testing.T) {
 
 func TestRegistry_Register_AlreadyRegistered(t *testing.T) {
 	r := NewRegistry()
-	p1 := newMockPlatform(paths.PlatformClaude)
-	p2 := newMockPlatform(paths.PlatformClaude)
 
 	// First registration should succeed
-	if err := r.Register(p1); err != nil {
+	if err := r.Register(paths.PlatformClaude); err != nil {
 		t.Fatalf("First Register() error = %v, want nil", err)
 	}
 
 	// Second registration should fail
-	err := r.Register(p2)
+	err := r.Register(paths.PlatformClaude)
 	if err != ErrPlatformAlreadyRegistered {
 		t.Errorf("Second Register() error = %v, want %v", err, ErrPlatformAlreadyRegistered)
 	}
 
 	// Original should still be registered
-	if got := r.Get(paths.PlatformClaude); got != p1 {
-		t.Error("Original platform was overwritten")
-	}
-}
-
-func TestRegistry_Register_NilPlatform(t *testing.T) {
-	r := NewRegistry()
-
-	err := r.Register(nil)
-	if err != ErrNilPlatform {
-		t.Errorf("Register(nil) error = %v, want %v", err, ErrNilPlatform)
+	if !r.Get(paths.PlatformClaude) {
+		t.Error("Platform no longer registered after duplicate registration attempt")
 	}
 }
 
 func TestRegistry_Get_Registered(t *testing.T) {
 	r := NewRegistry()
-	p := newMockPlatform(paths.PlatformClaude)
 
-	if err := r.Register(p); err != nil {
+	if err := r.Register(paths.PlatformClaude); err != nil {
 		t.Fatalf("Register() error = %v", err)
 	}
 
-	got := r.Get(paths.PlatformClaude)
-	if got != p {
-		t.Errorf("Get(%q) = %v, want %v", paths.PlatformClaude, got, p)
+	if !r.Get(paths.PlatformClaude) {
+		t.Errorf("Get(%q) = false, want true", paths.PlatformClaude)
 	}
 }
 
 func TestRegistry_Get_Unregistered(t *testing.T) {
 	r := NewRegistry()
 
-	got := r.Get(paths.PlatformClaude)
-	if got != nil {
-		t.Errorf("Get(%q) = %v, want nil", paths.PlatformClaude, got)
+	if r.Get(paths.PlatformClaude) {
+		t.Errorf("Get(%q) = true, want false", paths.PlatformClaude)
 	}
 }
 
 func TestRegistry_Get_InvalidName(t *testing.T) {
 	r := NewRegistry()
 
-	// Even with an invalid name, Get should return nil (not panic)
-	got := r.Get("invalid-platform")
-	if got != nil {
-		t.Errorf("Get(%q) = %v, want nil", "invalid-platform", got)
+	// Even with an invalid name, Get should return false (not panic)
+	if r.Get("invalid-platform") {
+		t.Errorf("Get(%q) = true, want false", "invalid-platform")
 	}
 }
 
@@ -178,7 +132,7 @@ func TestRegistry_All_DeterministicOrder(t *testing.T) {
 	}
 
 	for _, name := range platforms {
-		if err := r.Register(newMockPlatform(name)); err != nil {
+		if err := r.Register(name); err != nil {
 			t.Fatalf("Register(%q) error = %v", name, err)
 		}
 	}
@@ -198,9 +152,9 @@ func TestRegistry_All_DeterministicOrder(t *testing.T) {
 			paths.PlatformOpenCode,
 		}
 
-		for j, p := range all {
-			if p.Name() != expected[j] {
-				t.Errorf("All()[%d].Name() = %q, want %q", j, p.Name(), expected[j])
+		for j, name := range all {
+			if name != expected[j] {
+				t.Errorf("All()[%d] = %q, want %q", j, name, expected[j])
 			}
 		}
 	}
@@ -220,7 +174,7 @@ func TestRegistry_Available_FiltersInstalled(t *testing.T) {
 
 	// Register all platforms
 	for _, name := range paths.Platforms() {
-		if err := r.Register(newMockPlatform(name)); err != nil {
+		if err := r.Register(name); err != nil {
 			t.Fatalf("Register(%q) error = %v", name, err)
 		}
 	}
@@ -229,10 +183,10 @@ func TestRegistry_Available_FiltersInstalled(t *testing.T) {
 	available := r.Available()
 
 	// Verify each returned platform is actually installed
-	for _, p := range available {
-		detection := DetectPlatform(p.Name())
+	for _, name := range available {
+		detection := DetectPlatform(name)
 		if detection == nil || detection.Status != StatusInstalled {
-			t.Errorf("Available() returned non-installed platform %q", p.Name())
+			t.Errorf("Available() returned non-installed platform %q", name)
 		}
 	}
 }
@@ -258,7 +212,7 @@ func TestRegistry_Available_DeterministicOrder(t *testing.T) {
 	}
 
 	for _, name := range platforms {
-		if err := r.Register(newMockPlatform(name)); err != nil {
+		if err := r.Register(name); err != nil {
 			t.Fatalf("Register(%q) error = %v", name, err)
 		}
 	}
@@ -272,57 +226,11 @@ func TestRegistry_Available_DeterministicOrder(t *testing.T) {
 		}
 
 		for j := range current {
-			if current[j].Name() != first[j].Name() {
+			if current[j] != first[j] {
 				t.Errorf("Available() order not deterministic at index %d: %q vs %q",
-					j, current[j].Name(), first[j].Name())
+					j, current[j], first[j])
 			}
 		}
-	}
-}
-
-func TestRegistry_Names_DeterministicOrder(t *testing.T) {
-	r := NewRegistry()
-
-	// Register in random order
-	platforms := []string{
-		paths.PlatformCodex,
-		paths.PlatformOpenCode,
-		paths.PlatformClaude,
-		paths.PlatformGemini,
-	}
-
-	for _, name := range platforms {
-		if err := r.Register(newMockPlatform(name)); err != nil {
-			t.Fatalf("Register(%q) error = %v", name, err)
-		}
-	}
-
-	// Should be alphabetically sorted
-	expected := []string{
-		paths.PlatformClaude,
-		paths.PlatformCodex,
-		paths.PlatformGemini,
-		paths.PlatformOpenCode,
-	}
-
-	names := r.Names()
-	if len(names) != len(expected) {
-		t.Fatalf("Names() returned %d names, want %d", len(names), len(expected))
-	}
-
-	for i, name := range names {
-		if name != expected[i] {
-			t.Errorf("Names()[%d] = %q, want %q", i, name, expected[i])
-		}
-	}
-}
-
-func TestRegistry_Names_Empty(t *testing.T) {
-	r := NewRegistry()
-
-	got := r.Names()
-	if got != nil {
-		t.Errorf("Names() on empty registry = %v, want nil", got)
 	}
 }
 
@@ -340,11 +248,11 @@ func TestRegistry_ConcurrentSafety(t *testing.T) {
 			defer wg.Done()
 
 			// Each goroutine does different operations
-			switch idx % 4 {
+			switch idx % 3 {
 			case 0:
 				// Try to register (may fail with already registered, that's OK)
 				name := platforms[idx%len(platforms)]
-				_ = r.Register(newMockPlatform(name))
+				_ = r.Register(name)
 			case 1:
 				// Get by name
 				name := platforms[idx%len(platforms)]
@@ -352,9 +260,6 @@ func TestRegistry_ConcurrentSafety(t *testing.T) {
 			case 2:
 				// List all
 				_ = r.All()
-			case 3:
-				// List names
-				_ = r.Names()
 			}
 		}(i)
 	}
@@ -365,7 +270,6 @@ func TestRegistry_ConcurrentSafety(t *testing.T) {
 func TestRegistry_ConcurrentRegisterAndGet(t *testing.T) {
 	r := NewRegistry()
 	name := paths.PlatformClaude
-	p := newMockPlatform(name)
 
 	var wg sync.WaitGroup
 	const readers = 50
@@ -377,7 +281,7 @@ func TestRegistry_ConcurrentRegisterAndGet(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			registerErrors <- r.Register(p)
+			registerErrors <- r.Register(name)
 		}()
 	}
 
@@ -408,7 +312,7 @@ func TestRegistry_ConcurrentRegisterAndGet(t *testing.T) {
 	}
 
 	// Platform should be registered
-	if got := r.Get(name); got == nil {
+	if !r.Get(name) {
 		t.Error("Platform not registered after concurrent operations")
 	}
 }
@@ -421,11 +325,6 @@ func TestSentinelErrors(t *testing.T) {
 		want string
 	}{
 		{
-			name: "ErrPlatformNotRegistered",
-			err:  ErrPlatformNotRegistered,
-			want: "platform not registered",
-		},
-		{
 			name: "ErrPlatformAlreadyRegistered",
 			err:  ErrPlatformAlreadyRegistered,
 			want: "platform already registered",
@@ -434,11 +333,6 @@ func TestSentinelErrors(t *testing.T) {
 			name: "ErrInvalidPlatformName",
 			err:  ErrInvalidPlatformName,
 			want: "invalid platform name",
-		},
-		{
-			name: "ErrNilPlatform",
-			err:  ErrNilPlatform,
-			want: "platform is nil",
 		},
 	}
 

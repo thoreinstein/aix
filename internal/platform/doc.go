@@ -1,52 +1,39 @@
-// Package platform provides a platform adapter framework for AI coding assistant
-// configuration management.
+// Package platform provides platform detection and registration for AI coding
+// assistant configuration management.
 //
 // This package detects and manages configurations for supported AI coding
 // assistants: Claude Code, OpenCode, Codex, and Gemini CLI. It provides
 // detection capabilities to determine which platforms are installed on
-// the current system, and a registry for managing platform adapters.
-//
-// # Platform Interface
-//
-// The [Platform] interface defines the contract that all platform adapters must
-// implement. Each supported AI coding assistant (Claude, OpenCode, Codex, Gemini)
-// provides an adapter that implements this interface:
-//
-//	type Platform interface {
-//	    Name() string              // Platform identifier
-//	    GlobalConfigDir() string   // Path to global config directory
-//	    MCPConfigPath() string     // Path to MCP config file
-//	    InstructionFilename() string // Instruction file name (e.g., CLAUDE.md)
-//	}
+// the current system, and a registry for tracking registered platform names.
 //
 // # Platform Registry
 //
-// The [Registry] manages platform adapter registration and lookup. Create a new
-// registry and register adapters:
+// The [Registry] tracks which platform names are registered. Create a new
+// registry and register platform names:
 //
 //	registry := platform.NewRegistry()
 //
-//	// Register platform adapters
-//	if err := registry.Register(claude.NewPlatform()); err != nil {
+//	// Register platform names
+//	if err := registry.Register("claude"); err != nil {
 //	    log.Fatal(err)
 //	}
 //
-//	// Get a specific platform
-//	if p := registry.Get("claude"); p != nil {
-//	    fmt.Printf("Claude config: %s\n", p.GlobalConfigDir())
+//	// Check if a platform is registered
+//	if registry.Get("claude") {
+//	    fmt.Println("Claude is registered")
 //	}
 //
-//	// List all registered platforms
-//	for _, p := range registry.All() {
-//	    fmt.Printf("%s: %s\n", p.Name(), p.GlobalConfigDir())
+//	// List all registered platform names
+//	for _, name := range registry.All() {
+//	    fmt.Printf("Registered: %s\n", name)
 //	}
 //
 //	// List only installed platforms
-//	for _, p := range registry.Available() {
-//	    fmt.Printf("Installed: %s\n", p.Name())
+//	for _, name := range registry.Available() {
+//	    fmt.Printf("Installed: %s\n", name)
 //	}
 //
-// The registry is safe for concurrent use and returns platforms in
+// The registry is safe for concurrent use and returns platform names in
 // deterministic (alphabetical) order.
 //
 // # Platform Detection
@@ -92,10 +79,8 @@
 //
 // The registry operations return specific sentinel errors:
 //
-//   - [ErrPlatformNotRegistered]: Platform not found in registry
 //   - [ErrPlatformAlreadyRegistered]: Platform name already in use
 //   - [ErrInvalidPlatformName]: Platform name not recognized
-//   - [ErrNilPlatform]: Attempted to register nil platform
 //
 // # Thread Safety
 //
