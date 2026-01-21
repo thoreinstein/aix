@@ -57,14 +57,14 @@ import (
 
 ### Naming Conventions
 
-| Element | Convention | Example |
-|---------|------------|---------|
-| Packages | lowercase, single word | `platform`, `skill`, `mcp` |
-| Interfaces | noun or -er suffix | `Platform`, `Validator`, `Parser` |
-| Constructors | `New` prefix | `NewValidator(strict bool)` |
-| Errors | `Err` prefix | `ErrMissingName`, `ErrInvalidToolSyntax` |
-| Test files | `_test.go` suffix | `validator_test.go` |
-| Test functions | `Test` prefix | `TestValidator_Validate` |
+| Element        | Convention             | Example                                  |
+| -------------- | ---------------------- | ---------------------------------------- |
+| Packages       | lowercase, single word | `platform`, `skill`, `mcp`               |
+| Interfaces     | noun or -er suffix     | `Platform`, `Validator`, `Parser`        |
+| Constructors   | `New` prefix           | `NewValidator(strict bool)`              |
+| Errors         | `Err` prefix           | `ErrMissingName`, `ErrInvalidToolSyntax` |
+| Test files     | `_test.go` suffix      | `validator_test.go`                      |
+| Test functions | `Test` prefix          | `TestValidator_Validate`                 |
 
 ### Error Handling
 
@@ -243,6 +243,7 @@ bd sync               # Sync with git
    go test ./...
    golangci-lint run
    go build ./cmd/aix
+   pre-commit run --all-files
    ```
 3. **Update issues** - Close finished work, update in-progress items
 4. **Push to remote**:
