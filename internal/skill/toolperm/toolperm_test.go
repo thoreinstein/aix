@@ -186,12 +186,28 @@ func TestParser_Parse(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:  "underscore in tool name is valid",
-			input: "Tool_Name",
-			want: []Permission{
-				{Name: "Tool_Name"},
-			},
-			wantErr: false,
+			name:    "underscore in tool name is invalid",
+			input:   "Tool_Name",
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "tool name starting with number is invalid",
+			input:   "2Tool",
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "tool name starting with underscore is invalid",
+			input:   "_Tool",
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "tool name starting with lowercase is invalid",
+			input:   "read",
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name:  "number in tool name is valid",
@@ -313,10 +329,10 @@ func TestParser_ParseSingle(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "lowercase tool",
+			name:    "lowercase tool is invalid",
 			input:   "read",
-			want:    Permission{Name: "read"},
-			wantErr: false,
+			want:    Permission{},
+			wantErr: true,
 		},
 		{
 			name:    "mixed case tool",
@@ -455,8 +471,8 @@ func TestToolPermError_Error(t *testing.T) {
 	}{
 		{
 			name: "with token",
-			err:  &ToolPermError{Token: "Bash(", Message: "invalid tool permission syntax"},
-			want: `invalid tool permission "Bash(": invalid tool permission syntax`,
+			err:  &ToolPermError{Token: "Bash(", Message: "invalid tool permission syntax: tool name must be PascalCase (start with uppercase letter, e.g., Read, Write, Bash)"},
+			want: `invalid tool permission "Bash(": invalid tool permission syntax: tool name must be PascalCase (start with uppercase letter, e.g., Read, Write, Bash)`,
 		},
 		{
 			name: "empty token",
@@ -465,8 +481,8 @@ func TestToolPermError_Error(t *testing.T) {
 		},
 		{
 			name: "special characters in token",
-			err:  &ToolPermError{Token: "Tool@Name", Message: "invalid tool permission syntax"},
-			want: `invalid tool permission "Tool@Name": invalid tool permission syntax`,
+			err:  &ToolPermError{Token: "Tool@Name", Message: "invalid tool permission syntax: tool name must be PascalCase (start with uppercase letter, e.g., Read, Write, Bash)"},
+			want: `invalid tool permission "Tool@Name": invalid tool permission syntax: tool name must be PascalCase (start with uppercase letter, e.g., Read, Write, Bash)`,
 		},
 	}
 	for _, tt := range tests {
