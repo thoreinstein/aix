@@ -262,3 +262,4 @@ bd sync               # Sync with git
 - If push fails, resolve and retry until it succeeds
 - NEVER use git commit --no-verify
 - NEVER use git commit --amend
+- DO NOT define interfaces unless they are necessary
