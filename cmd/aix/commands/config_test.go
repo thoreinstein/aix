@@ -371,7 +371,7 @@ func TestConfigList(t *testing.T) {
 		}
 
 		// Verify output is valid YAML
-		var parsed map[string]interface{}
+		var parsed map[string]any
 		if err := yaml.Unmarshal([]byte(output), &parsed); err != nil {
 			t.Errorf("runConfigList() output is not valid YAML: %v\nOutput: %s", err, output)
 		}
@@ -404,7 +404,7 @@ func TestConfigList(t *testing.T) {
 		_, _ = buf.ReadFrom(r)
 		output := buf.String()
 
-		var parsed map[string]interface{}
+		var parsed map[string]any
 		if err := yaml.Unmarshal([]byte(output), &parsed); err != nil {
 			t.Fatalf("YAML parse error: %v", err)
 		}
@@ -415,7 +415,7 @@ func TestConfigList(t *testing.T) {
 		}
 
 		// Check platforms value
-		platforms, ok := parsed["default_platforms"].([]interface{})
+		platforms, ok := parsed["default_platforms"].([]any)
 		if !ok {
 			t.Fatalf("default_platforms not a slice: %T", parsed["default_platforms"])
 		}
@@ -448,7 +448,7 @@ func TestConfigList(t *testing.T) {
 		}
 
 		// Should still be valid YAML
-		var parsed map[string]interface{}
+		var parsed map[string]any
 		if err := yaml.Unmarshal([]byte(output), &parsed); err != nil {
 			t.Errorf("runConfigList() output is not valid YAML: %v", err)
 		}
@@ -482,7 +482,7 @@ func TestWriteConfig(t *testing.T) {
 		output := buf.String()
 
 		// Verify the YAML structure matches what writeConfig would produce
-		var parsed map[string]interface{}
+		var parsed map[string]any
 		if err := yaml.Unmarshal([]byte(output), &parsed); err != nil {
 			t.Errorf("marshaled config is not valid YAML: %v", err)
 		}
@@ -492,7 +492,7 @@ func TestWriteConfig(t *testing.T) {
 			t.Errorf("version = %v, want 1", parsed["version"])
 		}
 
-		platforms, ok := parsed["default_platforms"].([]interface{})
+		platforms, ok := parsed["default_platforms"].([]any)
 		if !ok {
 			t.Fatalf("default_platforms type = %T, want []interface{}", parsed["default_platforms"])
 		}
@@ -505,7 +505,7 @@ func TestWriteConfig(t *testing.T) {
 func TestConfigGet_InterfaceSlice(t *testing.T) {
 	// Test that runConfigGet handles []interface{} (which viper sometimes returns)
 	viper.Reset()
-	viper.Set("mixed_slice", []interface{}{"a", "b", "c"})
+	viper.Set("mixed_slice", []any{"a", "b", "c"})
 
 	// Capture stdout
 	old := os.Stdout
