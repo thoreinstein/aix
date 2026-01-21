@@ -5,6 +5,58 @@ import (
 	"testing"
 )
 
+func TestParseHeader(t *testing.T) {
+	tests := []struct {
+		name            string
+		content         string
+		wantDescription string
+	}{
+		{
+			name: "valid frontmatter",
+			content: `---
+description: Header only
+---
+Ignored body content`,
+			wantDescription: "Header only",
+		},
+		{
+			name: "no frontmatter",
+			content: `Just body
+content`,
+			wantDescription: "",
+		},
+		{
+			name:            "empty content",
+			content:         "",
+			wantDescription: "",
+		},
+		{
+			name: "unclosed frontmatter",
+			content: `---
+description: Unclosed
+body starts here`,
+			wantDescription: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var matter struct {
+				Description string `yaml:"description"`
+			}
+
+			err := ParseHeader(strings.NewReader(tt.content), &matter)
+			if err != nil {
+				t.Fatalf("ParseHeader() error = %v", err)
+			}
+
+			if matter.Description != tt.wantDescription {
+				t.Errorf("Description = %q, want %q", matter.Description, tt.wantDescription)
+			}
+		})
+	}
+}
+
 func TestParse(t *testing.T) {
 	tests := []struct {
 		name            string

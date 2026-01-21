@@ -60,14 +60,29 @@ func (m *SkillManager) List() ([]*Skill, error) {
 			continue
 		}
 
-		skill, err := m.Get(entry.Name())
-		if err != nil {
-			if errors.Is(err, ErrSkillNotFound) {
-				// Skip directories without valid SKILL.md
-				continue
-			}
-			return nil, fmt.Errorf("reading skill %s: %w", entry.Name(), err)
+		name := entry.Name()
+		skillPath := m.paths.SkillPath(name)
+		if skillPath == "" {
+			continue
 		}
+
+		// Check if SKILL.md exists
+		if _, err := os.Stat(skillPath); os.IsNotExist(err) {
+			continue
+		}
+
+		f, err := os.Open(skillPath)
+		if err != nil {
+			return nil, fmt.Errorf("opening skill file %q: %w", name, err)
+		}
+
+		skill := &Skill{Name: name}
+		if err := frontmatter.ParseHeader(f, skill); err != nil {
+			f.Close()
+			return nil, fmt.Errorf("parsing skill header %q: %w", name, err)
+		}
+		f.Close()
+
 		skills = append(skills, skill)
 	}
 
