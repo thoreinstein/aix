@@ -67,10 +67,20 @@ func (m *CommandManager) List() ([]*Command, error) {
 		}
 
 		name := strings.TrimSuffix(entry.Name(), ".md")
-		cmd, err := m.Get(name)
+		cmdPath := m.paths.CommandPath(name)
+
+		f, err := os.Open(cmdPath)
 		if err != nil {
-			return nil, fmt.Errorf("reading command %s: %w", name, err)
+			return nil, fmt.Errorf("opening command file %q: %w", name, err)
 		}
+
+		cmd := &Command{Name: name}
+		if err := frontmatter.ParseHeader(f, cmd); err != nil {
+			f.Close()
+			return nil, fmt.Errorf("parsing command header %q: %w", name, err)
+		}
+		f.Close()
+
 		commands = append(commands, cmd)
 	}
 
