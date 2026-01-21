@@ -47,7 +47,9 @@ func TestLoad_WithConfigFile(t *testing.T) {
 	}
 
 	Init()
-	viper.AddConfigPath(dir)
+	// Use SetConfigFile to bypass path search and read the exact file.
+	// This ensures the test isn't affected by user's actual config files.
+	viper.SetConfigFile(configPath)
 
 	if err := Load(); err != nil {
 		t.Fatalf("Load() error: %v", err)
