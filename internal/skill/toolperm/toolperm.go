@@ -26,8 +26,11 @@ func (p Permission) String() string {
 }
 
 // toolRegex matches tool permission syntax: ToolName or ToolName(scope)
+// Tool names must be PascalCase per the Agent Skills Specification:
+// - Must start with an uppercase letter [A-Z]
+// - Followed by zero or more alphanumeric characters [a-zA-Z0-9]
 // Captures: group 1 = tool name, group 2 = scope (optional, without parens)
-var toolRegex = regexp.MustCompile(`^(\w+)(?:\(([^)]+)\))?$`)
+var toolRegex = regexp.MustCompile(`^([A-Z][a-zA-Z0-9]*)(?:\(([^)]+)\))?$`)
 
 // Parser handles tool permission string parsing.
 type Parser struct{}
@@ -68,7 +71,10 @@ func (p *Parser) ParseSingle(token string) (Permission, error) {
 
 	matches := toolRegex.FindStringSubmatch(token)
 	if matches == nil {
-		return Permission{}, &ToolPermError{Token: token, Message: "invalid tool permission syntax"}
+		return Permission{}, &ToolPermError{
+			Token:   token,
+			Message: "invalid tool permission syntax: tool name must be PascalCase (start with uppercase letter, e.g., Read, Write, Bash)",
+		}
 	}
 
 	return Permission{
