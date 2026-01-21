@@ -2,6 +2,10 @@ package opencode
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // MCPServer represents an MCP (Model Context Protocol) server configuration
@@ -88,6 +92,41 @@ func (c *MCPConfig) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// CompatibilityMap maps platform names to version requirements.
+// It supports unmarshaling from both a map (OpenCode format) and a list (Spec format).
+type CompatibilityMap map[string]string
+
+// UnmarshalYAML implements yaml.Unmarshaler.
+func (c *CompatibilityMap) UnmarshalYAML(value *yaml.Node) error {
+	// Try unmarshaling as a map first (standard OpenCode format)
+	var m map[string]string
+	if err := value.Decode(&m); err == nil {
+		*c = m
+		return nil
+	}
+
+	// Try unmarshaling as a list (Spec format: ["claude >=1.0", "opencode"])
+	var l []string
+	if err := value.Decode(&l); err == nil {
+		if *c == nil {
+			*c = make(map[string]string)
+		}
+		for _, item := range l {
+			// Split "platform >=version" or just "platform"
+			parts := strings.SplitN(item, " ", 2)
+			platform := parts[0]
+			version := ""
+			if len(parts) > 1 {
+				version = strings.TrimSpace(parts[1])
+			}
+			(*c)[platform] = version
+		}
+		return nil
+	}
+
+	return fmt.Errorf("compatibility must be a map or list, got %s", value.Tag)
+}
+
 // Skill represents an OpenCode skill definition.
 // Skills are markdown files with YAML frontmatter that define reusable capabilities.
 // OpenCode extends the base skill spec with additional fields for tool restrictions
@@ -117,7 +156,7 @@ type Skill struct {
 
 	// Compatibility maps platform names to compatibility notes or version requirements.
 	// This is an OpenCode-specific field for cross-platform skill management.
-	Compatibility map[string]string `yaml:"compatibility,omitempty" json:"compatibility,omitempty"`
+	Compatibility CompatibilityMap `yaml:"compatibility,omitempty" json:"compatibility,omitempty"`
 
 	// Metadata contains arbitrary key-value pairs for extensibility.
 	// This is an OpenCode-specific field for custom skill metadata.

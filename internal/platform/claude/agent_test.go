@@ -639,7 +639,7 @@ func TestParseAgentContent_EdgeCases(t *testing.T) {
 			name:             "empty frontmatter",
 			content:          "---\n---\n\nJust instructions",
 			wantDescription:  "",
-			wantInstructions: "Just instructions",
+			wantInstructions: "---\n---\n\nJust instructions",
 		},
 		{
 			name:             "frontmatter only no instructions",

@@ -55,7 +55,7 @@ func TestSkillManager_List_MultipleSkills(t *testing.T) {
 		{
 			Name:         "skill-b",
 			Description:  "Second skill",
-			AllowedTools: "Read Write",
+			AllowedTools: ToolList{"Read", "Write"},
 			Instructions: "Instructions for B",
 		},
 		{
@@ -154,7 +154,7 @@ func TestSkillManager_Get_ExistingSkill(t *testing.T) {
 		License:       "MIT",
 		Compatibility: []string{"claude-code", "opencode"},
 		Metadata:      map[string]string{"version": "2.0.0", "author": "test-author"},
-		AllowedTools:  "Read Write Bash",
+		AllowedTools:  ToolList{"Read", "Write", "Bash"},
 		Instructions:  "These are the instructions.\n\nWith multiple paragraphs.",
 	}
 
@@ -184,7 +184,7 @@ func TestSkillManager_Get_ExistingSkill(t *testing.T) {
 	if !reflect.DeepEqual(got.Metadata, original.Metadata) {
 		t.Errorf("Metadata = %v, want %v", got.Metadata, original.Metadata)
 	}
-	if got.AllowedTools != original.AllowedTools {
+	if !reflect.DeepEqual(got.AllowedTools, original.AllowedTools) {
 		t.Errorf("AllowedTools = %q, want %q", got.AllowedTools, original.AllowedTools)
 	}
 	if got.Instructions != original.Instructions {
@@ -272,7 +272,7 @@ func TestSkillManager_Install_OverwriteExisting(t *testing.T) {
 		Name:         "overwrite-skill",
 		Description:  "Updated description",
 		Metadata:     map[string]string{"version": "2.0.0", "author": "new-author"},
-		AllowedTools: "Read",
+		AllowedTools: ToolList{"Read"},
 		Instructions: "Updated instructions",
 	}
 
@@ -292,7 +292,7 @@ func TestSkillManager_Install_OverwriteExisting(t *testing.T) {
 	if !reflect.DeepEqual(got.Metadata, updated.Metadata) {
 		t.Errorf("Metadata = %v, want %v", got.Metadata, updated.Metadata)
 	}
-	if got.AllowedTools != updated.AllowedTools {
+	if !reflect.DeepEqual(got.AllowedTools, updated.AllowedTools) {
 		t.Errorf("AllowedTools = %q, want %q", got.AllowedTools, updated.AllowedTools)
 	}
 	if got.Instructions != updated.Instructions {
@@ -445,7 +445,7 @@ here.
 				License:       "MIT",
 				Compatibility: []string{"claude-code", "opencode"},
 				Metadata:      map[string]string{"version": "1.2.3", "author": "test-author"},
-				AllowedTools:  "Read Write",
+				AllowedTools:  ToolList{"Read", "Write"},
 				Instructions:  "Multi-line\ninstructions\nhere.",
 			},
 		},
@@ -487,7 +487,7 @@ here.
 			if !reflect.DeepEqual(got.Metadata, tt.want.Metadata) {
 				t.Errorf("Metadata = %v, want %v", got.Metadata, tt.want.Metadata)
 			}
-			if got.AllowedTools != tt.want.AllowedTools {
+			if !reflect.DeepEqual(got.AllowedTools, tt.want.AllowedTools) {
 				t.Errorf("AllowedTools = %q, want %q", got.AllowedTools, tt.want.AllowedTools)
 			}
 			if got.Instructions != tt.want.Instructions {
@@ -525,7 +525,7 @@ func TestFormatSkillFile(t *testing.T) {
 				License:       "Apache-2.0",
 				Compatibility: []string{"claude-code"},
 				Metadata:      map[string]string{"version": "1.0.0", "author": "author"},
-				AllowedTools:  "Read Write",
+				AllowedTools:  ToolList{"Read", "Write"},
 				Instructions:  "Full instructions\nwith newlines.",
 			},
 		},
@@ -561,7 +561,7 @@ func TestFormatSkillFile(t *testing.T) {
 			if !reflect.DeepEqual(got.Metadata, tt.skill.Metadata) {
 				t.Errorf("Metadata = %v, want %v", got.Metadata, tt.skill.Metadata)
 			}
-			if got.AllowedTools != tt.skill.AllowedTools {
+			if !reflect.DeepEqual(got.AllowedTools, tt.skill.AllowedTools) {
 				t.Errorf("AllowedTools = %q, want %q", got.AllowedTools, tt.skill.AllowedTools)
 			}
 			if got.Instructions != tt.skill.Instructions {
@@ -583,7 +583,7 @@ func TestSkillManager_RoundTrip(t *testing.T) {
 		License:       "MIT",
 		Compatibility: []string{"claude-code", "opencode", "codex"},
 		Metadata:      map[string]string{"version": "3.2.1", "author": "test-author", "repository": "github.com/test/repo"},
-		AllowedTools:  "Read Write Bash Glob",
+		AllowedTools:  ToolList{"Read", "Write", "Bash", "Glob"},
 		Instructions:  "Complex instructions\n\nWith multiple paragraphs.\n\n- And bullet points\n- Like this one",
 	}
 

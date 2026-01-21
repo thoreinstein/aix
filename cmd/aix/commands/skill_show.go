@@ -128,16 +128,7 @@ func extractSkillDetail(skill any) *showSkillDetail {
 
 // extractClaudeSkill extracts details from a Claude skill.
 func extractClaudeSkill(s *claude.Skill) *showSkillDetail {
-	var allowedTools []string
-	if s.AllowedTools != "" {
-		// Claude stores allowed tools as a space-delimited string
-		for tool := range strings.SplitSeq(s.AllowedTools, " ") {
-			tool = strings.TrimSpace(tool)
-			if tool != "" {
-				allowedTools = append(allowedTools, tool)
-			}
-		}
-	}
+	allowedTools := []string(s.AllowedTools)
 
 	return &showSkillDetail{
 		Name:          s.Name,

@@ -21,7 +21,7 @@ func TestValidator_Validate(t *testing.T) {
 			skill: &claude.Skill{
 				Name:         "my-skill",
 				Description:  "A test skill",
-				AllowedTools: "Read Write Bash(git:*)",
+				AllowedTools: claude.ToolList{"Read", "Write", "Bash(git:*)"},
 			},
 			strict:   true,
 			wantErrs: 0,
@@ -187,7 +187,7 @@ func TestValidator_Validate(t *testing.T) {
 			skill: &claude.Skill{
 				Name:         "myskill",
 				Description:  "A test skill",
-				AllowedTools: "Read Write Bash(git:*) Glob",
+				AllowedTools: claude.ToolList{"Read", "Write", "Bash(git:*)", "Glob"},
 			},
 			strict:   true,
 			wantErrs: 0,
@@ -197,7 +197,7 @@ func TestValidator_Validate(t *testing.T) {
 			skill: &claude.Skill{
 				Name:         "myskill",
 				Description:  "A test skill",
-				AllowedTools: "Read Write Bash(git:* Glob",
+				AllowedTools: claude.ToolList{"Read", "Write", "Bash(git:*", "Glob"},
 			},
 			strict:    true,
 			wantErrs:  1,
@@ -209,7 +209,7 @@ func TestValidator_Validate(t *testing.T) {
 			skill: &claude.Skill{
 				Name:         "myskill",
 				Description:  "A test skill",
-				AllowedTools: "Read Write Bash(git:* Glob",
+				AllowedTools: claude.ToolList{"Read", "Write", "Bash(git:*", "Glob"},
 			},
 			strict:   false,
 			wantErrs: 0,
@@ -380,7 +380,7 @@ func TestNew_Options(t *testing.T) {
 		skill := &claude.Skill{
 			Name:         "test",
 			Description:  "Test",
-			AllowedTools: "Invalid((",
+			AllowedTools: claude.ToolList{"Invalid(("},
 		}
 		errs := v.Validate(skill)
 		if len(errs) != 0 {
@@ -393,7 +393,7 @@ func TestNew_Options(t *testing.T) {
 		skill := &claude.Skill{
 			Name:         "test",
 			Description:  "Test",
-			AllowedTools: "Invalid((",
+			AllowedTools: claude.ToolList{"Invalid(("},
 		}
 		errs := v.Validate(skill)
 		if len(errs) != 1 {

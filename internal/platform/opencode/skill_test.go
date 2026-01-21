@@ -90,10 +90,10 @@ func TestSkillManager_List(t *testing.T) {
 		paths := testPaths(t)
 		mgr := NewSkillManager(paths)
 
-		// Create skill directory
+		// Create skills directory
 		skillDir := paths.SkillDir()
 		if err := os.MkdirAll(skillDir, 0o755); err != nil {
-			t.Fatalf("failed to create skill directory: %v", err)
+			t.Fatalf("failed to create skills directory: %v", err)
 		}
 
 		// Create a file (not a directory) in skill dir
