@@ -260,3 +260,5 @@ bd sync               # Sync with git
 - Work is NOT complete until `git push` succeeds
 - NEVER stop before pushing - that leaves work stranded locally
 - If push fails, resolve and retry until it succeeds
+- NEVER use git commit --no-verify
+- NEVER use git commit --amend
