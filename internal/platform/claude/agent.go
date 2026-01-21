@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
 
 // Sentinel errors for agent operations.
@@ -153,50 +153,15 @@ func (m *AgentManager) Uninstall(name string) error {
 // If frontmatter is present (delimited by ---), it's parsed for metadata.
 // The remaining content becomes Instructions.
 func parseAgentContent(data []byte) (*Agent, error) {
-	content := string(data)
 	agent := &Agent{}
 
-	// Check for frontmatter delimiter
-	if !strings.HasPrefix(content, "---\n") {
-		// No frontmatter, entire content is instructions
-		agent.Instructions = strings.TrimSpace(content)
-		return agent, nil
-	}
-
-	// Find the closing delimiter
-	rest := content[4:] // Skip opening "---\n"
-
-	// Handle empty frontmatter case (---\n--- immediately)
-	if strings.HasPrefix(rest, "---\n") || strings.HasPrefix(rest, "---") && (len(rest) == 3 || rest[3] == '\n') {
-		// Empty frontmatter, skip the closing ---
-		afterClose := strings.TrimPrefix(rest, "---")
-		afterClose = strings.TrimPrefix(afterClose, "\n")
-		agent.Instructions = strings.TrimSpace(afterClose)
-		return agent, nil
-	}
-
-	endIdx := strings.Index(rest, "\n---")
-	if endIdx == -1 {
-		// No closing delimiter, treat as no frontmatter
-		agent.Instructions = strings.TrimSpace(content)
-		return agent, nil
-	}
-
-	// Parse frontmatter
-	frontmatter := rest[:endIdx]
-	if err := yaml.Unmarshal([]byte(frontmatter), agent); err != nil {
+	// Parse with optional frontmatter
+	body, err := frontmatter.Parse(bytes.NewReader(data), agent)
+	if err != nil {
 		return nil, fmt.Errorf("parsing frontmatter: %w", err)
 	}
 
-	// Extract instructions (skip closing --- and newline)
-	instructionsStart := endIdx + 4 // len("\n---")
-	if instructionsStart < len(rest) {
-		instructions := rest[instructionsStart:]
-		// Skip leading newline if present
-		instructions = strings.TrimPrefix(instructions, "\n")
-		agent.Instructions = strings.TrimSpace(instructions)
-	}
-
+	agent.Instructions = strings.TrimSpace(string(body))
 	return agent, nil
 }
 
