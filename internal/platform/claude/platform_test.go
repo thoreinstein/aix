@@ -156,7 +156,7 @@ func TestClaudePlatform_SkillLifecycle(t *testing.T) {
 	skill := &Skill{
 		Name:         "test-skill",
 		Description:  "A test skill",
-		Version:      "1.0.0",
+		Metadata:     map[string]string{"version": "1.0.0"},
 		Instructions: "Test instructions",
 	}
 
