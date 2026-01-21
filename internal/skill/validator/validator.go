@@ -15,9 +15,9 @@ const (
 	maxNameLength = 64
 )
 
-// nameRegex validates skill names: lowercase alphanumeric, single hyphens allowed
-// between segments, no start/end hyphen, no consecutive hyphens.
-var nameRegex = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+// nameRegex validates skill names: must start with a letter, lowercase alphanumeric,
+// single hyphens allowed between segments, no start/end hyphen, no consecutive hyphens.
+var nameRegex = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
 
 // Option configures a Validator.
 type Option func(*Validator)
@@ -113,7 +113,7 @@ func (v *Validator) validateName(name string) []error {
 	}
 
 	if !nameRegex.MatchString(name) {
-		msg := "name must be lowercase alphanumeric with single hyphens between segments"
+		msg := "name must start with a letter, be lowercase alphanumeric with single hyphens between segments"
 		if strings.HasPrefix(name, "-") || strings.HasSuffix(name, "-") {
 			msg = "name cannot start or end with a hyphen"
 		} else if strings.Contains(name, "--") {

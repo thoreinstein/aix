@@ -151,6 +151,16 @@ func TestValidator_Validate(t *testing.T) {
 			wantField: "name",
 			wantMsg:   "lowercase alphanumeric",
 		},
+		{
+			name: "name starts with number",
+			skill: &claude.Skill{
+				Name:        "123skill",
+				Description: "A test skill",
+			},
+			wantErrs:  1,
+			wantField: "name",
+			wantMsg:   "start with a letter",
+		},
 		// Description validation
 		{
 			name: "missing description",
