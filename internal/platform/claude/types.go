@@ -90,26 +90,30 @@ func (c *MCPConfig) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Skill represents a Claude Code skill definition.
+// Skill represents a skill definition per the Agent Skills Specification.
 // Skills are markdown files with YAML frontmatter that define reusable capabilities.
+// See: https://agentskills.io/specification
 type Skill struct {
-	// Name is the skill's unique identifier.
+	// Name is the skill's unique identifier (required).
+	// Must be 1-64 chars, lowercase alphanumeric + hyphens, no --, no start/end -.
 	Name string `yaml:"name" json:"name"`
 
-	// Description explains what the skill does.
+	// Description explains what the skill does (required).
 	Description string `yaml:"description" json:"description"`
 
-	// Version is the semantic version of the skill.
-	Version string `yaml:"version,omitempty" json:"version,omitempty"`
+	// License is the SPDX license identifier (optional).
+	License string `yaml:"license,omitempty" json:"license,omitempty"`
 
-	// Author is the skill creator's name or identifier.
-	Author string `yaml:"author,omitempty" json:"author,omitempty"`
+	// Compatibility lists compatible AI assistants (optional).
+	// E.g., ["claude-code", "opencode", "codex"]
+	Compatibility []string `yaml:"compatibility,omitempty" json:"compatibility,omitempty"`
 
-	// Tools lists the tool permissions required by this skill.
-	Tools []string `yaml:"tools,omitempty" json:"tools,omitempty"`
+	// Metadata contains optional key-value pairs like author, version, repository.
+	Metadata map[string]string `yaml:"metadata,omitempty" json:"metadata,omitempty"`
 
-	// Triggers are phrases that activate this skill.
-	Triggers []string `yaml:"triggers,omitempty" json:"triggers,omitempty"`
+	// AllowedTools is a space-delimited string of tool permissions (optional).
+	// E.g., "Read Write Bash(git:*) Glob"
+	AllowedTools string `yaml:"allowed-tools,omitempty" json:"allowed-tools,omitempty"`
 
 	// Instructions contains the skill's markdown body content.
 	// This field is not part of the YAML frontmatter.

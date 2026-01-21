@@ -49,20 +49,19 @@ func TestSkillManager_List_MultipleSkills(t *testing.T) {
 		{
 			Name:         "skill-a",
 			Description:  "First skill",
-			Version:      "1.0.0",
+			Metadata:     map[string]string{"version": "1.0.0"},
 			Instructions: "Instructions for A",
 		},
 		{
 			Name:         "skill-b",
 			Description:  "Second skill",
-			Tools:        []string{"Read", "Write"},
+			AllowedTools: "Read Write",
 			Instructions: "Instructions for B",
 		},
 		{
 			Name:         "skill-c",
 			Description:  "Third skill",
-			Author:       "test",
-			Triggers:     []string{"/skill-c"},
+			Metadata:     map[string]string{"author": "test"},
 			Instructions: "Instructions for C",
 		},
 	}
@@ -150,13 +149,13 @@ func TestSkillManager_Get_ExistingSkill(t *testing.T) {
 
 	// Install a skill
 	original := &Skill{
-		Name:         "test-skill",
-		Description:  "A test skill",
-		Version:      "2.0.0",
-		Author:       "test-author",
-		Tools:        []string{"Read", "Write", "Bash"},
-		Triggers:     []string{"/test", "/ts"},
-		Instructions: "These are the instructions.\n\nWith multiple paragraphs.",
+		Name:          "test-skill",
+		Description:   "A test skill",
+		License:       "MIT",
+		Compatibility: []string{"claude-code", "opencode"},
+		Metadata:      map[string]string{"version": "2.0.0", "author": "test-author"},
+		AllowedTools:  "Read Write Bash",
+		Instructions:  "These are the instructions.\n\nWith multiple paragraphs.",
 	}
 
 	if err := mgr.Install(original); err != nil {
@@ -176,17 +175,17 @@ func TestSkillManager_Get_ExistingSkill(t *testing.T) {
 	if got.Description != original.Description {
 		t.Errorf("Description = %q, want %q", got.Description, original.Description)
 	}
-	if got.Version != original.Version {
-		t.Errorf("Version = %q, want %q", got.Version, original.Version)
+	if got.License != original.License {
+		t.Errorf("License = %q, want %q", got.License, original.License)
 	}
-	if got.Author != original.Author {
-		t.Errorf("Author = %q, want %q", got.Author, original.Author)
+	if !reflect.DeepEqual(got.Compatibility, original.Compatibility) {
+		t.Errorf("Compatibility = %v, want %v", got.Compatibility, original.Compatibility)
 	}
-	if !reflect.DeepEqual(got.Tools, original.Tools) {
-		t.Errorf("Tools = %v, want %v", got.Tools, original.Tools)
+	if !reflect.DeepEqual(got.Metadata, original.Metadata) {
+		t.Errorf("Metadata = %v, want %v", got.Metadata, original.Metadata)
 	}
-	if !reflect.DeepEqual(got.Triggers, original.Triggers) {
-		t.Errorf("Triggers = %v, want %v", got.Triggers, original.Triggers)
+	if got.AllowedTools != original.AllowedTools {
+		t.Errorf("AllowedTools = %q, want %q", got.AllowedTools, original.AllowedTools)
 	}
 	if got.Instructions != original.Instructions {
 		t.Errorf("Instructions = %q, want %q", got.Instructions, original.Instructions)
@@ -223,7 +222,7 @@ func TestSkillManager_Install_NewSkill(t *testing.T) {
 	skill := &Skill{
 		Name:         "new-skill",
 		Description:  "A brand new skill",
-		Version:      "1.0.0",
+		Metadata:     map[string]string{"version": "1.0.0"},
 		Instructions: "New skill instructions",
 	}
 
@@ -260,7 +259,7 @@ func TestSkillManager_Install_OverwriteExisting(t *testing.T) {
 	original := &Skill{
 		Name:         "overwrite-skill",
 		Description:  "Original description",
-		Version:      "1.0.0",
+		Metadata:     map[string]string{"version": "1.0.0"},
 		Instructions: "Original instructions",
 	}
 
@@ -272,9 +271,8 @@ func TestSkillManager_Install_OverwriteExisting(t *testing.T) {
 	updated := &Skill{
 		Name:         "overwrite-skill",
 		Description:  "Updated description",
-		Version:      "2.0.0",
-		Author:       "new-author",
-		Tools:        []string{"Read"},
+		Metadata:     map[string]string{"version": "2.0.0", "author": "new-author"},
+		AllowedTools: "Read",
 		Instructions: "Updated instructions",
 	}
 
@@ -291,11 +289,11 @@ func TestSkillManager_Install_OverwriteExisting(t *testing.T) {
 	if got.Description != updated.Description {
 		t.Errorf("Description = %q, want %q", got.Description, updated.Description)
 	}
-	if got.Version != updated.Version {
-		t.Errorf("Version = %q, want %q", got.Version, updated.Version)
+	if !reflect.DeepEqual(got.Metadata, updated.Metadata) {
+		t.Errorf("Metadata = %v, want %v", got.Metadata, updated.Metadata)
 	}
-	if got.Author != updated.Author {
-		t.Errorf("Author = %q, want %q", got.Author, updated.Author)
+	if got.AllowedTools != updated.AllowedTools {
+		t.Errorf("AllowedTools = %q, want %q", got.AllowedTools, updated.AllowedTools)
 	}
 	if got.Instructions != updated.Instructions {
 		t.Errorf("Instructions = %q, want %q", got.Instructions, updated.Instructions)
@@ -427,14 +425,14 @@ These are the instructions.
 			content: `---
 name: full-skill
 description: Full skill description
-version: 1.2.3
-author: test-author
-tools:
-  - Read
-  - Write
-triggers:
-  - /full
-  - /fs
+license: MIT
+compatibility:
+  - claude-code
+  - opencode
+metadata:
+  version: "1.2.3"
+  author: test-author
+allowed-tools: Read Write
 ---
 
 Multi-line
@@ -442,13 +440,13 @@ instructions
 here.
 `,
 			want: &Skill{
-				Name:         "full-skill",
-				Description:  "Full skill description",
-				Version:      "1.2.3",
-				Author:       "test-author",
-				Tools:        []string{"Read", "Write"},
-				Triggers:     []string{"/full", "/fs"},
-				Instructions: "Multi-line\ninstructions\nhere.",
+				Name:          "full-skill",
+				Description:   "Full skill description",
+				License:       "MIT",
+				Compatibility: []string{"claude-code", "opencode"},
+				Metadata:      map[string]string{"version": "1.2.3", "author": "test-author"},
+				AllowedTools:  "Read Write",
+				Instructions:  "Multi-line\ninstructions\nhere.",
 			},
 		},
 		{
@@ -480,17 +478,17 @@ here.
 			if got.Description != tt.want.Description {
 				t.Errorf("Description = %q, want %q", got.Description, tt.want.Description)
 			}
-			if got.Version != tt.want.Version {
-				t.Errorf("Version = %q, want %q", got.Version, tt.want.Version)
+			if got.License != tt.want.License {
+				t.Errorf("License = %q, want %q", got.License, tt.want.License)
 			}
-			if got.Author != tt.want.Author {
-				t.Errorf("Author = %q, want %q", got.Author, tt.want.Author)
+			if !reflect.DeepEqual(got.Compatibility, tt.want.Compatibility) {
+				t.Errorf("Compatibility = %v, want %v", got.Compatibility, tt.want.Compatibility)
 			}
-			if !reflect.DeepEqual(got.Tools, tt.want.Tools) {
-				t.Errorf("Tools = %v, want %v", got.Tools, tt.want.Tools)
+			if !reflect.DeepEqual(got.Metadata, tt.want.Metadata) {
+				t.Errorf("Metadata = %v, want %v", got.Metadata, tt.want.Metadata)
 			}
-			if !reflect.DeepEqual(got.Triggers, tt.want.Triggers) {
-				t.Errorf("Triggers = %v, want %v", got.Triggers, tt.want.Triggers)
+			if got.AllowedTools != tt.want.AllowedTools {
+				t.Errorf("AllowedTools = %q, want %q", got.AllowedTools, tt.want.AllowedTools)
 			}
 			if got.Instructions != tt.want.Instructions {
 				t.Errorf("Instructions = %q, want %q", got.Instructions, tt.want.Instructions)
@@ -522,13 +520,13 @@ func TestFormatSkillFile(t *testing.T) {
 		{
 			name: "full skill",
 			skill: &Skill{
-				Name:         "full",
-				Description:  "Full skill",
-				Version:      "1.0.0",
-				Author:       "author",
-				Tools:        []string{"Read", "Write"},
-				Triggers:     []string{"/full"},
-				Instructions: "Full instructions\nwith newlines.",
+				Name:          "full",
+				Description:   "Full skill",
+				License:       "Apache-2.0",
+				Compatibility: []string{"claude-code"},
+				Metadata:      map[string]string{"version": "1.0.0", "author": "author"},
+				AllowedTools:  "Read Write",
+				Instructions:  "Full instructions\nwith newlines.",
 			},
 		},
 	}
@@ -554,17 +552,17 @@ func TestFormatSkillFile(t *testing.T) {
 			if got.Description != tt.skill.Description {
 				t.Errorf("Description = %q, want %q", got.Description, tt.skill.Description)
 			}
-			if got.Version != tt.skill.Version {
-				t.Errorf("Version = %q, want %q", got.Version, tt.skill.Version)
+			if got.License != tt.skill.License {
+				t.Errorf("License = %q, want %q", got.License, tt.skill.License)
 			}
-			if got.Author != tt.skill.Author {
-				t.Errorf("Author = %q, want %q", got.Author, tt.skill.Author)
+			if !reflect.DeepEqual(got.Compatibility, tt.skill.Compatibility) {
+				t.Errorf("Compatibility = %v, want %v", got.Compatibility, tt.skill.Compatibility)
 			}
-			if !reflect.DeepEqual(got.Tools, tt.skill.Tools) {
-				t.Errorf("Tools = %v, want %v", got.Tools, tt.skill.Tools)
+			if !reflect.DeepEqual(got.Metadata, tt.skill.Metadata) {
+				t.Errorf("Metadata = %v, want %v", got.Metadata, tt.skill.Metadata)
 			}
-			if !reflect.DeepEqual(got.Triggers, tt.skill.Triggers) {
-				t.Errorf("Triggers = %v, want %v", got.Triggers, tt.skill.Triggers)
+			if got.AllowedTools != tt.skill.AllowedTools {
+				t.Errorf("AllowedTools = %q, want %q", got.AllowedTools, tt.skill.AllowedTools)
 			}
 			if got.Instructions != tt.skill.Instructions {
 				t.Errorf("Instructions = %q, want %q", got.Instructions, tt.skill.Instructions)
@@ -580,13 +578,13 @@ func TestSkillManager_RoundTrip(t *testing.T) {
 
 	// Full skill with all fields populated
 	original := &Skill{
-		Name:         "round-trip-skill",
-		Description:  "Tests complete round-trip",
-		Version:      "3.2.1",
-		Author:       "test-author",
-		Tools:        []string{"Read", "Write", "Bash", "Glob"},
-		Triggers:     []string{"/round", "/trip", "/rt"},
-		Instructions: "Complex instructions\n\nWith multiple paragraphs.\n\n- And bullet points\n- Like this one",
+		Name:          "round-trip-skill",
+		Description:   "Tests complete round-trip",
+		License:       "MIT",
+		Compatibility: []string{"claude-code", "opencode", "codex"},
+		Metadata:      map[string]string{"version": "3.2.1", "author": "test-author", "repository": "github.com/test/repo"},
+		AllowedTools:  "Read Write Bash Glob",
+		Instructions:  "Complex instructions\n\nWith multiple paragraphs.\n\n- And bullet points\n- Like this one",
 	}
 
 	// Install
