@@ -197,6 +197,21 @@ type Command struct {
 	Instructions string `yaml:"-" json:"-"`
 }
 
+// GetName returns the command's name.
+func (c *Command) GetName() string {
+	return c.Name
+}
+
+// SetName sets the command's name.
+func (c *Command) SetName(name string) {
+	c.Name = name
+}
+
+// SetInstructions sets the command's instructions.
+func (c *Command) SetInstructions(instructions string) {
+	c.Instructions = instructions
+}
+
 // Agent represents an OpenCode agent definition.
 // Agents are markdown files that define specialized AI assistants.
 // OpenCode extends the base agent spec with mode and temperature controls.
