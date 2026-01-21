@@ -1,0 +1,244 @@
+package commands
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/spf13/cobra"
+
+	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/platform/claude"
+	"github.com/thoreinstein/aix/internal/platform/opencode"
+)
+
+const defaultCommandInstructionsPreviewLength = 200
+
+var (
+	commandShowJSON bool
+	commandShowFull bool
+)
+
+func init() {
+	commandShowCmd.Flags().BoolVar(&commandShowJSON, "json", false, "Output as JSON")
+	commandShowCmd.Flags().BoolVar(&commandShowFull, "full", false, "Show complete instructions (default truncated)")
+	commandCmd.AddCommand(commandShowCmd)
+}
+
+var commandShowCmd = &cobra.Command{
+	Use:   "show <name>",
+	Short: "Display detailed command information",
+	Long: `Display detailed information about an installed slash command.
+
+Searches for the command across all detected platforms (or only the specified
+--platform). Shows metadata, installation locations, and an instructions preview.
+
+Examples:
+  aix command show review
+  aix command show review --full
+  aix command show review --json
+  aix command show review --platform claude`,
+	Args: cobra.ExactArgs(1),
+	RunE: runCommandShow,
+}
+
+// showCommandDetail holds unified command information for display.
+type showCommandDetail struct {
+	Name          string                   `json:"name"`
+	Description   string                   `json:"description,omitempty"`
+	Model         string                   `json:"model,omitempty"`
+	Agent         string                   `json:"agent,omitempty"`
+	Instructions  string                   `json:"instructions,omitempty"`
+	Installations []commandInstallLocation `json:"installations"`
+
+	// Claude-specific fields
+	ArgumentHint           string   `json:"argument_hint,omitempty"`
+	DisableModelInvocation bool     `json:"disable_model_invocation,omitempty"`
+	UserInvocable          bool     `json:"user_invocable,omitempty"`
+	AllowedTools           []string `json:"allowed_tools,omitempty"`
+	Context                string   `json:"context,omitempty"`
+	Hooks                  []string `json:"hooks,omitempty"`
+
+	// OpenCode-specific fields
+	Subtask  bool   `json:"subtask,omitempty"`
+	Template string `json:"template,omitempty"`
+}
+
+// commandInstallLocation describes where a command is installed.
+type commandInstallLocation struct {
+	Platform string `json:"platform"`
+	Path     string `json:"path"`
+}
+
+func runCommandShow(_ *cobra.Command, args []string) error {
+	return runCommandShowWithWriter(args[0], os.Stdout)
+}
+
+// runCommandShowWithWriter allows injecting a writer for testing.
+func runCommandShowWithWriter(name string, w io.Writer) error {
+	platforms, err := cli.ResolvePlatforms(GetPlatformFlag())
+	if err != nil {
+		return err
+	}
+
+	// Collect command info from all platforms where it exists
+	var detail *showCommandDetail
+	installations := make([]commandInstallLocation, 0, len(platforms))
+
+	for _, p := range platforms {
+		cmdAny, err := p.GetCommand(name)
+		if err != nil {
+			// Command not found on this platform, continue to next
+			continue
+		}
+
+		// Build installation location
+		cmdPath := filepath.Join(p.CommandDir(), name+".md")
+		installations = append(installations, commandInstallLocation{
+			Platform: p.DisplayName(),
+			Path:     cmdPath,
+		})
+
+		// Extract command details (use first found as canonical)
+		if detail == nil {
+			detail = extractCommandDetail(cmdAny)
+		}
+	}
+
+	if detail == nil {
+		return fmt.Errorf("command %q not found on any platform", name)
+	}
+
+	detail.Installations = installations
+
+	// Truncate instructions unless --full is specified
+	if !commandShowFull && len(detail.Instructions) > defaultCommandInstructionsPreviewLength {
+		detail.Instructions = detail.Instructions[:defaultCommandInstructionsPreviewLength]
+	}
+
+	if commandShowJSON {
+		return outputCommandShowJSON(w, detail)
+	}
+
+	return outputCommandShowText(w, detail)
+}
+
+// extractCommandDetail converts a platform-specific command to the unified detail struct.
+func extractCommandDetail(cmd any) *showCommandDetail {
+	switch c := cmd.(type) {
+	case *claude.Command:
+		return extractClaudeCommand(c)
+	case *opencode.Command:
+		return extractOpenCodeCommand(c)
+	default:
+		return nil
+	}
+}
+
+// extractClaudeCommand extracts details from a Claude command.
+func extractClaudeCommand(c *claude.Command) *showCommandDetail {
+	var allowedTools []string
+	if len(c.AllowedTools) > 0 {
+		allowedTools = []string(c.AllowedTools)
+	}
+
+	return &showCommandDetail{
+		Name:                   c.Name,
+		Description:            c.Description,
+		Model:                  c.Model,
+		Agent:                  c.Agent,
+		ArgumentHint:           c.ArgumentHint,
+		DisableModelInvocation: c.DisableModelInvocation,
+		UserInvocable:          c.UserInvocable,
+		AllowedTools:           allowedTools,
+		Context:                c.Context,
+		Hooks:                  c.Hooks,
+		Instructions:           c.Instructions,
+	}
+}
+
+// extractOpenCodeCommand extracts details from an OpenCode command.
+func extractOpenCodeCommand(c *opencode.Command) *showCommandDetail {
+	return &showCommandDetail{
+		Name:         c.Name,
+		Description:  c.Description,
+		Model:        c.Model,
+		Agent:        c.Agent,
+		Subtask:      c.Subtask,
+		Template:     c.Template,
+		Instructions: c.Instructions,
+	}
+}
+
+func outputCommandShowJSON(w io.Writer, detail *showCommandDetail) error {
+	data, err := json.MarshalIndent(detail, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling JSON: %w", err)
+	}
+	fmt.Fprintln(w, string(data))
+	return nil
+}
+
+func outputCommandShowText(w io.Writer, detail *showCommandDetail) error {
+	fmt.Fprintf(w, "Command: /%s\n", detail.Name)
+	fmt.Fprintf(w, "Description: %s\n", detail.Description)
+
+	if detail.Model != "" {
+		fmt.Fprintf(w, "Model: %s\n", detail.Model)
+	}
+	if detail.Agent != "" {
+		fmt.Fprintf(w, "Agent: %s\n", detail.Agent)
+	}
+
+	// Claude-specific fields
+	if detail.ArgumentHint != "" {
+		fmt.Fprintf(w, "Argument Hint: %s\n", detail.ArgumentHint)
+	}
+	if detail.Context != "" {
+		fmt.Fprintf(w, "Context: %s\n", detail.Context)
+	}
+	if detail.DisableModelInvocation {
+		fmt.Fprintf(w, "Model Invocation: disabled\n")
+	}
+	if detail.UserInvocable {
+		fmt.Fprintf(w, "User Invocable: true\n")
+	}
+	if len(detail.Hooks) > 0 {
+		fmt.Fprintf(w, "Hooks: %s\n", strings.Join(detail.Hooks, ", "))
+	}
+
+	// OpenCode-specific fields
+	if detail.Subtask {
+		fmt.Fprintf(w, "Subtask: true\n")
+	}
+	if detail.Template != "" {
+		fmt.Fprintf(w, "Template: %s\n", detail.Template)
+	}
+
+	if len(detail.AllowedTools) > 0 {
+		fmt.Println("\nAllowed Tools:")
+		for _, tool := range detail.AllowedTools {
+			fmt.Fprintf(w, "  - %s\n", tool)
+		}
+	}
+
+	if len(detail.Installations) > 0 {
+		fmt.Fprintln(w, "\nInstalled On:")
+		for _, loc := range detail.Installations {
+			fmt.Fprintf(w, "  - %s (%s)\n", loc.Platform, loc.Path)
+		}
+	}
+
+	if detail.Instructions != "" {
+		fmt.Fprintln(w, "\nInstructions Preview:")
+		fmt.Fprintf(w, "  %s\n", detail.Instructions)
+		if !commandShowFull {
+			fmt.Fprintln(w, "  [truncated, use --full for complete output]")
+		}
+	}
+
+	return nil
+}
