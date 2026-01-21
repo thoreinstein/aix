@@ -1,5 +1,5 @@
 # Binaries
-aix
+/aix
 *.exe
 *.exe~
 *.dll
@@ -30,3 +30,6 @@ vendor/
 # Debug files
 __debug_bin*
 trees/
+
+# bv (beads viewer) local config and caches
+.bv/

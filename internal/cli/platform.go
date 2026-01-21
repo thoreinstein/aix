@@ -46,6 +46,9 @@ type Platform interface {
 	// IsAvailable checks if the platform is installed on this system.
 	IsAvailable() bool
 
+	// SkillDir returns the skills directory for the platform.
+	SkillDir() string
+
 	// InstallSkill installs a skill to the platform.
 	// The skill parameter is platform-specific.
 	InstallSkill(skill any) error
@@ -111,6 +114,10 @@ func (a *claudeAdapter) GetSkill(name string) (any, error) {
 	return a.p.GetSkill(name)
 }
 
+func (a *claudeAdapter) SkillDir() string {
+	return a.p.SkillDir()
+}
+
 // opencodeAdapter wraps OpenCodePlatform to implement the Platform interface.
 type opencodeAdapter struct {
 	p *opencode.OpenCodePlatform
@@ -159,6 +166,10 @@ func (a *opencodeAdapter) ListSkills() ([]SkillInfo, error) {
 
 func (a *opencodeAdapter) GetSkill(name string) (any, error) {
 	return a.p.GetSkill(name)
+}
+
+func (a *opencodeAdapter) SkillDir() string {
+	return a.p.SkillDir()
 }
 
 // NewPlatform creates a Platform adapter for the given platform name.
