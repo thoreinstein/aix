@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
 
@@ -188,7 +186,7 @@ func parseSkillFile(data []byte) (*Skill, error) {
 // formatSkillFile formats a Skill as a SKILL.md file with YAML frontmatter.
 func formatSkillFile(s *Skill) ([]byte, error) {
 	// Build frontmatter struct (only include non-empty optional fields)
-	frontmatter := struct {
+	meta := struct {
 		Name        string   `yaml:"name"`
 		Description string   `yaml:"description"`
 		Version     string   `yaml:"version,omitempty"`
@@ -204,22 +202,5 @@ func formatSkillFile(s *Skill) ([]byte, error) {
 		Triggers:    s.Triggers,
 	}
 
-	// Marshal frontmatter to YAML
-	yamlData, err := yaml.Marshal(frontmatter)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling frontmatter: %w", err)
-	}
-
-	// Build complete file
-	var buf bytes.Buffer
-	buf.WriteString("---\n")
-	buf.Write(yamlData)
-	buf.WriteString("---\n")
-	if s.Instructions != "" {
-		buf.WriteString("\n")
-		buf.WriteString(s.Instructions)
-		buf.WriteString("\n")
-	}
-
-	return buf.Bytes(), nil
+	return frontmatter.Format(meta, s.Instructions)
 }
