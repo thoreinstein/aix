@@ -169,6 +169,31 @@ type Command struct {
 	// Description explains what the command does.
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 
+	// ArgumentHint provides hint text shown for command arguments in the UI.
+	ArgumentHint string `yaml:"argument-hint,omitempty" json:"argumentHint,omitempty"`
+
+	// DisableModelInvocation prevents the model from invoking this command automatically.
+	DisableModelInvocation bool `yaml:"disable-model-invocation,omitempty" json:"disableModelInvocation,omitempty"`
+
+	// UserInvocable indicates whether the user can invoke this command directly.
+	UserInvocable bool `yaml:"user-invocable,omitempty" json:"userInvocable,omitempty"`
+
+	// AllowedTools lists the tool permissions available to this command.
+	// Can be a space-delimited string or a list of strings.
+	AllowedTools ToolList `yaml:"allowed-tools,omitempty" json:"allowedTools,omitempty"`
+
+	// Model specifies which model to use when executing this command.
+	Model string `yaml:"model,omitempty" json:"model,omitempty"`
+
+	// Context specifies the context mode for this command (e.g., "none", "file", "repo").
+	Context string `yaml:"context,omitempty" json:"context,omitempty"`
+
+	// Agent specifies the agent to use when executing this command.
+	Agent string `yaml:"agent,omitempty" json:"agent,omitempty"`
+
+	// Hooks lists hooks to run during command execution.
+	Hooks []string `yaml:"hooks,omitempty" json:"hooks,omitempty"`
+
 	// Instructions contains the command's markdown body content.
 	// This field is not part of the YAML frontmatter.
 	Instructions string `yaml:"-" json:"-"`

@@ -176,6 +176,22 @@ type Command struct {
 	// Description explains what the command does.
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 
+	// Agent specifies which agent should handle this command.
+	// When set, the command will be executed by the named agent instead of the default.
+	Agent string `yaml:"agent,omitempty" json:"agent,omitempty"`
+
+	// Model specifies which model should be used for this command.
+	// Overrides the default model selection for command execution.
+	Model string `yaml:"model,omitempty" json:"model,omitempty"`
+
+	// Subtask indicates whether the command runs as a subtask.
+	// When true, the command executes in a separate context from the main conversation.
+	Subtask bool `yaml:"subtask,omitempty" json:"subtask,omitempty"`
+
+	// Template defines the output template for the command.
+	// Supports variable substitution for structured command output.
+	Template string `yaml:"template,omitempty" json:"template,omitempty"`
+
 	// Instructions contains the command's markdown body content.
 	// This field is not part of the YAML frontmatter.
 	Instructions string `yaml:"-" json:"-"`
