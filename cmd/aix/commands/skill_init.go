@@ -62,20 +62,36 @@ Examples:
 }
 
 // skillNameRegex validates skill names per the Agent Skills Specification.
-// Must start with lowercase letter, followed by lowercase alphanumeric or hyphens.
-// Maximum 64 characters total.
-var skillNameRegex = regexp.MustCompile(`^[a-z][a-z0-9-]{0,63}$`)
+// Must consist of lowercase alphanumeric segments separated by single hyphens.
+// No leading, trailing, or consecutive hyphens are allowed.
+var skillNameRegex = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+
+// skillNameSanitizer matches characters that are not allowed in a skill name.
+var skillNameSanitizer = regexp.MustCompile(`[^a-z0-9-]+`)
 
 // errInitFailed is a sentinel error that signals non-zero exit.
 var errInitFailed = errors.New("skill initialization failed")
+
+func sanitizeDefaultName(name string) string {
+	// Normalize to lowercase and replace invalid characters with hyphens.
+	sanitized := strings.ToLower(name)
+	sanitized = skillNameSanitizer.ReplaceAllString(sanitized, "-")
+	sanitized = strings.Trim(sanitized, "-")
+
+	// Fallback to a safe default if the result is empty or still invalid.
+	if sanitized == "" || !skillNameRegex.MatchString(sanitized) {
+		return "new-skill"
+	}
+
+	return sanitized
+}
 
 func runSkillInit(_ *cobra.Command, args []string) error {
 	// Determine default name
 	defaultName := "my-skill"
 	if len(args) > 0 {
-		defaultName = filepath.Base(args[0])
+		defaultName = sanitizeDefaultName(filepath.Base(args[0]))
 	}
-	defaultName = strings.ToLower(defaultName)
 
 	// Interactive prompts
 	scanner := bufio.NewScanner(os.Stdin)
@@ -194,17 +210,17 @@ func runSkillInit(_ *cobra.Command, args []string) error {
 	// Generate content
 	body := `# Instructions
 
-	You are a helpful assistant for [describe purpose].
+You are a helpful assistant for [describe purpose].
 
-	## Guidelines
+## Guidelines
 
-	- Guideline 1
-	- Guideline 2
+- Guideline 1
+- Guideline 2
 
-	## Examples
+## Examples
 
-	When the user asks to [do something], you should...
-	`
+When the user asks to [do something], you should...
+`
 
 	// Prepare struct for formatting
 	meta := struct {
