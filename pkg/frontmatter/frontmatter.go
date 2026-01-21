@@ -43,15 +43,11 @@ func parse[T any](r io.Reader, matter *T, required bool) ([]byte, error) {
 		return content, nil
 	}
 
-	// Find end delimiter
-	// We start searching after the first 3 bytes (---)
-	// We need to handle \n--- and \r\n---
-	startOffset := 3
-	if len(content) > 3 && content[3] == '\r' {
-		startOffset = 4
-	}
-	if len(content) > startOffset && content[startOffset] == '\n' {
-		startOffset++
+	// Skip past opening delimiter and its line ending.
+	// We know content starts with "---\n" or "---\r\n" from the check above.
+	startOffset := 4 // For "---\n"
+	if bytes.HasPrefix(content, []byte("---\r\n")) {
+		startOffset = 5 // For "---\r\n"
 	}
 
 	// Search for closing "---" on a new line
