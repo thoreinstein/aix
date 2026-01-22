@@ -80,13 +80,13 @@ func (p *ClaudePaths) AgentDir() string {
 }
 
 // MCPConfigPath returns the path to the MCP servers configuration file.
-// Returns <base>/mcp_servers.json
+// Returns <base>/.mcp.json
 func (p *ClaudePaths) MCPConfigPath() string {
 	base := p.BaseDir()
 	if base == "" {
 		return ""
 	}
-	return filepath.Join(base, "mcp_servers.json")
+	return filepath.Join(base, ".mcp.json")
 }
 
 // InstructionsPath returns the path to the CLAUDE.md instructions file.

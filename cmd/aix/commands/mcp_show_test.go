@@ -283,11 +283,11 @@ func TestExtractServerDetail_Claude(t *testing.T) {
 		{
 			name: "stdio server with command",
 			server: &claude.MCPServer{
-				Name:      "github",
-				Command:   "npx",
-				Args:      []string{"-y", "@modelcontextprotocol/server-github"},
-				Transport: "stdio",
-				Env:       map[string]string{"TOKEN": "xxx"},
+				Name:    "github",
+				Command: "npx",
+				Args:    []string{"-y", "@modelcontextprotocol/server-github"},
+				Type:    "stdio",
+				Env:     map[string]string{"TOKEN": "xxx"},
 			},
 			platform: "Claude Code",
 			want: &serverDetail{
@@ -299,12 +299,12 @@ func TestExtractServerDetail_Claude(t *testing.T) {
 			},
 		},
 		{
-			name: "sse server with url",
+			name: "http server with url",
 			server: &claude.MCPServer{
-				Name:      "api-gw",
-				URL:       "https://api.example.com/mcp",
-				Transport: "sse",
-				Headers:   map[string]string{"Auth": "Bearer token"},
+				Name:    "api-gw",
+				URL:     "https://api.example.com/mcp",
+				Type:    "http",
+				Headers: map[string]string{"Auth": "Bearer token"},
 			},
 			platform: "Claude Code",
 			want: &serverDetail{

@@ -24,7 +24,7 @@ func TestMCPManager_List_NonExistentConfig(t *testing.T) {
 
 func TestMCPManager_List_MultipleServers(t *testing.T) {
 	dir := t.TempDir()
-	configPath := filepath.Join(dir, ".claude", "mcp_servers.json")
+	configPath := filepath.Join(dir, ".claude", ".mcp.json")
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -41,7 +41,7 @@ func TestMCPManager_List_MultipleServers(t *testing.T) {
     },
     "api-server": {
       "url": "https://api.example.com/mcp",
-      "transport": "sse"
+      "type": "http"
     }
   }
 }`
@@ -89,7 +89,7 @@ func TestMCPManager_List_MultipleServers(t *testing.T) {
 
 func TestMCPManager_Get_ExistingServer(t *testing.T) {
 	dir := t.TempDir()
-	configPath := filepath.Join(dir, ".claude", "mcp_servers.json")
+	configPath := filepath.Join(dir, ".claude", ".mcp.json")
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestMCPManager_Get_ExistingServer(t *testing.T) {
 
 func TestMCPManager_Get_NonExistentServer(t *testing.T) {
 	dir := t.TempDir()
-	configPath := filepath.Join(dir, ".claude", "mcp_servers.json")
+	configPath := filepath.Join(dir, ".claude", ".mcp.json")
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -180,7 +180,7 @@ func TestMCPManager_Add_NewServer(t *testing.T) {
 	}
 
 	// Verify file exists
-	configPath := filepath.Join(dir, ".claude", "mcp_servers.json")
+	configPath := filepath.Join(dir, ".claude", ".mcp.json")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		t.Error("config file was not created")
 	}
@@ -188,7 +188,7 @@ func TestMCPManager_Add_NewServer(t *testing.T) {
 
 func TestMCPManager_Add_OverwriteExisting(t *testing.T) {
 	dir := t.TempDir()
-	configPath := filepath.Join(dir, ".claude", "mcp_servers.json")
+	configPath := filepath.Join(dir, ".claude", ".mcp.json")
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -261,7 +261,7 @@ func TestMCPManager_Add_InvalidServer(t *testing.T) {
 
 func TestMCPManager_Remove_ExistingServer(t *testing.T) {
 	dir := t.TempDir()
-	configPath := filepath.Join(dir, ".claude", "mcp_servers.json")
+	configPath := filepath.Join(dir, ".claude", ".mcp.json")
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -309,7 +309,7 @@ func TestMCPManager_Remove_NonExistentServer(t *testing.T) {
 
 func TestMCPManager_Enable(t *testing.T) {
 	dir := t.TempDir()
-	configPath := filepath.Join(dir, ".claude", "mcp_servers.json")
+	configPath := filepath.Join(dir, ".claude", ".mcp.json")
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -344,7 +344,7 @@ func TestMCPManager_Enable(t *testing.T) {
 
 func TestMCPManager_Disable(t *testing.T) {
 	dir := t.TempDir()
-	configPath := filepath.Join(dir, ".claude", "mcp_servers.json")
+	configPath := filepath.Join(dir, ".claude", ".mcp.json")
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -401,7 +401,7 @@ func TestMCPManager_Disable_NonExistentServer(t *testing.T) {
 
 func TestMCPManager_PreservesUnknownFields(t *testing.T) {
 	dir := t.TempDir()
-	configPath := filepath.Join(dir, ".claude", "mcp_servers.json")
+	configPath := filepath.Join(dir, ".claude", ".mcp.json")
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -494,15 +494,15 @@ func TestMCPManager_CreatesParentDirectory(t *testing.T) {
 	}
 
 	// Verify config file exists
-	configPath := filepath.Join(configDir, "mcp_servers.json")
+	configPath := filepath.Join(configDir, ".mcp.json")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		t.Error("mcp_servers.json was not created")
+		t.Error(".mcp.json was not created")
 	}
 }
 
 func TestMCPManager_AtomicWrite(t *testing.T) {
 	dir := t.TempDir()
-	configPath := filepath.Join(dir, ".claude", "mcp_servers.json")
+	configPath := filepath.Join(dir, ".claude", ".mcp.json")
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
@@ -528,7 +528,7 @@ func TestMCPManager_AtomicWrite(t *testing.T) {
 	}
 
 	for _, entry := range entries {
-		if entry.Name() != "mcp_servers.json" {
+		if entry.Name() != ".mcp.json" {
 			t.Errorf("unexpected file left behind: %s", entry.Name())
 		}
 	}
@@ -549,7 +549,7 @@ func TestMCPManager_JSONFormatting(t *testing.T) {
 	}
 
 	// Read the file and verify formatting
-	configPath := filepath.Join(dir, ".claude", "mcp_servers.json")
+	configPath := filepath.Join(dir, ".claude", ".mcp.json")
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("failed to read config: %v", err)

@@ -32,11 +32,11 @@ func TestMCPServer_JSONRoundTrip(t *testing.T) {
 			},
 		},
 		{
-			name: "sse server with headers",
+			name: "http server with headers",
 			server: &MCPServer{
-				Name:      "remote",
-				URL:       "https://api.example.com/mcp",
-				Transport: "sse",
+				Name: "remote",
+				URL:  "https://api.example.com/mcp",
+				Type: "http",
 				Headers: map[string]string{
 					"Authorization": "Bearer ${API_KEY}",
 				},
@@ -54,11 +54,11 @@ func TestMCPServer_JSONRoundTrip(t *testing.T) {
 		{
 			name: "full server configuration",
 			server: &MCPServer{
-				Name:      "full",
-				Command:   "full-cmd",
-				Args:      []string{"--verbose", "--config", "/etc/full.conf"},
-				URL:       "http://localhost:8080",
-				Transport: "stdio",
+				Name:    "full",
+				Command: "full-cmd",
+				Args:    []string{"--verbose", "--config", "/etc/full.conf"},
+				URL:     "http://localhost:8080",
+				Type:    "stdio",
 				Env: map[string]string{
 					"KEY1": "value1",
 					"KEY2": "value2",
@@ -86,9 +86,14 @@ func TestMCPServer_JSONRoundTrip(t *testing.T) {
 				t.Fatalf("Unmarshal() error = %v", err)
 			}
 
+			// Name has json:"-" tag so it won't round-trip through JSON.
+			// Clear it from the expected value before comparing.
+			expected := *tt.server
+			expected.Name = ""
+
 			// Compare
-			if !reflect.DeepEqual(&got, tt.server) {
-				t.Errorf("round-trip mismatch:\ngot:  %+v\nwant: %+v", got, tt.server)
+			if !reflect.DeepEqual(&got, &expected) {
+				t.Errorf("round-trip mismatch:\ngot:  %+v\nwant: %+v", got, expected)
 			}
 		})
 	}
@@ -110,7 +115,8 @@ func TestMCPConfig_JSONRoundTrip(t *testing.T) {
 			config: &MCPConfig{
 				MCPServers: map[string]*MCPServer{
 					"test": {
-						Name:    "test",
+						// Name is not set here because it has json:"-" tag
+						// and won't round-trip through JSON. Name comes from map key.
 						Command: "test-cmd",
 					},
 				},
@@ -121,12 +127,12 @@ func TestMCPConfig_JSONRoundTrip(t *testing.T) {
 			config: &MCPConfig{
 				MCPServers: map[string]*MCPServer{
 					"github": {
-						Name:    "github",
+						// Name omitted - stored as map key, not in JSON
 						Command: "npx",
 						Args:    []string{"-y", "@modelcontextprotocol/server-github"},
 					},
 					"filesystem": {
-						Name:    "filesystem",
+						// Name omitted - stored as map key, not in JSON
 						Command: "npx",
 						Args:    []string{"-y", "@modelcontextprotocol/server-filesystem", "/tmp"},
 					},

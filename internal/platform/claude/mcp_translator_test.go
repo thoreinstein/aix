@@ -53,12 +53,12 @@ func TestMCPTranslator_ToCanonical(t *testing.T) {
 			},
 		},
 		{
-			name: "valid config with sse transport",
+			name: "valid config with http type (remote server)",
 			input: `{
 				"mcpServers": {
 					"remote": {
 						"url": "https://api.example.com/mcp",
-						"transport": "sse",
+						"type": "http",
 						"headers": {"Authorization": "Bearer token"}
 					}
 				}
@@ -74,6 +74,7 @@ func TestMCPTranslator_ToCanonical(t *testing.T) {
 				if server.URL != "https://api.example.com/mcp" {
 					t.Errorf("URL = %q, want %q", server.URL, "https://api.example.com/mcp")
 				}
+				// Claude "http" should be translated to canonical "sse"
 				if server.Transport != "sse" {
 					t.Errorf("Transport = %q, want %q", server.Transport, "sse")
 				}
@@ -212,7 +213,7 @@ func TestMCPTranslator_FromCanonical(t *testing.T) {
 			},
 		},
 		{
-			name: "valid sse server",
+			name: "valid sse server translates to http type",
 			config: &mcp.Config{
 				Servers: map[string]*mcp.Server{
 					"remote": {
@@ -237,8 +238,9 @@ func TestMCPTranslator_FromCanonical(t *testing.T) {
 				if server["url"] != "https://api.example.com" {
 					t.Errorf("url = %v, want %q", server["url"], "https://api.example.com")
 				}
-				if server["transport"] != "sse" {
-					t.Errorf("transport = %v, want %q", server["transport"], "sse")
+				// Canonical "sse" should be translated to Claude "http"
+				if server["type"] != "http" {
+					t.Errorf("type = %v, want %q", server["type"], "http")
 				}
 			},
 		},
@@ -402,18 +404,19 @@ func TestMCPTranslator_RoundTrip_CanonicalToClaude(t *testing.T) {
 func TestMCPTranslator_RoundTrip_ClaudeToCanonical(t *testing.T) {
 	translator := NewMCPTranslator()
 
+	// Use Claude's actual format: "type" field with "stdio" and "http" values
 	originalJSON := `{
 		"mcpServers": {
 			"github": {
 				"command": "npx",
 				"args": ["-y", "@modelcontextprotocol/server-github"],
 				"env": {"GITHUB_TOKEN": "token123"},
-				"transport": "stdio",
+				"type": "stdio",
 				"platforms": ["darwin", "linux", "windows"]
 			},
 			"api-server": {
 				"url": "https://api.example.com/mcp",
-				"transport": "sse",
+				"type": "http",
 				"headers": {"Authorization": "Bearer secret"},
 				"disabled": true
 			}
@@ -461,7 +464,7 @@ func TestMCPTranslator_RoundTrip_ClaudeToCanonical(t *testing.T) {
 		t.Errorf("github.len(Platforms) = %d, want 3", len(github.Platforms))
 	}
 
-	// Check api-server
+	// Check api-server - note: canonical Transport should be "sse" (mapped from Claude's "http")
 	apiServer := result.Servers["api-server"]
 	if apiServer == nil {
 		t.Fatal("api-server not found")
