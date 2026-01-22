@@ -12,6 +12,18 @@ import (
 // AppName is the application name used for config file naming.
 const AppName = "aix"
 
+// Config represents the top-level configuration structure.
+type Config struct {
+	Version          int                         `mapstructure:"version" yaml:"version"`
+	DefaultPlatforms []string                    `mapstructure:"default_platforms" yaml:"default_platforms"`
+	Platforms        map[string]PlatformOverride `mapstructure:"platforms" yaml:"platforms"`
+}
+
+// PlatformOverride contains configuration overrides for a specific platform.
+type PlatformOverride struct {
+	ConfigDir string `mapstructure:"config_dir" yaml:"config_dir"`
+}
+
 // Init initializes Viper with default configuration.
 // Call this once at application startup before accessing config values.
 func Init() {
