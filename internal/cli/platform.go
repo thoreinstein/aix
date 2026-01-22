@@ -57,6 +57,13 @@ type MCPInfo struct {
 	Env       map[string]string // Environment variables
 }
 
+// AgentInfo provides platform-agnostic agent information for display.
+type AgentInfo struct {
+	Name        string
+	Description string
+	Source      string // "local" or future: git URL
+}
+
 // Platform defines the interface that platform adapters must implement
 // for CLI operations. This is the consumer interface used by CLI commands.
 type Platform interface {
@@ -111,6 +118,13 @@ type Platform interface {
 	GetMCP(name string) (any, error)
 	EnableMCP(name string) error
 	DisableMCP(name string) error
+
+	// Agent configuration
+	AgentDir() string
+	InstallAgent(agent any) error
+	UninstallAgent(name string) error
+	ListAgents() ([]AgentInfo, error)
+	GetAgent(name string) (any, error)
 }
 
 // claudeAdapter wraps ClaudePlatform to implement the Platform interface.
@@ -266,6 +280,43 @@ func (a *claudeAdapter) DisableMCP(name string) error {
 	return a.p.DisableMCP(name)
 }
 
+func (a *claudeAdapter) AgentDir() string {
+	return a.p.AgentDir()
+}
+
+func (a *claudeAdapter) InstallAgent(agent any) error {
+	ag, ok := agent.(*claude.Agent)
+	if !ok {
+		return fmt.Errorf("expected *claude.Agent, got %T", agent)
+	}
+	return a.p.InstallAgent(ag)
+}
+
+func (a *claudeAdapter) UninstallAgent(name string) error {
+	return a.p.UninstallAgent(name)
+}
+
+func (a *claudeAdapter) ListAgents() ([]AgentInfo, error) {
+	agents, err := a.p.ListAgents()
+	if err != nil {
+		return nil, err
+	}
+
+	infos := make([]AgentInfo, len(agents))
+	for i, ag := range agents {
+		infos[i] = AgentInfo{
+			Name:        ag.Name,
+			Description: ag.Description,
+			Source:      "local", // TODO: track source in agent metadata
+		}
+	}
+	return infos, nil
+}
+
+func (a *claudeAdapter) GetAgent(name string) (any, error) {
+	return a.p.GetAgent(name)
+}
+
 // opencodeAdapter wraps OpenCodePlatform to implement the Platform interface.
 type opencodeAdapter struct {
 	p *opencode.OpenCodePlatform
@@ -415,6 +466,43 @@ func (a *opencodeAdapter) EnableMCP(name string) error {
 
 func (a *opencodeAdapter) DisableMCP(name string) error {
 	return a.p.DisableMCP(name)
+}
+
+func (a *opencodeAdapter) AgentDir() string {
+	return a.p.AgentDir()
+}
+
+func (a *opencodeAdapter) InstallAgent(agent any) error {
+	ag, ok := agent.(*opencode.Agent)
+	if !ok {
+		return fmt.Errorf("expected *opencode.Agent, got %T", agent)
+	}
+	return a.p.InstallAgent(ag)
+}
+
+func (a *opencodeAdapter) UninstallAgent(name string) error {
+	return a.p.UninstallAgent(name)
+}
+
+func (a *opencodeAdapter) ListAgents() ([]AgentInfo, error) {
+	agents, err := a.p.ListAgents()
+	if err != nil {
+		return nil, err
+	}
+
+	infos := make([]AgentInfo, len(agents))
+	for i, ag := range agents {
+		infos[i] = AgentInfo{
+			Name:        ag.Name,
+			Description: ag.Description,
+			Source:      "local", // TODO: track source in agent metadata
+		}
+	}
+	return infos, nil
+}
+
+func (a *opencodeAdapter) GetAgent(name string) (any, error) {
+	return a.p.GetAgent(name)
 }
 
 // NewPlatform creates a Platform adapter for the given platform name.
