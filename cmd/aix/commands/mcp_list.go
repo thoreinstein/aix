@@ -217,6 +217,8 @@ func maskSecrets(env map[string]string, showSecrets bool) map[string]string {
 		}
 		if isSecret && len(v) > 4 {
 			masked[k] = "****" + v[len(v)-4:]
+		} else if isSecret {
+			masked[k] = "********"
 		} else {
 			masked[k] = v
 		}
