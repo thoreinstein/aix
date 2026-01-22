@@ -7,7 +7,7 @@
 // # MCP Configuration
 //
 // Claude Code uses MCP (Model Context Protocol) servers for extensibility.
-// The [MCPConfig] type models the mcp_servers.json file format:
+// The [MCPConfig] type models the .mcp.json file format:
 //
 //	config := &claude.MCPConfig{
 //	    MCPServers: map[string]*claude.MCPServer{
