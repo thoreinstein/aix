@@ -10,6 +10,19 @@ var skillCmd = &cobra.Command{
 	Use:   "skill",
 	Short: "Manage skills across platforms",
 	Long:  `Manage reusable AI assistant skills defined as Markdown with YAML frontmatter, enabling you to list, inspect, install, remove, validate, and initialize them across supported platforms`,
+	Example: `  # List all installed skills
+  aix skill list
+
+  # Install a skill from a git repository
+  aix skill install https://github.com/user/my-skill.git
+
+  # Create a new skill
+  aix skill init my-new-skill
+
+  See Also:
+    aix skill list     - List installed skills
+    aix skill install  - Install a skill
+    aix skill init     - Create a new skill`,
 	// RunE shows help when invoked without a subcommand.
 	// This ensures 'skill' appears as a command, not just a help topic.
 	RunE: func(cmd *cobra.Command, _ []string) error {
