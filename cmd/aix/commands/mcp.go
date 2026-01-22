@@ -14,10 +14,8 @@ var mcpCmd = &cobra.Command{
 
 MCP servers extend AI coding assistants with additional tools and capabilities.
 This command group allows you to add, remove, list, and manage MCP server
-configurations in Claude Code, OpenCode, and other supported platforms.
-
-Examples:
-  # Add a local MCP server
+configurations in Claude Code, OpenCode, and other supported platforms.`,
+	Example: `  # Add a local MCP server
   aix mcp add github npx -y @modelcontextprotocol/server-github
 
   # Add a remote SSE server
@@ -26,11 +24,16 @@ Examples:
   # List all configured MCP servers
   aix mcp list
 
-  # Remove an MCP server
-  aix mcp remove github
-
   # Show details of an MCP server
-  aix mcp show github`,
+  aix mcp show github
+
+  See Also:
+    aix mcp add      - Add a new MCP server
+    aix mcp list     - List configured servers
+    aix mcp show     - Show server details
+    aix mcp remove   - Remove a server
+    aix mcp enable   - Enable a server
+    aix mcp disable  - Disable a server`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		return cmd.Help()
 	},

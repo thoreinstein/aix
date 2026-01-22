@@ -56,34 +56,29 @@ var mcpAddCmd = &cobra.Command{
 
 When called without arguments, runs in interactive mode.
 
-For local stdio servers, provide a command and optional arguments:
-  aix mcp add github npx -y @modelcontextprotocol/server-github
-
-For remote SSE servers, use the --url flag:
-  aix mcp add api-gateway --url=https://api.example.com/mcp
-
-Environment variables can be set with --env (repeatable):
-  aix mcp add github npx -y @modelcontextprotocol/server-github \
-    --env GITHUB_TOKEN=ghp_xxx
-
-HTTP headers for SSE authentication can be set with --headers (repeatable):
-  aix mcp add api-gateway --url=https://api.example.com/mcp \
-    --headers "Authorization=Bearer token123"
-
-Platform restrictions (for Claude Code only, lossy for OpenCode):
-  aix mcp add macos-tools /usr/local/bin/macos-mcp --platform darwin
-
-Examples:
-  # Interactive mode
+For local stdio servers, provide a command and optional arguments.
+For remote SSE servers, use the --url flag.
+Environment variables can be set with --env (repeatable).
+HTTP headers for SSE authentication can be set with --headers (repeatable).
+Platform restrictions (for Claude Code only) can be set with --platform.`,
+	Example: `  # Interactive mode
   aix mcp add
 
   # Add a local stdio server
   aix mcp add github npx -y @modelcontextprotocol/server-github
 
-  # Add a remote SSE server
+  # Add a remote SSE server with headers
   aix mcp add api --url=https://api.example.com/mcp --headers "Auth=Bearer token"
+
+  # Add a local server with environment variables
   aix mcp add db-tools ./db-mcp --env DB_HOST=localhost --env DB_PORT=5432
-  aix mcp add github npx @modelcontextprotocol/server-github --force`,
+
+  # Overwrite existing server
+  aix mcp add github npx @modelcontextprotocol/server-github --force
+
+  See Also:
+    aix mcp list     - List configured servers
+    aix mcp remove   - Remove a server`,
 	Args: cobra.ArbitraryArgs,
 	RunE: runMCPAdd,
 }
