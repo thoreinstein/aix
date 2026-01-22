@@ -30,8 +30,12 @@ func TestLoad_NoConfigFile(t *testing.T) {
 	Init()
 
 	// Load with no config file should not error
-	if err := Load(); err != nil {
+	cfg, err := Load("")
+	if err != nil {
 		t.Errorf("Load() with no config file should not error: %v", err)
+	}
+	if cfg == nil {
+		t.Error("expected config to be returned")
 	}
 }
 
@@ -47,16 +51,24 @@ func TestLoad_WithConfigFile(t *testing.T) {
 	}
 
 	Init()
-	// Use SetConfigFile to bypass path search and read the exact file.
-	// This ensures the test isn't affected by user's actual config files.
-	viper.SetConfigFile(configPath)
 
-	if err := Load(); err != nil {
+	cfg, err := Load(configPath)
+	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
 
-	platforms := viper.GetStringSlice("default_platforms")
-	if len(platforms) != 2 {
-		t.Errorf("expected 2 platforms, got %d", len(platforms))
+	if len(cfg.DefaultPlatforms) != 2 {
+		t.Errorf("expected 2 platforms, got %d", len(cfg.DefaultPlatforms))
+	}
+}
+
+func TestLoad_ExplicitPathNotFound(t *testing.T) {
+	viper.Reset()
+	Init()
+
+	// Load with non-existent config file should error
+	_, err := Load("/non/existent/path/config.yaml")
+	if err == nil {
+		t.Error("Load() with non-existent explicit path should error")
 	}
 }
