@@ -84,6 +84,13 @@ func (m *mockPlatform) GetMCP(_ string) (any, error)    { return nil, errors.New
 func (m *mockPlatform) EnableMCP(_ string) error        { return nil }
 func (m *mockPlatform) DisableMCP(_ string) error       { return nil }
 
+// Agent methods for cli.Platform interface
+func (m *mockPlatform) AgentDir() string                     { return "/mock/agents" }
+func (m *mockPlatform) InstallAgent(_ any) error             { return nil }
+func (m *mockPlatform) UninstallAgent(_ string) error        { return nil }
+func (m *mockPlatform) ListAgents() ([]cli.AgentInfo, error) { return nil, nil }
+func (m *mockPlatform) GetAgent(_ string) (any, error)       { return nil, errors.New("not found") }
+
 func TestFindPlatformsWithSkill(t *testing.T) {
 	tests := []struct {
 		name      string
