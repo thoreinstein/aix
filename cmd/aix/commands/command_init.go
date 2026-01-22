@@ -40,10 +40,8 @@ If [path] is provided, the command is created in that directory.
 If no path is provided, a directory named after the command is created.
 
 The command is interactive and will prompt for details unless they are
-provided via flags.
-
-Examples:
-  # Interactive creation
+provided via flags.`,
+	Example: `  # Interactive creation
   aix command init
 
   # Create in specific directory
@@ -53,7 +51,11 @@ Examples:
   aix command init my-command --name my-command --description "Review code"
 
   # Specify model and agent
-  aix command init review --name review --model claude-3-5-sonnet --agent task`,
+  aix command init review --name review --model claude-3-5-sonnet --agent task
+
+  See Also:
+    aix command install  - Install the created command
+    aix command validate - Validate the command file`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runCommandInit,
 }

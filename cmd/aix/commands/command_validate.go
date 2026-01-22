@@ -40,17 +40,19 @@ additional checks beyond the basic requirements.
 
 Exit codes:
   0 - Valid command
-  1 - Invalid command or validation errors
-
-Examples:
-  # Validate a command file
+  1 - Invalid command or validation errors`,
+	Example: `  # Validate a command file
   aix command validate ./review.md
 
   # Strict validation
   aix command validate ./review.md --strict
 
   # JSON output for CI/CD
-  aix command validate ./review.md --json`,
+  aix command validate ./review.md --json
+
+  See Also:
+    aix command init     - Create a new command
+    aix command install  - Install a command`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(_ *cobra.Command, args []string) error {
 		return runCommandValidate(args[0], os.Stdout)

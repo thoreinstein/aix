@@ -40,17 +40,26 @@ The source can be:
   - A git URL (https://, git@, or .git suffix)
 
 For git URLs, the repository is cloned to a temporary directory, the command
-is installed, and the temporary directory is cleaned up.
-
-Examples:
+is installed, and the temporary directory is cleaned up.`,
+	Example: `  # Install from a local file
   aix command install ./review.md
+
+  # Install from a directory
   aix command install ./my-command/
+
+  # Install from a git repository
   aix command install https://github.com/user/my-command.git
   aix command install git@github.com:user/my-command.git
 
-Flags:
-  --force, -f     Overwrite existing command without confirmation
-  --platform, -p  Install to specific platform(s) only`,
+  # Force overwrite existing command
+  aix command install ./review.md --force
+
+  # Install to a specific platform
+  aix command install ./review.md --platform claude
+
+  See Also:
+    aix command remove   - Remove an installed command
+    aix command init     - Create a new command`,
 	Args: cobra.ExactArgs(1),
 	RunE: runCommandInstall,
 }
