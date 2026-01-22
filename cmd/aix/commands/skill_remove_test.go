@@ -74,6 +74,15 @@ func (m *mockPlatform) GetCommand(name string) (any, error) {
 	return cmd, nil
 }
 
+// MCP methods for cli.Platform interface
+func (m *mockPlatform) MCPConfigPath() string           { return "/mock/mcp.json" }
+func (m *mockPlatform) AddMCP(_ any) error              { return nil }
+func (m *mockPlatform) RemoveMCP(_ string) error        { return nil }
+func (m *mockPlatform) ListMCP() ([]cli.MCPInfo, error) { return nil, nil }
+func (m *mockPlatform) GetMCP(_ string) (any, error)    { return nil, errors.New("not found") }
+func (m *mockPlatform) EnableMCP(_ string) error        { return nil }
+func (m *mockPlatform) DisableMCP(_ string) error       { return nil }
+
 func TestFindPlatformsWithSkill(t *testing.T) {
 	tests := []struct {
 		name      string
