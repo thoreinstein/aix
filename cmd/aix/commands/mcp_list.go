@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/doctor"
 )
 
 var (
@@ -101,7 +101,7 @@ func outputMCPJSON(w io.Writer, platforms []cli.Platform) error {
 				Command:   s.Command,
 				URL:       s.URL,
 				Disabled:  s.Disabled,
-				Env:       maskSecrets(s.Env, mcpListShowSecrets),
+				Env:       maskSecretsIfNeeded(s.Env),
 			}
 		}
 		output = append(output, mcpListPlatformOutput{
@@ -183,45 +183,10 @@ func outputMCPTabular(w io.Writer, platforms []cli.Platform) error {
 	return nil
 }
 
-// secretKeyPatterns contains substrings that indicate a key likely contains a secret.
-var secretKeyPatterns = []string{
-	"TOKEN",
-	"KEY",
-	"SECRET",
-	"PASSWORD",
-	"AUTH",
-	"CREDENTIAL",
-	"API_KEY",
-}
-
-// maskSecrets masks secret values in environment variables.
-// If showSecrets is true, returns the original map unchanged.
-// Secret detection is based on key names containing common secret indicators.
-func maskSecrets(env map[string]string, showSecrets bool) map[string]string {
-	if env == nil {
-		return nil
-	}
-	if showSecrets {
+// maskSecretsIfNeeded conditionally masks secrets based on the --show-secrets flag.
+func maskSecretsIfNeeded(env map[string]string) map[string]string {
+	if mcpListShowSecrets {
 		return env
 	}
-
-	masked := make(map[string]string, len(env))
-	for k, v := range env {
-		upper := strings.ToUpper(k)
-		isSecret := false
-		for _, pattern := range secretKeyPatterns {
-			if strings.Contains(upper, pattern) {
-				isSecret = true
-				break
-			}
-		}
-		if isSecret && len(v) > 4 {
-			masked[k] = "****" + v[len(v)-4:]
-		} else if isSecret {
-			masked[k] = "********"
-		} else {
-			masked[k] = v
-		}
-	}
-	return masked
+	return doctor.MaskSecrets(env)
 }
