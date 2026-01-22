@@ -1,8 +1,10 @@
 package commands
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -16,6 +18,9 @@ import (
 var (
 	errMCPAddMissingCommandOrURL = errors.New("either command or --url is required")
 	errMCPAddBothCommandAndURL   = errors.New("cannot specify both command and --url")
+	errMCPAddMissingName         = errors.New("server name is required")
+	errMCPAddMissingCommand      = errors.New("command is required for stdio transport")
+	errMCPAddMissingURL          = errors.New("URL is required for sse transport")
 )
 
 // Package-level flag variables for mcp add command.
@@ -45,9 +50,11 @@ func init() {
 }
 
 var mcpAddCmd = &cobra.Command{
-	Use:   "add <name> [command] [args...]",
+	Use:   "add [name] [command] [args...]",
 	Short: "Add an MCP server configuration",
 	Long: `Add an MCP server configuration to the targeted platform(s).
+
+When called without arguments, runs in interactive mode.
 
 For local stdio servers, provide a command and optional arguments:
   aix mcp add github npx -y @modelcontextprotocol/server-github
@@ -67,16 +74,37 @@ Platform restrictions (for Claude Code only, lossy for OpenCode):
   aix mcp add macos-tools /usr/local/bin/macos-mcp --platform darwin
 
 Examples:
+  # Interactive mode
+  aix mcp add
+
+  # Add a local stdio server
   aix mcp add github npx -y @modelcontextprotocol/server-github
+
+  # Add a remote SSE server
   aix mcp add api --url=https://api.example.com/mcp --headers "Auth=Bearer token"
   aix mcp add db-tools ./db-mcp --env DB_HOST=localhost --env DB_PORT=5432
   aix mcp add github npx @modelcontextprotocol/server-github --force`,
-	Args: cobra.MinimumNArgs(1),
+	Args: cobra.ArbitraryArgs,
 	RunE: runMCPAdd,
 }
 
 // runMCPAdd implements the mcp add command logic.
-func runMCPAdd(_ *cobra.Command, args []string) error {
+func runMCPAdd(cmd *cobra.Command, args []string) error {
+	// Check if interactive mode (no args and no --url flag)
+	if len(args) == 0 && mcpAddURL == "" {
+		return runMCPAddInteractive(cmd)
+	}
+
+	// Non-interactive mode requires at least a name
+	if len(args) < 1 {
+		return errMCPAddMissingName
+	}
+
+	return runMCPAddCore(args)
+}
+
+// runMCPAddCore contains the core add logic used by both interactive and non-interactive modes.
+func runMCPAddCore(args []string) error {
 	name := args[0]
 	var command string
 	var cmdArgs []string
@@ -167,6 +195,136 @@ func runMCPAdd(_ *cobra.Command, args []string) error {
 	return nil
 }
 
+// runMCPAddInteractive runs the interactive wizard for adding an MCP server.
+func runMCPAddInteractive(_ *cobra.Command) error {
+	reader := bufio.NewReader(os.Stdin)
+
+	// 1. Server name
+	fmt.Print("Enter server name: ")
+	name, err := reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("reading server name: %w", err)
+	}
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return errMCPAddMissingName
+	}
+
+	// 2. Transport type
+	fmt.Println("Select transport type:")
+	fmt.Println("  [1] stdio (local command)")
+	fmt.Println("  [2] sse (remote URL)")
+	fmt.Print("Choice [1]: ")
+	choice, err := reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("reading transport choice: %w", err)
+	}
+	choice = strings.TrimSpace(choice)
+	if choice == "" {
+		choice = "1"
+	}
+
+	var command string
+	var commandArgs []string
+	var url string
+	var headers map[string]string
+
+	if choice == "1" || choice == "stdio" {
+		// 3a. Stdio: command and args
+		fmt.Print("Enter command: ")
+		command, err = reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("reading command: %w", err)
+		}
+		command = strings.TrimSpace(command)
+		if command == "" {
+			return errMCPAddMissingCommand
+		}
+
+		fmt.Print("Enter arguments (space-separated, or empty): ")
+		argsLine, err := reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("reading arguments: %w", err)
+		}
+		argsLine = strings.TrimSpace(argsLine)
+		if argsLine != "" {
+			commandArgs = strings.Fields(argsLine)
+		}
+	} else {
+		// 3b. SSE: URL and headers
+		fmt.Print("Enter URL: ")
+		url, err = reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("reading URL: %w", err)
+		}
+		url = strings.TrimSpace(url)
+		if url == "" {
+			return errMCPAddMissingURL
+		}
+
+		fmt.Print("Enter headers (KEY=VALUE, comma-separated, or empty): ")
+		headersLine, err := reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("reading headers: %w", err)
+		}
+		headersLine = strings.TrimSpace(headersLine)
+		if headersLine != "" {
+			headers = parseCommaKeyValueList(headersLine)
+		}
+	}
+
+	// 4. Environment variables
+	fmt.Print("Enter environment variables (KEY=VALUE, comma-separated, or empty): ")
+	envLine, err := reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("reading environment variables: %w", err)
+	}
+	envLine = strings.TrimSpace(envLine)
+	var env map[string]string
+	if envLine != "" {
+		env = parseCommaKeyValueList(envLine)
+	}
+
+	// 5. Target platforms
+	fmt.Println("Select target platforms:")
+	fmt.Println("  [1] All detected platforms")
+	fmt.Println("  [2] Claude Code only")
+	fmt.Println("  [3] OpenCode only")
+	fmt.Print("Choice [1]: ")
+	platChoice, err := reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("reading platform choice: %w", err)
+	}
+	platChoice = strings.TrimSpace(platChoice)
+
+	// Store original platform flag and restore after
+	origPlatform := GetPlatformFlag()
+	defer SetPlatformFlag(origPlatform)
+
+	switch platChoice {
+	case "2":
+		SetPlatformFlag([]string{"claude"})
+	case "3":
+		SetPlatformFlag([]string{"opencode"})
+	default:
+		// Keep original (all platforms)
+	}
+
+	// Set the package-level flag variables with collected values
+	mcpAddURL = url
+	mcpAddEnv = formatKeyValueSlice(env)
+	mcpAddHeaders = formatKeyValueSlice(headers)
+
+	// Build args slice for the core add function
+	finalArgs := []string{name}
+	if command != "" {
+		finalArgs = append(finalArgs, command)
+		finalArgs = append(finalArgs, commandArgs...)
+	}
+
+	return runMCPAddCore(finalArgs)
+}
+
 // addMCPToPlatform adds an MCP server to the specified platform.
 func addMCPToPlatform(
 	plat cli.Platform,
@@ -245,4 +403,34 @@ func parseKeyValueSlice(entries []string, flagName string) (map[string]string, e
 		result[key] = value
 	}
 	return result, nil
+}
+
+// parseCommaKeyValueList parses a comma-separated string of KEY=VALUE pairs into a map.
+// Invalid entries are silently skipped.
+func parseCommaKeyValueList(s string) map[string]string {
+	result := make(map[string]string)
+	pairs := strings.Split(s, ",")
+	for _, pair := range pairs {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		key, value, found := strings.Cut(pair, "=")
+		if found && key != "" {
+			result[strings.TrimSpace(key)] = strings.TrimSpace(value)
+		}
+	}
+	return result
+}
+
+// formatKeyValueSlice converts a map to a slice of KEY=VALUE strings.
+func formatKeyValueSlice(m map[string]string) []string {
+	if len(m) == 0 {
+		return nil
+	}
+	result := make([]string, 0, len(m))
+	for k, v := range m {
+		result = append(result, fmt.Sprintf("%s=%s", k, v))
+	}
+	return result
 }
