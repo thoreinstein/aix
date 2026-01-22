@@ -52,7 +52,7 @@ go test -cover ./...            # With coverage report
 go test ./internal/platform/... # Test specific package
 ```
 
-**Important**: 
+**Important**:
 - Tests pass with exit code 0 and show "ok" for each package
 - The "go: no such tool 'covdata'" warning in coverage output is harmless
 - Always run `go test ./...` before committing code changes
@@ -113,10 +113,10 @@ import (
     // Standard library
     "context"
     "fmt"
-    
+
     // External dependencies
     "github.com/spf13/cobra"
-    
+
     // Internal packages
     "github.com/thoreinstein/aix/internal/config"
 )
