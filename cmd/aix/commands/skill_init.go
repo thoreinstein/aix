@@ -46,17 +46,19 @@ If [path] is provided, the skill is created in that directory.
 If no path is provided, the current directory is used.
 
 The command is interactive and will prompt for skill details unless they are
-provided via flags.
-
-Examples:
-  # Create in current directory, interactive prompts
+provided via flags.`,
+	Example: `  # Create in current directory, interactive prompts
   aix skill init
 
   # Create in specific directory with optional folders
   aix skill init my-skill --dirs docs,tests
 
   # Non-interactive creation
-  aix skill init my-skill --name my-skill --description "My Skill" --license MIT`,
+  aix skill init my-skill --name my-skill --description "My Skill" --license MIT
+
+  See Also:
+    aix skill validate - Validate a skill
+    aix skill edit     - Edit a skill`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runSkillInit,
 }

@@ -26,17 +26,22 @@ You can provide either:
 
 Uses the $EDITOR environment variable. If not set, defaults to 'vi'.
 If the skill is installed on multiple platforms, uses the first one found
-unless --platform is specified.
-
-Examples:
-  # Open installed skill
+unless --platform is specified.`,
+	Example: `  # Open installed skill
   aix skill edit my-skill
 
   # Open local skill directory
   aix skill edit ./my-new-skill
 
   # Open current directory
-  aix skill edit .`,
+  aix skill edit .
+
+  # Open skill on specific platform
+  aix skill edit my-skill --platform claude
+
+  See Also:
+    aix skill show     - Show skill details
+    aix skill list     - List installed skills`,
 	Args: cobra.ExactArgs(1),
 	RunE: runSkillEdit,
 }

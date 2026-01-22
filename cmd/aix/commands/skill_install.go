@@ -37,15 +37,28 @@ The source can be:
 For git URLs, the repository is cloned to a temporary directory, the skill
 is installed, and the temporary directory is cleaned up.
 
-Examples:
-  aix skill install ./my-skill
-  aix skill install /path/to/skill-dir
-  aix skill install https://github.com/user/skill-repo.git
-  aix skill install git@github.com:user/skill-repo.git
-
 Flags:
   --force, -f     Overwrite existing skill without confirmation
   --platform, -p  Install to specific platform(s) only`,
+	Example: `  # Install from local directory
+  aix skill install ./my-skill
+
+  # Install from absolute path
+  aix skill install /path/to/skill-dir
+
+  # Install from git repository
+  aix skill install https://github.com/user/skill-repo.git
+
+  # Install from git SSH URL
+  aix skill install git@github.com:user/skill-repo.git
+
+  # Force overwrite existing skill
+  aix skill install ./my-skill --force
+
+  See Also:
+    aix skill remove   - Remove an installed skill
+    aix skill list     - List installed skills
+    aix skill validate - Validate a skill before installing`,
 	Args: cobra.ExactArgs(1),
 	RunE: runSkillInstall,
 }

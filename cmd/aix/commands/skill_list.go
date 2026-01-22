@@ -25,17 +25,19 @@ var skillListCmd = &cobra.Command{
 	Long: `List all installed skills grouped by platform.
 
 By default, lists skills for all detected platforms. Use the --platform flag
-to limit to specific platforms.
-
-Examples:
-  # List all skills
+to limit to specific platforms.`,
+	Example: `  # List all skills
   aix skill list
 
   # List skills for a specific platform
   aix skill list --platform claude
 
   # Output as JSON
-  aix skill list --json`,
+  aix skill list --json
+
+  See Also:
+    aix skill show     - Show skill details
+    aix skill install  - Install a new skill`,
 	RunE: runSkillList,
 }
 
