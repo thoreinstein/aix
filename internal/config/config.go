@@ -3,6 +3,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/spf13/viper"
@@ -25,6 +26,27 @@ type PlatformOverride struct {
 	ConfigDir string `mapstructure:"config_dir" yaml:"config_dir"`
 }
 
+// Validate checks the configuration for errors.
+func (c *Config) Validate() error {
+	if c.Version != 1 {
+		return fmt.Errorf("unsupported config version: %d", c.Version)
+	}
+
+	for _, p := range c.DefaultPlatforms {
+		if !paths.ValidPlatform(p) {
+			return fmt.Errorf("invalid default platform: %s", p)
+		}
+	}
+
+	for p := range c.Platforms {
+		if !paths.ValidPlatform(p) {
+			return fmt.Errorf("invalid platform override key: %s", p)
+		}
+	}
+
+	return nil
+}
+
 // Init initializes Viper with default configuration.
 // Call this once at application startup before accessing config values.
 func Init() {
@@ -33,8 +55,12 @@ func Init() {
 	viper.SetConfigType("yaml")
 
 	// Search paths (in order of precedence)
-	viper.AddConfigPath(".") // Current directory
-	viper.AddConfigPath(filepath.Join(paths.ConfigHome(), AppName))
+	if envDir := os.Getenv("AIX_CONFIG_DIR"); envDir != "" {
+		viper.AddConfigPath(envDir)
+	} else {
+		viper.AddConfigPath(".") // Current directory
+		viper.AddConfigPath(filepath.Join(paths.ConfigHome(), AppName))
+	}
 
 	// Environment variable support
 	viper.SetEnvPrefix("AIX")
@@ -71,6 +97,10 @@ func Load(path string) (*Config, error) {
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("unmarshaling config: %w", err)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("validating config: %w", err)
 	}
 
 	return &cfg, nil
