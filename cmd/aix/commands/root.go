@@ -50,6 +50,19 @@ platform's native format.
 
 Use the --platform flag to target specific platforms, or omit it to
 target all detected/installed platforms.`,
+	Example: `  # Initialize configuration
+  aix init
+
+  # List installed skills
+  aix skill list
+
+  # Check system health
+  aix doctor
+
+  # Target specific platform
+  aix skill list --platform claude
+
+  See Also: aix init, aix doctor, aix config`,
 	PersistentPreRunE: validatePlatformFlag,
 }
 
