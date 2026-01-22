@@ -33,13 +33,22 @@ var skillShowCmd = &cobra.Command{
 
 Searches for the skill across all detected platforms (or only the specified
 --platform). Shows metadata, allowed tools, installation locations, and an
-instructions preview.
-
-Examples:
+instructions preview.`,
+	Example: `  # Show details for 'debug' skill
   aix skill show debug
+
+  # Show full instructions
   aix skill show debug --full
+
+  # Show details as JSON
   aix skill show debug --json
-  aix skill show debug --platform claude`,
+
+  # Show details for specific platform
+  aix skill show debug --platform claude
+
+  See Also:
+    aix skill list     - List installed skills
+    aix skill edit     - Edit a skill`,
 	Args: cobra.ExactArgs(1),
 	RunE: runSkillShow,
 }

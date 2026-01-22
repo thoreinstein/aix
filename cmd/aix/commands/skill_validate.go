@@ -41,6 +41,21 @@ Use --json for machine-readable output.
 Exit codes:
   0 - Skill is valid
   1 - Skill validation failed`,
+	Example: `  # Validate skill in current directory
+  aix skill validate .
+
+  # Validate skill in specific directory
+  aix skill validate ./my-skill
+
+  # Strict validation (checks allowed-tools syntax)
+  aix skill validate ./my-skill --strict
+
+  # Output validation results as JSON
+  aix skill validate ./my-skill --json
+
+  See Also:
+    aix skill init     - Create a new skill
+    aix skill install  - Install a skill`,
 	Args: cobra.ExactArgs(1),
 	RunE: runSkillValidate,
 }

@@ -28,17 +28,19 @@ var skillRemoveCmd = &cobra.Command{
 By default, removes the skill from all detected platforms where it is installed.
 Use the --platform flag to target specific platforms.
 
-A confirmation prompt is shown before removal unless --force is specified.
-
-Examples:
-  # Remove skill from all platforms (with confirmation)
+A confirmation prompt is shown before removal unless --force is specified.`,
+	Example: `  # Remove skill from all platforms (with confirmation)
   aix skill remove debug
 
   # Remove skill without confirmation
   aix skill remove debug --force
 
   # Remove skill from a specific platform only
-  aix skill remove debug --platform claude`,
+  aix skill remove debug --platform claude
+
+  See Also:
+    aix skill install  - Install a skill
+    aix skill list     - List installed skills`,
 	Args: cobra.ExactArgs(1),
 	RunE: runSkillRemove,
 }
