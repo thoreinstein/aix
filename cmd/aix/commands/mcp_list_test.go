@@ -143,13 +143,13 @@ func TestMaskSecrets(t *testing.T) {
 			},
 		},
 		{
-			name: "short secret value not masked",
+			name: "short secret value is masked",
 			env: map[string]string{
 				"TOKEN": "abc",
 			},
 			showSecrets: false,
 			want: map[string]string{
-				"TOKEN": "abc",
+				"TOKEN": "********",
 			},
 		},
 		{
