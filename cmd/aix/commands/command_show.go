@@ -34,13 +34,22 @@ var commandShowCmd = &cobra.Command{
 	Long: `Display detailed information about an installed slash command.
 
 Searches for the command across all detected platforms (or only the specified
---platform). Shows metadata, installation locations, and an instructions preview.
-
-Examples:
+--platform). Shows metadata, installation locations, and an instructions preview.`,
+	Example: `  # Show command details
   aix command show review
+
+  # Show full instructions (no truncation)
   aix command show review --full
+
+  # Output as JSON
   aix command show review --json
-  aix command show review --platform claude`,
+
+  # Show details for a specific platform
+  aix command show review --platform claude
+
+  See Also:
+    aix command list     - List installed commands
+    aix command validate - Validate a command file`,
 	Args: cobra.ExactArgs(1),
 	RunE: runCommandShow,
 }
