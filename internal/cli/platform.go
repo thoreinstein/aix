@@ -47,6 +47,16 @@ type CommandInfo struct {
 	Source string
 }
 
+// MCPInfo provides platform-agnostic MCP server information for display.
+type MCPInfo struct {
+	Name      string
+	Transport string // "stdio" or "sse"
+	Command   string // Executable path (stdio)
+	URL       string // Endpoint (sse)
+	Disabled  bool
+	Env       map[string]string // Environment variables
+}
+
 // Platform defines the interface that platform adapters must implement
 // for CLI operations. This is the consumer interface used by CLI commands.
 type Platform interface {
@@ -92,6 +102,15 @@ type Platform interface {
 	// GetCommand retrieves a command by name.
 	// Returns the platform-specific command type.
 	GetCommand(name string) (any, error)
+
+	// MCP configuration
+	MCPConfigPath() string
+	AddMCP(server any) error
+	RemoveMCP(name string) error
+	ListMCP() ([]MCPInfo, error)
+	GetMCP(name string) (any, error)
+	EnableMCP(name string) error
+	DisableMCP(name string) error
 }
 
 // claudeAdapter wraps ClaudePlatform to implement the Platform interface.
@@ -185,6 +204,61 @@ func (a *claudeAdapter) GetCommand(name string) (any, error) {
 	return a.p.GetCommand(name)
 }
 
+func (a *claudeAdapter) MCPConfigPath() string {
+	return a.p.MCPConfigPath()
+}
+
+func (a *claudeAdapter) AddMCP(server any) error {
+	s, ok := server.(*claude.MCPServer)
+	if !ok {
+		return fmt.Errorf("expected *claude.MCPServer, got %T", server)
+	}
+	return a.p.AddMCP(s)
+}
+
+func (a *claudeAdapter) RemoveMCP(name string) error {
+	return a.p.RemoveMCP(name)
+}
+
+func (a *claudeAdapter) ListMCP() ([]MCPInfo, error) {
+	servers, err := a.p.ListMCP()
+	if err != nil {
+		return nil, err
+	}
+	infos := make([]MCPInfo, len(servers))
+	for i, s := range servers {
+		transport := s.Transport
+		if transport == "" {
+			if s.URL != "" {
+				transport = "sse"
+			} else {
+				transport = "stdio"
+			}
+		}
+		infos[i] = MCPInfo{
+			Name:      s.Name,
+			Transport: transport,
+			Command:   s.Command,
+			URL:       s.URL,
+			Disabled:  s.Disabled,
+			Env:       s.Env,
+		}
+	}
+	return infos, nil
+}
+
+func (a *claudeAdapter) GetMCP(name string) (any, error) {
+	return a.p.GetMCP(name)
+}
+
+func (a *claudeAdapter) EnableMCP(name string) error {
+	return a.p.EnableMCP(name)
+}
+
+func (a *claudeAdapter) DisableMCP(name string) error {
+	return a.p.DisableMCP(name)
+}
+
 // opencodeAdapter wraps OpenCodePlatform to implement the Platform interface.
 type opencodeAdapter struct {
 	p *opencode.OpenCodePlatform
@@ -274,6 +348,61 @@ func (a *opencodeAdapter) ListCommands() ([]CommandInfo, error) {
 
 func (a *opencodeAdapter) GetCommand(name string) (any, error) {
 	return a.p.GetCommand(name)
+}
+
+func (a *opencodeAdapter) MCPConfigPath() string {
+	return a.p.MCPConfigPath()
+}
+
+func (a *opencodeAdapter) AddMCP(server any) error {
+	s, ok := server.(*opencode.MCPServer)
+	if !ok {
+		return fmt.Errorf("expected *opencode.MCPServer, got %T", server)
+	}
+	return a.p.AddMCP(s)
+}
+
+func (a *opencodeAdapter) RemoveMCP(name string) error {
+	return a.p.RemoveMCP(name)
+}
+
+func (a *opencodeAdapter) ListMCP() ([]MCPInfo, error) {
+	servers, err := a.p.ListMCP()
+	if err != nil {
+		return nil, err
+	}
+	infos := make([]MCPInfo, len(servers))
+	for i, s := range servers {
+		transport := "stdio"
+		if s.Type == "remote" || s.URL != "" {
+			transport = "sse"
+		}
+		cmd := ""
+		if len(s.Command) > 0 {
+			cmd = s.Command[0]
+		}
+		infos[i] = MCPInfo{
+			Name:      s.Name,
+			Transport: transport,
+			Command:   cmd,
+			URL:       s.URL,
+			Disabled:  s.Disabled,
+			Env:       s.Environment,
+		}
+	}
+	return infos, nil
+}
+
+func (a *opencodeAdapter) GetMCP(name string) (any, error) {
+	return a.p.GetMCP(name)
+}
+
+func (a *opencodeAdapter) EnableMCP(name string) error {
+	return a.p.EnableMCP(name)
+}
+
+func (a *opencodeAdapter) DisableMCP(name string) error {
+	return a.p.DisableMCP(name)
 }
 
 // NewPlatform creates a Platform adapter for the given platform name.
