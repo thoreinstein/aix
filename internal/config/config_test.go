@@ -27,6 +27,11 @@ func TestInit(t *testing.T) {
 
 func TestLoad_NoConfigFile(t *testing.T) {
 	viper.Reset()
+
+	// Set AIX_CONFIG_DIR to a temp dir to avoid loading system config
+	tempDir := t.TempDir()
+	t.Setenv("AIX_CONFIG_DIR", tempDir)
+
 	Init()
 
 	// Load with no config file should not error
@@ -70,5 +75,49 @@ func TestLoad_ExplicitPathNotFound(t *testing.T) {
 	_, err := Load("/non/existent/path/config.yaml")
 	if err == nil {
 		t.Error("Load() with non-existent explicit path should error")
+	}
+}
+
+func TestLoad_InvalidConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		wantErr string
+	}{
+		{
+			name:    "invalid version",
+			content: "version: 2\n",
+			wantErr: "unsupported config version: 2",
+		},
+		{
+			name:    "invalid default platform",
+			content: "default_platforms:\n  - invalid_platform\n",
+			wantErr: "invalid default platform: invalid_platform",
+		},
+		{
+			name:    "invalid platform override",
+			content: "platforms:\n  invalid_platform:\n    config_dir: /tmp\n",
+			wantErr: "invalid platform override key: invalid_platform",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			viper.Reset()
+			Init()
+
+			dir := t.TempDir()
+			configPath := filepath.Join(dir, "config.yaml")
+			if err := os.WriteFile(configPath, []byte(tt.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			_, err := Load(configPath)
+			if err == nil {
+				t.Error("Load() expected error, got nil")
+			} else if err.Error() != "validating config: "+tt.wantErr {
+				t.Errorf("Load() error = %v, want %v", err, "validating config: "+tt.wantErr)
+			}
+		})
 	}
 }
