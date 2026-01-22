@@ -159,13 +159,16 @@ func extractOpenCodeMCPServer(s *opencode.MCPServer, platformName string) *serve
 		}
 	}
 
+	// Convert OpenCode's Enabled (positive) to Disabled (negative)
+	disabled := s.Enabled != nil && !*s.Enabled
+
 	return &serverDetail{
 		Platform:  platformName,
 		Transport: transport,
 		Command:   command,
 		Args:      args,
 		URL:       s.URL,
-		Disabled:  s.Disabled,
+		Disabled:  disabled,
 		Env:       s.Environment,
 		Headers:   s.Headers,
 	}

@@ -95,20 +95,20 @@ func (m *MCPManager) Remove(name string) error {
 	return m.saveConfig(config)
 }
 
-// Enable sets Disabled=false for the specified server.
+// Enable sets Enabled=true for the specified server.
 // Returns ErrMCPServerNotFound if the server does not exist.
 func (m *MCPManager) Enable(name string) error {
-	return m.setDisabled(name, false)
+	return m.setEnabled(name, true)
 }
 
-// Disable sets Disabled=true for the specified server.
+// Disable sets Enabled=false for the specified server.
 // Returns ErrMCPServerNotFound if the server does not exist.
 func (m *MCPManager) Disable(name string) error {
-	return m.setDisabled(name, true)
+	return m.setEnabled(name, false)
 }
 
-// setDisabled is a helper to toggle the Disabled field.
-func (m *MCPManager) setDisabled(name string, disabled bool) error {
+// setEnabled is a helper to toggle the Enabled field.
+func (m *MCPManager) setEnabled(name string, enabled bool) error {
 	config, err := m.loadConfig()
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func (m *MCPManager) setDisabled(name string, disabled bool) error {
 		return ErrMCPServerNotFound
 	}
 
-	server.Disabled = disabled
+	server.Enabled = &enabled
 
 	return m.saveConfig(config)
 }

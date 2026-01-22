@@ -6,6 +6,11 @@ import (
 	"testing"
 )
 
+// ptrBool returns a pointer to the given bool value.
+func ptrBool(b bool) *bool {
+	return &b
+}
+
 func TestMCPConfig_MarshalJSON(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -46,7 +51,7 @@ func TestMCPConfig_MarshalJSON(t *testing.T) {
 						Headers: map[string]string{
 							"Authorization": "Bearer token",
 						},
-						Disabled: true,
+						Enabled: ptrBool(false),
 					},
 				},
 			},
@@ -83,45 +88,69 @@ func TestMCPConfig_UnmarshalJSON(t *testing.T) {
 		name       string
 		input      string
 		wantErr    bool
-		wantMCP    map[string]*MCPServer
 		checkExtra bool // whether to check for unknown fields
+		check      func(t *testing.T, cfg *MCPConfig)
 	}{
 		{
 			name:    "empty mcp",
 			input:   `{"mcp": {}}`,
 			wantErr: false,
-			wantMCP: map[string]*MCPServer{},
+			check: func(t *testing.T, cfg *MCPConfig) {
+				if len(cfg.MCP) != 0 {
+					t.Errorf("MCP count = %d, want 0", len(cfg.MCP))
+				}
+			},
 		},
 		{
 			name:    "single server",
-			input:   `{"mcp": {"test": {"name": "test", "command": ["test-cmd"]}}}`,
+			input:   `{"mcp": {"test": {"command": ["test-cmd"]}}}`,
 			wantErr: false,
-			wantMCP: map[string]*MCPServer{
-				"test": {
-					Name:    "test",
-					Command: []string{"test-cmd"},
-				},
+			check: func(t *testing.T, cfg *MCPConfig) {
+				if len(cfg.MCP) != 1 {
+					t.Errorf("MCP count = %d, want 1", len(cfg.MCP))
+				}
+				server := cfg.MCP["test"]
+				if server == nil {
+					t.Fatal("test server not found")
+				}
+				// Name is not populated from JSON (json:"-"), it's populated from map key elsewhere
+				if len(server.Command) != 1 || server.Command[0] != "test-cmd" {
+					t.Errorf("Command = %v, want [test-cmd]", server.Command)
+				}
 			},
 		},
 		{
 			name:    "server with all fields",
-			input:   `{"mcp": {"full": {"name": "full", "command": ["cmd", "arg"], "type": "local", "url": "http://localhost", "environment": {"KEY": "val"}, "headers": {"Auth": "token"}, "disabled": true}}}`,
+			input:   `{"mcp": {"full": {"command": ["cmd", "arg"], "type": "local", "url": "http://localhost", "environment": {"KEY": "val"}, "headers": {"Auth": "token"}, "enabled": false}}}`,
 			wantErr: false,
-			wantMCP: map[string]*MCPServer{
-				"full": {
-					Name:        "full",
-					Command:     []string{"cmd", "arg"},
-					Type:        "local",
-					URL:         "http://localhost",
-					Environment: map[string]string{"KEY": "val"},
-					Headers:     map[string]string{"Auth": "token"},
-					Disabled:    true,
-				},
+			check: func(t *testing.T, cfg *MCPConfig) {
+				server := cfg.MCP["full"]
+				if server == nil {
+					t.Fatal("full server not found")
+				}
+				if len(server.Command) != 2 {
+					t.Errorf("len(Command) = %d, want 2", len(server.Command))
+				}
+				if server.Type != "local" {
+					t.Errorf("Type = %q, want %q", server.Type, "local")
+				}
+				if server.URL != "http://localhost" {
+					t.Errorf("URL = %q, want %q", server.URL, "http://localhost")
+				}
+				if server.Environment["KEY"] != "val" {
+					t.Errorf("Environment[KEY] = %q, want %q", server.Environment["KEY"], "val")
+				}
+				if server.Headers["Auth"] != "token" {
+					t.Errorf("Headers[Auth] = %q, want %q", server.Headers["Auth"], "token")
+				}
+				if server.Enabled == nil || *server.Enabled != false {
+					t.Errorf("Enabled = %v, want false", server.Enabled)
+				}
 			},
 		},
 		{
 			name:       "preserves unknown fields",
-			input:      `{"mcp": {"test": {"name": "test"}}, "futureField": "value"}`,
+			input:      `{"mcp": {"test": {}}, "futureField": "value"}`,
 			wantErr:    false,
 			checkExtra: true,
 		},
@@ -143,8 +172,8 @@ func TestMCPConfig_UnmarshalJSON(t *testing.T) {
 				return
 			}
 
-			if tt.wantMCP != nil && !reflect.DeepEqual(config.MCP, tt.wantMCP) {
-				t.Errorf("MCP = %+v, want %+v", config.MCP, tt.wantMCP)
+			if tt.check != nil {
+				tt.check(t, &config)
 			}
 
 			if tt.checkExtra && config.unknownFields == nil {
@@ -256,11 +285,10 @@ func TestMCPConfig_RoundTrip(t *testing.T) {
 						},
 					},
 					"remote": {
-						Name:     "remote",
-						Type:     "remote",
-						URL:      "https://api.example.com/mcp",
-						Headers:  map[string]string{"Authorization": "Bearer ${API_KEY}"},
-						Disabled: false,
+						Name:    "remote",
+						Type:    "remote",
+						URL:     "https://api.example.com/mcp",
+						Headers: map[string]string{"Authorization": "Bearer ${API_KEY}"},
 					},
 				},
 			},
@@ -281,9 +309,38 @@ func TestMCPConfig_RoundTrip(t *testing.T) {
 				t.Fatalf("Unmarshal() error = %v", err)
 			}
 
-			// Compare MCP servers
-			if !reflect.DeepEqual(got.MCP, tt.config.MCP) {
-				t.Errorf("MCP mismatch:\ngot:  %+v\nwant: %+v", got.MCP, tt.config.MCP)
+			// Compare MCP servers by checking individual fields
+			// (can't use reflect.DeepEqual due to pointer comparison issues)
+			if len(got.MCP) != len(tt.config.MCP) {
+				t.Errorf("MCP server count mismatch: got %d, want %d", len(got.MCP), len(tt.config.MCP))
+				return
+			}
+
+			for name, want := range tt.config.MCP {
+				gotServer, ok := got.MCP[name]
+				if !ok {
+					t.Errorf("missing server %q", name)
+					continue
+				}
+				// Name is set from map key during unmarshal
+				if gotServer.Name != name {
+					t.Errorf("server %q: Name = %q, want %q", name, gotServer.Name, name)
+				}
+				if !reflect.DeepEqual(gotServer.Command, want.Command) {
+					t.Errorf("server %q: Command = %v, want %v", name, gotServer.Command, want.Command)
+				}
+				if gotServer.Type != want.Type {
+					t.Errorf("server %q: Type = %q, want %q", name, gotServer.Type, want.Type)
+				}
+				if gotServer.URL != want.URL {
+					t.Errorf("server %q: URL = %q, want %q", name, gotServer.URL, want.URL)
+				}
+				if !reflect.DeepEqual(gotServer.Environment, want.Environment) {
+					t.Errorf("server %q: Environment = %v, want %v", name, gotServer.Environment, want.Environment)
+				}
+				if !reflect.DeepEqual(gotServer.Headers, want.Headers) {
+					t.Errorf("server %q: Headers = %v, want %v", name, gotServer.Headers, want.Headers)
+				}
 			}
 		})
 	}

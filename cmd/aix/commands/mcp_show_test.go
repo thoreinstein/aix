@@ -8,6 +8,11 @@ import (
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 )
 
+// ptrBool returns a pointer to the given bool value.
+func ptrBool(b bool) *bool {
+	return &b
+}
+
 func TestMCPShowCommand_Metadata(t *testing.T) {
 	if mcpShowCmd.Use != "show <name>" {
 		t.Errorf("Use = %q, want %q", mcpShowCmd.Use, "show <name>")
@@ -459,9 +464,9 @@ func TestExtractServerDetail_OpenCode(t *testing.T) {
 		{
 			name: "disabled server",
 			server: &opencode.MCPServer{
-				Name:     "disabled",
-				Command:  []string{"cmd"},
-				Disabled: true,
+				Name:    "disabled",
+				Command: []string{"cmd"},
+				Enabled: ptrBool(false),
 			},
 			platform: "OpenCode",
 			want: &serverDetail{
