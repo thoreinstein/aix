@@ -51,6 +51,19 @@ Exit codes:
   0 - All checks passed (no errors or warnings)
   1 - Warnings present, no errors
   2 - Errors present`,
+	Example: `  # Run standard diagnostics
+  aix doctor
+
+  # Show all checks including passed ones
+  aix doctor --verbose
+
+  # Automatically fix issues
+  aix doctor --fix
+
+  # Output as JSON for scripts
+  aix doctor --json
+
+See Also: aix status, aix config`,
 	PreRunE: validateDoctorFlags,
 	RunE:    runDoctor,
 }
