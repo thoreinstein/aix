@@ -423,8 +423,9 @@ func TestOpenCodePlatform_MCPLifecycle(t *testing.T) {
 		t.Fatalf("DisableMCP() error = %v", err)
 	}
 	got, _ = p.GetMCP("test-server")
-	if !got.Disabled {
-		t.Error("DisableMCP() did not set Disabled=true")
+	// After DisableMCP, Enabled should be false
+	if got.Enabled == nil || *got.Enabled {
+		t.Error("DisableMCP() did not set Enabled=false")
 	}
 
 	// Enable
@@ -432,8 +433,9 @@ func TestOpenCodePlatform_MCPLifecycle(t *testing.T) {
 		t.Fatalf("EnableMCP() error = %v", err)
 	}
 	got, _ = p.GetMCP("test-server")
-	if got.Disabled {
-		t.Error("EnableMCP() did not set Disabled=false")
+	// After EnableMCP, Enabled should be true (or nil)
+	if got.Enabled != nil && !*got.Enabled {
+		t.Error("EnableMCP() did not set Enabled=true")
 	}
 
 	// Remove
@@ -749,16 +751,18 @@ func TestOpenCodePlatform_MCPOperations_Delegation(t *testing.T) {
 		t.Fatalf("DisableMCP() error = %v", err)
 	}
 	got, _ = p.GetMCP("delegation-server")
-	if !got.Disabled {
-		t.Error("DisableMCP() did not set Disabled=true")
+	// After DisableMCP, Enabled should be false
+	if got.Enabled == nil || *got.Enabled {
+		t.Error("DisableMCP() did not set Enabled=false")
 	}
 
 	if err := p.EnableMCP("delegation-server"); err != nil {
 		t.Fatalf("EnableMCP() error = %v", err)
 	}
 	got, _ = p.GetMCP("delegation-server")
-	if got.Disabled {
-		t.Error("EnableMCP() did not set Disabled=false")
+	// After EnableMCP, Enabled should be true (or nil)
+	if got.Enabled != nil && !*got.Enabled {
+		t.Error("EnableMCP() did not set Enabled=true")
 	}
 
 	// RemoveMCP should update the config file

@@ -234,7 +234,8 @@ func TestMCPManager_Enable(t *testing.T) {
 		paths := testPaths(t)
 		mgr := NewMCPManager(paths)
 
-		server := &MCPServer{Name: "enable-test", Command: []string{"cmd"}, Disabled: true}
+		disabled := false
+		server := &MCPServer{Name: "enable-test", Command: []string{"cmd"}, Enabled: &disabled}
 		if err := mgr.Add(server); err != nil {
 			t.Fatalf("Add() error = %v", err)
 		}
@@ -247,8 +248,9 @@ func TestMCPManager_Enable(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Get() error = %v", err)
 		}
-		if got.Disabled {
-			t.Error("Enable() did not set Disabled to false")
+		// After Enable(), Enabled should be true (or nil, which means enabled)
+		if got.Enabled != nil && !*got.Enabled {
+			t.Error("Enable() did not set Enabled to true")
 		}
 	})
 
@@ -268,7 +270,8 @@ func TestMCPManager_Disable(t *testing.T) {
 		paths := testPaths(t)
 		mgr := NewMCPManager(paths)
 
-		server := &MCPServer{Name: "disable-test", Command: []string{"cmd"}, Disabled: false}
+		// Server starts enabled (nil or true means enabled)
+		server := &MCPServer{Name: "disable-test", Command: []string{"cmd"}}
 		if err := mgr.Add(server); err != nil {
 			t.Fatalf("Add() error = %v", err)
 		}
@@ -281,8 +284,9 @@ func TestMCPManager_Disable(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Get() error = %v", err)
 		}
-		if !got.Disabled {
-			t.Error("Disable() did not set Disabled to true")
+		// After Disable(), Enabled should be false
+		if got.Enabled == nil || *got.Enabled {
+			t.Error("Disable() did not set Enabled to false")
 		}
 	})
 
@@ -402,7 +406,7 @@ func TestMCPManager_RoundTrip(t *testing.T) {
 		URL:         "",
 		Environment: map[string]string{"API_KEY": "secret"},
 		Headers:     map[string]string{"Authorization": "Bearer token"},
-		Disabled:    false,
+		// Enabled is nil (default), which means enabled
 	}
 
 	if err := mgr.Add(original); err != nil {
@@ -426,7 +430,8 @@ func TestMCPManager_RoundTrip(t *testing.T) {
 	if got.Environment["API_KEY"] != original.Environment["API_KEY"] {
 		t.Errorf("Environment[API_KEY] = %q, want %q", got.Environment["API_KEY"], original.Environment["API_KEY"])
 	}
-	if got.Disabled != original.Disabled {
-		t.Errorf("Disabled = %v, want %v", got.Disabled, original.Disabled)
+	// Both nil means enabled, both should be equivalent
+	if (got.Enabled == nil) != (original.Enabled == nil) {
+		t.Errorf("Enabled pointer state mismatch: got=%v, want=%v", got.Enabled, original.Enabled)
 	}
 }

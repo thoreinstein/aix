@@ -381,12 +381,17 @@ func (a *opencodeAdapter) ListMCP() ([]MCPInfo, error) {
 		if len(s.Command) > 0 {
 			cmd = s.Command[0]
 		}
+		// Convert OpenCode's Enabled (positive) to MCPInfo's Disabled (negative)
+		disabled := false
+		if s.Enabled != nil && !*s.Enabled {
+			disabled = true
+		}
 		infos[i] = MCPInfo{
 			Name:      s.Name,
 			Transport: transport,
 			Command:   cmd,
 			URL:       s.URL,
-			Disabled:  s.Disabled,
+			Disabled:  disabled,
 			Env:       s.Environment,
 		}
 	}

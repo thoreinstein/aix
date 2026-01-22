@@ -24,7 +24,7 @@ The canonical format provides a unified representation of MCP server configurati
 | `env` | `env` | `environment` | `map[string]string` | Environment variables for the server process |
 | `headers` | `headers` | `headers` | `map[string]string` | HTTP headers for SSE transport |
 | `platforms` | `platforms` | N/A | `[]string` | **LOSSY**: OpenCode does not support platform restrictions |
-| `disabled` | `disabled` | `disabled` | `bool` | Whether server is temporarily disabled |
+| `disabled` | `disabled` | `enabled` (inverted) | `bool` | Canonical/Claude use negative logic (`disabled`); OpenCode uses positive logic (`enabled`) |
 
 ### Transport Mapping
 
