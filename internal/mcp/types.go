@@ -251,6 +251,13 @@ func (c *Config) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		delete(raw, "servers")
+
+		// Populate Name field from map keys
+		for name, server := range c.Servers {
+			if server != nil {
+				server.Name = name
+			}
+		}
 	}
 
 	// Store remaining fields as unknown
