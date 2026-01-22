@@ -146,10 +146,16 @@ func runMCPAddCore(args []string) error {
 		}
 	}
 
-	// Validate transport value
+	// Validate transport value and required fields
 	switch transport {
-	case "stdio", "sse":
-		// Valid
+	case "stdio":
+		if command == "" {
+			return errMCPAddMissingCommand
+		}
+	case "sse":
+		if mcpAddURL == "" {
+			return errMCPAddMissingURL
+		}
 	default:
 		return fmt.Errorf("invalid --transport %q: must be 'stdio' or 'sse'", transport)
 	}
