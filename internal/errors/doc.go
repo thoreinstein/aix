@@ -18,19 +18,21 @@
 // The package defines standard exit codes for CLI applications:
 //
 //   - ExitSuccess (0): Command completed successfully
-//   - ExitGeneral (1): General error
-//   - ExitUsage (2): Usage or argument error
-//   - ExitMisuse (64): Command used incorrectly
+//   - ExitUser (1): User-related error (invalid input, configuration, etc.)
+//   - ExitSystem (2): System-related error (I/O, network, permissions, etc.)
 //
 // # ExitError
 //
-// [ExitError] wraps an underlying error with an exit code for CLI
-// applications. It supports error unwrapping via [errors.Unwrap] and
+// [ExitError] wraps an underlying error with an exit code and optional suggestion
+// for CLI applications. It supports error unwrapping via [errors.Unwrap] and
 // [errors.As]:
 //
-//	err := aixerrors.NewExitError(aixerrors.ErrInvalidConfig, aixerrors.ExitUsage)
+//	err := aixerrors.NewUserError(aixerrors.ErrInvalidConfig, "Check your config file")
 //	var exitErr *aixerrors.ExitError
 //	if errors.As(err, &exitErr) {
+//	    if exitErr.Suggestion != "" {
+//	        fmt.Println("Suggestion:", exitErr.Suggestion)
+//	    }
 //	    os.Exit(exitErr.Code)
 //	}
 package errors
