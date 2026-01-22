@@ -177,11 +177,17 @@ func addMCPToPlatform(
 ) error {
 	switch plat.Name() {
 	case "claude":
+		// Map canonical transport to Claude type: stdio -> stdio, sse -> http
+		claudeType := transport
+		if transport == "sse" {
+			claudeType = "http"
+		}
+
 		server := &claude.MCPServer{
 			Name:      name,
 			Command:   command,
 			Args:      args,
-			Transport: transport,
+			Type:      claudeType,
 			URL:       mcpAddURL,
 			Env:       env,
 			Headers:   headers,

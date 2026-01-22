@@ -11,25 +11,27 @@ import (
 // MCPServer represents an MCP (Model Context Protocol) server configuration.
 // It supports both stdio-based (Command/Args) and HTTP-based (URL) transports.
 type MCPServer struct {
-	// Name is the server's identifier, typically matching the map key.
-	Name string `json:"name"`
+	// Name is the server's identifier, populated from the map key when loading.
+	// Not serialized to JSON as it's the map key itself.
+	Name string `json:"-"`
+
+	// Type specifies the server transport type: "stdio" or "http".
+	// Note: Claude Code uses "http" for remote servers, while canonical uses "sse".
+	Type string `json:"type,omitempty"`
 
 	// Command is the executable to run for stdio transport.
-	Command string `json:"command"`
+	Command string `json:"command,omitempty"`
 
 	// Args are command-line arguments passed to the command.
 	Args []string `json:"args,omitempty"`
 
-	// URL is the server endpoint for HTTP/SSE transport.
+	// URL is the server endpoint for HTTP transport.
 	URL string `json:"url,omitempty"`
-
-	// Transport specifies the server transport type.
-	Transport string `json:"transport,omitempty"`
 
 	// Env contains environment variables passed to the server process.
 	Env map[string]string `json:"env,omitempty"`
 
-	// Headers contains HTTP headers for SSE transport connections.
+	// Headers contains HTTP headers for HTTP transport connections.
 	Headers map[string]string `json:"headers,omitempty"`
 
 	// Platforms restricts the server to specific OS platforms (e.g., "darwin", "linux").
@@ -39,7 +41,7 @@ type MCPServer struct {
 	Disabled bool `json:"disabled,omitempty"`
 }
 
-// MCPConfig represents the root structure of Claude Code's mcp_servers.json file.
+// MCPConfig represents the root structure of Claude Code's .mcp.json file.
 // It preserves unknown fields for forward compatibility with future versions.
 type MCPConfig struct {
 	// MCPServers maps server names to their configurations.

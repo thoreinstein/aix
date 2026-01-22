@@ -200,13 +200,13 @@ func TestClaudePaths_MCPConfigPath(t *testing.T) {
 			name:        "user scope",
 			scope:       ScopeUser,
 			projectRoot: "",
-			want:        filepath.Join(home, ".claude", "mcp_servers.json"),
+			want:        filepath.Join(home, ".claude", ".mcp.json"),
 		},
 		{
 			name:        "project scope",
 			scope:       ScopeProject,
 			projectRoot: "/my/project",
-			want:        filepath.Join("/my/project", ".claude", "mcp_servers.json"),
+			want:        filepath.Join("/my/project", ".claude", ".mcp.json"),
 		},
 		{
 			name:        "project scope empty root",

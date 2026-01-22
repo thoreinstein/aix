@@ -227,13 +227,20 @@ func (a *claudeAdapter) ListMCP() ([]MCPInfo, error) {
 	}
 	infos := make([]MCPInfo, len(servers))
 	for i, s := range servers {
-		transport := s.Transport
-		if transport == "" {
+		// Map Claude's Type to display transport
+		// Claude uses "http" for remote, we display as "sse" for consistency
+		var transport string
+		switch s.Type {
+		case "":
 			if s.URL != "" {
 				transport = "sse"
 			} else {
 				transport = "stdio"
 			}
+		case "http":
+			transport = "sse"
+		default:
+			transport = s.Type
 		}
 		infos[i] = MCPInfo{
 			Name:      s.Name,
