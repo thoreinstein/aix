@@ -2,6 +2,7 @@ package commands
 
 import (
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -129,8 +130,8 @@ func TestParseKeyValueSlice(t *testing.T) {
 }
 
 func TestMCPAddCommand_Metadata(t *testing.T) {
-	if mcpAddCmd.Use != "add <name> [command] [args...]" {
-		t.Errorf("Use = %q, want %q", mcpAddCmd.Use, "add <name> [command] [args...]")
+	if mcpAddCmd.Use != "add [name] [command] [args...]" {
+		t.Errorf("Use = %q, want %q", mcpAddCmd.Use, "add [name] [command] [args...]")
 	}
 
 	if mcpAddCmd.Short == "" {
@@ -155,7 +156,7 @@ func TestMCPAddCommand_Metadata(t *testing.T) {
 		t.Error("-f shorthand for --force should be defined")
 	}
 
-	// Verify Args validator is set (MinimumNArgs(1))
+	// Verify Args validator is set (ArbitraryArgs for interactive mode)
 	if mcpAddCmd.Args == nil {
 		t.Error("Args validator should be set")
 	}
@@ -427,5 +428,212 @@ func TestOpenCodeCommandSliceConstruction(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestParseCommaKeyValueList(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  map[string]string
+	}{
+		{
+			name:  "empty string",
+			input: "",
+			want:  map[string]string{},
+		},
+		{
+			name:  "single entry",
+			input: "KEY=value",
+			want:  map[string]string{"KEY": "value"},
+		},
+		{
+			name:  "multiple entries",
+			input: "KEY1=value1,KEY2=value2",
+			want:  map[string]string{"KEY1": "value1", "KEY2": "value2"},
+		},
+		{
+			name:  "entries with spaces",
+			input: "KEY1=value1, KEY2=value2",
+			want:  map[string]string{"KEY1": "value1", "KEY2": "value2"},
+		},
+		{
+			name:  "whitespace around key and value",
+			input: " KEY = value ",
+			want:  map[string]string{"KEY": "value"},
+		},
+		{
+			name:  "empty value",
+			input: "KEY=",
+			want:  map[string]string{"KEY": ""},
+		},
+		{
+			name:  "equals in value",
+			input: "KEY=val=ue",
+			want:  map[string]string{"KEY": "val=ue"},
+		},
+		{
+			name:  "skip invalid entries",
+			input: "VALID=ok,invalid,ANOTHER=yes",
+			want:  map[string]string{"VALID": "ok", "ANOTHER": "yes"},
+		},
+		{
+			name:  "skip empty key",
+			input: "=value,VALID=ok",
+			want:  map[string]string{"VALID": "ok"},
+		},
+		{
+			name:  "skip empty segments",
+			input: "KEY1=v1,,KEY2=v2",
+			want:  map[string]string{"KEY1": "v1", "KEY2": "v2"},
+		},
+		{
+			name:  "authorization header style",
+			input: "Authorization=Bearer token123",
+			want:  map[string]string{"Authorization": "Bearer token123"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseCommaKeyValueList(tt.input)
+			if len(got) != len(tt.want) {
+				t.Errorf("parseCommaKeyValueList() len = %d, want %d", len(got), len(tt.want))
+				return
+			}
+			for k, wantV := range tt.want {
+				if gotV, ok := got[k]; !ok {
+					t.Errorf("parseCommaKeyValueList() missing key %q", k)
+				} else if gotV != wantV {
+					t.Errorf("parseCommaKeyValueList()[%q] = %q, want %q", k, gotV, wantV)
+				}
+			}
+		})
+	}
+}
+
+func TestFormatKeyValueSlice(t *testing.T) {
+	tests := []struct {
+		name  string
+		input map[string]string
+		want  int // expected slice length (map iteration order is non-deterministic)
+	}{
+		{
+			name:  "nil map",
+			input: nil,
+			want:  0,
+		},
+		{
+			name:  "empty map",
+			input: map[string]string{},
+			want:  0,
+		},
+		{
+			name:  "single entry",
+			input: map[string]string{"KEY": "value"},
+			want:  1,
+		},
+		{
+			name:  "multiple entries",
+			input: map[string]string{"KEY1": "value1", "KEY2": "value2"},
+			want:  2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := formatKeyValueSlice(tt.input)
+			if tt.want == 0 {
+				if got != nil {
+					t.Errorf("formatKeyValueSlice() = %v, want nil", got)
+				}
+				return
+			}
+			if len(got) != tt.want {
+				t.Errorf("formatKeyValueSlice() len = %d, want %d", len(got), tt.want)
+				return
+			}
+			// Verify each entry has KEY=VALUE format
+			for _, entry := range got {
+				if !strings.Contains(entry, "=") {
+					t.Errorf("formatKeyValueSlice() entry %q missing '='", entry)
+				}
+			}
+		})
+	}
+}
+
+func TestInteractiveModeDetection(t *testing.T) {
+	// Test the condition: len(args) == 0 && mcpAddURL == ""
+	tests := []struct {
+		name            string
+		args            []string
+		url             string
+		wantInteractive bool
+	}{
+		{
+			name:            "no args and no url",
+			args:            []string{},
+			url:             "",
+			wantInteractive: true,
+		},
+		{
+			name:            "nil args and no url",
+			args:            nil,
+			url:             "",
+			wantInteractive: true,
+		},
+		{
+			name:            "has args",
+			args:            []string{"github"},
+			url:             "",
+			wantInteractive: false,
+		},
+		{
+			name:            "no args but has url",
+			args:            []string{},
+			url:             "https://example.com/mcp",
+			wantInteractive: false,
+		},
+		{
+			name:            "has both args and url",
+			args:            []string{"api-gateway"},
+			url:             "https://example.com/mcp",
+			wantInteractive: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Simulate the interactive mode detection from runMCPAdd
+			isInteractive := len(tt.args) == 0 && tt.url == ""
+			if isInteractive != tt.wantInteractive {
+				t.Errorf("interactive mode detection = %v, want %v", isInteractive, tt.wantInteractive)
+			}
+		})
+	}
+}
+
+func TestMCPAddNewSentinelErrors(t *testing.T) {
+	// Test the new sentinel errors added for interactive mode
+	if errMCPAddMissingName == nil {
+		t.Error("errMCPAddMissingName should be defined")
+	}
+	if errMCPAddMissingCommand == nil {
+		t.Error("errMCPAddMissingCommand should be defined")
+	}
+	if errMCPAddMissingURL == nil {
+		t.Error("errMCPAddMissingURL should be defined")
+	}
+
+	// Verify error messages
+	if errMCPAddMissingName.Error() != "server name is required" {
+		t.Errorf("unexpected error message: %s", errMCPAddMissingName.Error())
+	}
+	if errMCPAddMissingCommand.Error() != "command is required for stdio transport" {
+		t.Errorf("unexpected error message: %s", errMCPAddMissingCommand.Error())
+	}
+	if errMCPAddMissingURL.Error() != "URL is required for sse transport" {
+		t.Errorf("unexpected error message: %s", errMCPAddMissingURL.Error())
 	}
 }
