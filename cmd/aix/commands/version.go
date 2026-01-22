@@ -27,6 +27,10 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version information",
 	Long:  `Print the version, commit, build date, Go version, and detected platforms.`,
+	Example: `  # Print version info
+  aix version
+
+See Also: aix status, aix doctor`,
 	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Printf("aix version %s\n", Version)
 		fmt.Printf("  commit:    %s\n", Commit)

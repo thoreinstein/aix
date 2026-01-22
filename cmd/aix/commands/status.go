@@ -43,10 +43,8 @@ Output modes (mutually exclusive):
   --json      Machine-readable JSON output
 
 In verbose mode, sensitive environment variable values (TOKEN, SECRET,
-KEY, PASSWORD, CREDENTIAL, AUTH) are redacted for security.
-
-Examples:
-  # Show status for all platforms
+KEY, PASSWORD, CREDENTIAL, AUTH) are redacted for security.`,
+	Example: `  # Show status for all platforms
   aix status
 
   # Quick summary
@@ -56,7 +54,9 @@ Examples:
   aix status --verbose
 
   # JSON output for scripting
-  aix status --json`,
+  aix status --json
+
+See Also: aix doctor, aix config`,
 	PreRunE: validateStatusFlags,
 	RunE:    runStatus,
 }

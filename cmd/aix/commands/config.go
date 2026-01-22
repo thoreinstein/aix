@@ -30,6 +30,16 @@ var configCmd = &cobra.Command{
 	Long: `Manage aix configuration stored in ~/.config/aix/config.yaml.
 
 Without a subcommand, lists all configuration values.`,
+	Example: `  # List all configuration
+  aix config
+
+  # Get a specific value
+  aix config get default_platforms
+
+  # Set a value
+  aix config set default_platforms claude,opencode
+
+See Also: aix init, aix doctor`,
 	RunE: runConfigList,
 }
 
@@ -38,11 +48,14 @@ var configGetCmd = &cobra.Command{
 	Short: "Get a configuration value",
 	Long: `Get a single configuration value by key.
 
-Supports dot notation for nested keys. Array values are printed one per line.
-
-Examples:
+Supports dot notation for nested keys. Array values are printed one per line.`,
+	Example: `  # Get version
   aix config get version
-  aix config get default_platforms`,
+
+  # Get default platforms
+  aix config get default_platforms
+
+See Also: aix config set, aix config list`,
 	Args: cobra.ExactArgs(1),
 	RunE: runConfigGet,
 }
@@ -53,11 +66,14 @@ var configSetCmd = &cobra.Command{
 	Long: `Set a configuration value.
 
 For array values like default_platforms, use comma-separated values.
-Platform names are validated against supported platforms.
-
-Examples:
+Platform names are validated against supported platforms.`,
+	Example: `  # Set version
   aix config set version 2
-  aix config set default_platforms claude,opencode`,
+
+  # Set default platforms
+  aix config set default_platforms claude,opencode
+
+See Also: aix config get, aix config list`,
 	Args: cobra.ExactArgs(2),
 	RunE: runConfigSet,
 }
@@ -66,7 +82,11 @@ var configListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all configuration",
 	Long:  `List all configuration values in YAML format.`,
-	RunE:  runConfigList,
+	Example: `  # List all configuration
+  aix config list
+
+See Also: aix config get, aix config set`,
+	RunE: runConfigList,
 }
 
 var configEditCmd = &cobra.Command{
@@ -76,6 +96,13 @@ var configEditCmd = &cobra.Command{
 
 Uses $EDITOR environment variable, or falls back to vi.
 If no configuration file exists, prints an error suggesting to run 'aix init'.`,
+	Example: `  # Open config in default editor
+  aix config edit
+
+  # Open with specific editor
+  EDITOR=nano aix config edit
+
+See Also: aix config list, aix init`,
 	RunE: runConfigEdit,
 }
 
