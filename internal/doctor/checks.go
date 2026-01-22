@@ -19,13 +19,29 @@ import (
 const maxSecureFilePerm os.FileMode = 0644
 
 // PathPermissionCheck validates file paths and permissions for platform configurations.
-type PathPermissionCheck struct{}
+// It implements both the Check and Fixer interfaces.
+type PathPermissionCheck struct {
+	fixer PermissionFixer
+}
 
 var _ Check = (*PathPermissionCheck)(nil)
+var _ Fixer = (*PathPermissionCheck)(nil)
 
 // NewPathPermissionCheck creates a new path permission check.
 func NewPathPermissionCheck() *PathPermissionCheck {
 	return &PathPermissionCheck{}
+}
+
+// CanFix returns true if there are fixable permission issues.
+// Must be called after Run().
+func (c *PathPermissionCheck) CanFix() bool {
+	return c.fixer.CanFix()
+}
+
+// Fix attempts to remediate fixable permission issues.
+// Must be called after Run().
+func (c *PathPermissionCheck) Fix() []FixResult {
+	return c.fixer.Fix()
 }
 
 // Name returns the unique identifier for this check.
@@ -60,6 +76,9 @@ func (c *PathPermissionCheck) Run() *CheckResult {
 			checked++
 		}
 	}
+
+	// Store issues in the fixer for potential auto-remediation
+	c.fixer.setIssues(issues)
 
 	return c.buildResult(issues, checked)
 }
