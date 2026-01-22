@@ -175,9 +175,10 @@ func setupTestEnv(t *testing.T) *testEnv {
 }
 
 // readClaudeConfig reads the Claude MCP config file and returns the parsed content.
+// Note: User-scoped Claude config is at ~/.claude.json (not in .claude directory).
 func (e *testEnv) readClaudeConfig(t *testing.T) *claude.MCPConfig {
 	t.Helper()
-	configPath := filepath.Join(e.claudeDir, ".mcp.json")
+	configPath := filepath.Join(e.homeDir, ".claude.json")
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -567,7 +568,8 @@ func TestMCPAtomicWrites(t *testing.T) {
 	}
 
 	// Verify file contains proper JSON (read raw and check format)
-	configPath := filepath.Join(env.claudeDir, ".mcp.json")
+	// Note: User-scoped config is at ~/.claude.json (not in .claude directory)
+	configPath := filepath.Join(env.homeDir, ".claude.json")
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("failed to read config file: %v", err)
@@ -589,7 +591,8 @@ func TestMCPInvalidExistingConfig(t *testing.T) {
 	env := setupTestEnv(t)
 
 	// Write invalid JSON to config file
-	configPath := filepath.Join(env.claudeDir, ".mcp.json")
+	// Note: User-scoped config is at ~/.claude.json (not in .claude directory)
+	configPath := filepath.Join(env.homeDir, ".claude.json")
 	if err := os.WriteFile(configPath, []byte("{ invalid json }"), 0644); err != nil {
 		t.Fatalf("failed to write invalid config: %v", err)
 	}

@@ -418,9 +418,9 @@ func TestMCPConfigPath(t *testing.T) {
 		want     string
 	}{
 		{
-			name:     "claude MCP config",
+			name:     "claude MCP config is in home directory",
 			platform: PlatformClaude,
-			want:     filepath.Join(home, ".claude", ".mcp.json"),
+			want:     filepath.Join(home, ".claude.json"),
 		},
 		{
 			name:     "opencode MCP config",
