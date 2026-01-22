@@ -36,13 +36,22 @@ Searches for the server across all detected platforms (or only the specified
 and status. Highlights any configuration differences between platforms.
 
 Environment variables and headers are masked by default to protect secrets.
-Use --show-secrets to reveal the full values.
-
-Examples:
+Use --show-secrets to reveal the full values.`,
+	Example: `  # Show details of a server
   aix mcp show github
+
+  # Show details including secrets
   aix mcp show github --show-secrets
+
+  # Output as JSON
   aix mcp show github --json
-  aix mcp show github --platform claude`,
+
+  # Show details for a specific platform
+  aix mcp show github --platform claude
+
+  See Also:
+    aix mcp list     - List all servers
+    aix mcp remove   - Remove this server`,
 	Args: cobra.ExactArgs(1),
 	RunE: runMCPShow,
 }
