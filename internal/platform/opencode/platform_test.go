@@ -144,7 +144,7 @@ func TestOpenCodePlatform_PathMethods(t *testing.T) {
 
 	t.Run("CommandDir", func(t *testing.T) {
 		got := p.CommandDir()
-		want := filepath.Join(tmpDir, "commands")
+		want := filepath.Join(tmpDir, "command")
 		if got != want {
 			t.Errorf("CommandDir() = %q, want %q", got, want)
 		}
@@ -153,7 +153,7 @@ func TestOpenCodePlatform_PathMethods(t *testing.T) {
 	t.Run("AgentDir", func(t *testing.T) {
 		got := p.AgentDir()
 		// OpenCode uses plural "agents"
-		want := filepath.Join(tmpDir, "agents")
+		want := filepath.Join(tmpDir, "agent")
 		if got != want {
 			t.Errorf("AgentDir() = %q, want %q", got, want)
 		}
@@ -619,7 +619,7 @@ func TestOpenCodePlatform_CommandOperations_Delegation(t *testing.T) {
 	}
 
 	// Verify file was created
-	cmdPath := filepath.Join(tmpDir, "commands", "delegation-cmd.md")
+	cmdPath := filepath.Join(tmpDir, "command", "delegation-cmd.md")
 	if _, err := os.Stat(cmdPath); os.IsNotExist(err) {
 		t.Errorf("InstallCommand() did not create command file at %q", cmdPath)
 	}
@@ -670,7 +670,7 @@ func TestOpenCodePlatform_AgentOperations_Delegation(t *testing.T) {
 	}
 
 	// Verify file was created (OpenCode uses "agents" plural)
-	agentPath := filepath.Join(tmpDir, "agents", "delegation-agent.md")
+	agentPath := filepath.Join(tmpDir, "agent", "delegation-agent.md")
 	if _, err := os.Stat(agentPath); os.IsNotExist(err) {
 		t.Errorf("InstallAgent() did not create agent file at %q", agentPath)
 	}
