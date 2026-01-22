@@ -335,6 +335,37 @@ func TestConfig_PreservesUnknownFields(t *testing.T) {
 	}
 }
 
+func TestConfig_PopulatesServerNameFromKey(t *testing.T) {
+	// JSON where the server object lacks a "name" field
+	input := `{
+		"servers": {
+			"github": {
+				"command": "npx",
+				"args": ["@modelcontextprotocol/server-github"]
+			}
+		}
+	}`
+
+	var config Config
+	if err := json.Unmarshal([]byte(input), &config); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+
+	if len(config.Servers) != 1 {
+		t.Fatalf("Servers count = %d, want 1", len(config.Servers))
+	}
+
+	server, ok := config.Servers["github"]
+	if !ok {
+		t.Fatal("server 'github' not found in map")
+	}
+
+	// This is what we're testing: the Name field should be populated from the key "github"
+	if server.Name != "github" {
+		t.Errorf("server.Name = %q, want %q", server.Name, "github")
+	}
+}
+
 func TestConfig_RoundTripWithUnknownFields(t *testing.T) {
 	// Start with JSON that has unknown fields
 	input := `{
