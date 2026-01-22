@@ -192,13 +192,23 @@ func CommandDir(platform string) string {
 // MCPConfigPath returns the MCP config file path for a platform.
 //
 // Platform paths:
-//   - claude: ~/.claude/.mcp.json
+//   - claude: ~/.claude.json (main user config file, NOT in .claude directory)
 //   - opencode: ~/.config/opencode/opencode.json
 //   - codex: ~/.codex/mcp.json
 //   - gemini: ~/.gemini/settings.toml
 //
 // Returns an empty string for unknown platforms.
 func MCPConfigPath(platform string) string {
+	home := Home()
+	if home == "" {
+		return ""
+	}
+
+	// Claude is special: MCP config is in ~/.claude.json (not in .claude directory)
+	if platform == PlatformClaude {
+		return filepath.Join(home, ".claude.json")
+	}
+
 	globalDir := GlobalConfigDir(platform)
 	if globalDir == "" {
 		return ""

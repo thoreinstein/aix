@@ -2,6 +2,7 @@
 package claude
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/thoreinstein/aix/internal/paths"
@@ -80,13 +81,29 @@ func (p *ClaudePaths) AgentDir() string {
 }
 
 // MCPConfigPath returns the path to the MCP servers configuration file.
-// Returns <base>/.mcp.json
+//
+// For ScopeUser: ~/.claude.json (the main user config file, NOT ~/.claude/.mcp.json)
+// For ScopeProject: <projectRoot>/.claude/.mcp.json
+//
+// Note: Claude Code stores user-level MCP servers in the main user config file
+// at ~/.claude.json, not in a separate file within the .claude directory.
 func (p *ClaudePaths) MCPConfigPath() string {
-	base := p.BaseDir()
-	if base == "" {
+	switch p.scope {
+	case ScopeUser:
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+		return filepath.Join(home, ".claude.json")
+	case ScopeProject:
+		base := p.BaseDir()
+		if base == "" {
+			return ""
+		}
+		return filepath.Join(base, ".mcp.json")
+	default:
 		return ""
 	}
-	return filepath.Join(base, ".mcp.json")
 }
 
 // InstructionsPath returns the path to the CLAUDE.md instructions file.

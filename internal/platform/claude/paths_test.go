@@ -197,19 +197,19 @@ func TestClaudePaths_MCPConfigPath(t *testing.T) {
 		want        string
 	}{
 		{
-			name:        "user scope",
+			name:        "user scope returns ~/.claude.json (not in .claude directory)",
 			scope:       ScopeUser,
 			projectRoot: "",
-			want:        filepath.Join(home, ".claude", ".mcp.json"),
+			want:        filepath.Join(home, ".claude.json"),
 		},
 		{
-			name:        "project scope",
+			name:        "project scope returns .mcp.json in .claude directory",
 			scope:       ScopeProject,
 			projectRoot: "/my/project",
 			want:        filepath.Join("/my/project", ".claude", ".mcp.json"),
 		},
 		{
-			name:        "project scope empty root",
+			name:        "project scope empty root returns empty",
 			scope:       ScopeProject,
 			projectRoot: "",
 			want:        "",
