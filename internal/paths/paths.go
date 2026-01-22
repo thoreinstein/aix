@@ -44,7 +44,7 @@ var platformInstructionFiles = map[string]string{
 // platformMCPConfigs maps platform names to their MCP config file paths
 // relative to the global config directory.
 var platformMCPConfigs = map[string]string{
-	PlatformClaude:   "mcp_servers.json",
+	PlatformClaude:   ".mcp.json",
 	PlatformOpenCode: "opencode.json", // MCP config is in the main config file
 	PlatformCodex:    "mcp.json",      // Assumed, may need verification
 	PlatformGemini:   "settings.toml", // MCP config is in the main settings file
@@ -192,7 +192,7 @@ func CommandDir(platform string) string {
 // MCPConfigPath returns the MCP config file path for a platform.
 //
 // Platform paths:
-//   - claude: ~/.claude/mcp_servers.json
+//   - claude: ~/.claude/.mcp.json
 //   - opencode: ~/.config/opencode/opencode.json
 //   - codex: ~/.codex/mcp.json
 //   - gemini: ~/.gemini/settings.toml

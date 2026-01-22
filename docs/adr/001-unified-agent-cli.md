@@ -63,7 +63,7 @@ Config Locations:
 Files:
   Instructions:  CLAUDE.md (project root) or ~/.claude/CLAUDE.md
   Commands:      .claude/commands/<name>.md
-  MCP Config:    ~/.claude/mcp_servers.json (global)
+  MCP Config:    ~/.claude/.mcp.json (global)
                  .mcp.json (project)
   Settings:      ~/.claude/settings.json
 
@@ -277,7 +277,7 @@ servers:
 
 **Platform-Specific Output:**
 
-Claude (`~/.claude/mcp_servers.json`):
+Claude (`~/.claude/.mcp.json`):
 ```json
 {
   "mcpServers": {
@@ -1212,7 +1212,7 @@ Added MCP server: context7
 $ aix mcp enable context7 --platform=claude,opencode
 
 Enabled context7 on:
-  ✓ claude: Updated ~/.claude/mcp_servers.json
+  ✓ claude: Updated ~/.claude/.mcp.json
   ✓ opencode: Updated ~/.config/opencode/opencode.json
 ```
 
@@ -1238,7 +1238,7 @@ Run without --dry-run to apply changes.
 
 ## Appendix B: Configuration File Formats
 
-### Claude MCP Config (`~/.claude/mcp_servers.json`)
+### Claude MCP Config (`~/.claude/.mcp.json`)
 
 ```json
 {
