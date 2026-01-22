@@ -34,6 +34,19 @@ var initCmd = &cobra.Command{
 
 Creates ~/.config/aix/config.yaml with detected AI coding platforms.
 Platforms are detected by checking if their config directories exist.`,
+	Example: `  # Initialize with interactive prompts
+  aix init
+
+  # Initialize non-interactively, accepting defaults
+  aix init --yes
+
+  # Initialize for specific platforms
+  aix init --platforms claude,opencode
+
+  # Force overwrite existing configuration
+  aix init --force
+
+  See Also: aix config, aix doctor`,
 	RunE: runInit,
 }
 
