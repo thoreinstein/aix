@@ -88,6 +88,12 @@ func GetPlatformFlag() []string {
 	return platformFlag
 }
 
+// SetPlatformFlag sets the platform flag value.
+// This is used for programmatic override (e.g., interactive mode).
+func SetPlatformFlag(platforms []string) {
+	platformFlag = platforms
+}
+
 // Execute runs the root command.
 func Execute() error {
 	return rootCmd.Execute()
