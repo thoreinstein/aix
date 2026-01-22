@@ -12,8 +12,9 @@ import (
 // for OpenCode. OpenCode uses a different structure than Claude Code, with
 // command as a string array and type-based transport selection.
 type MCPServer struct {
-	// Name is the server's identifier, typically matching the map key.
-	Name string `json:"name"`
+	// Name is the server's identifier, derived from the map key.
+	// Not serialized to JSON since OpenCode uses the map key as the name.
+	Name string `json:"-"`
 
 	// Command is the executable and its arguments as a single array.
 	// Unlike Claude Code which separates command and args, OpenCode combines them.
@@ -32,8 +33,10 @@ type MCPServer struct {
 	// Headers contains HTTP headers for remote transport connections.
 	Headers map[string]string `json:"headers,omitempty"`
 
-	// Disabled indicates whether the server is temporarily disabled.
-	Disabled bool `json:"disabled,omitempty"`
+	// Enabled indicates whether the server is active.
+	// OpenCode uses positive logic (enabled=true means active).
+	// Pointer type to distinguish unset from explicitly false.
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 // MCPConfig represents the root structure of OpenCode's MCP configuration.
@@ -82,6 +85,13 @@ func (c *MCPConfig) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		delete(raw, "mcp")
+
+		// Set each server's Name from its map key
+		for name, server := range c.MCP {
+			if server != nil {
+				server.Name = name
+			}
+		}
 	}
 
 	// Store remaining fields as unknown

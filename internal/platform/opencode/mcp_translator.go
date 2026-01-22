@@ -24,6 +24,7 @@ const (
 //   - "command" is []string (combined cmd + args) instead of separate fields
 //   - "type" ("local"/"remote") instead of "transport" ("stdio"/"sse")
 //   - "environment" instead of "env"
+//   - "enabled" (positive logic) instead of "disabled" (negative logic)
 //   - No "platforms" field (LOSSY: this field is not preserved)
 type MCPTranslator struct{}
 
@@ -71,11 +72,19 @@ func (t *MCPTranslator) ToCanonical(platformData []byte) (*mcp.Config, error) {
 	// Convert to canonical format
 	config := mcp.NewConfig()
 	for name, openServer := range openConfig.MCP {
+		// Convert Enabled (positive) to Disabled (negative)
+		// If Enabled is nil or true, Disabled is false
+		// If Enabled is explicitly false, Disabled is true
+		disabled := false
+		if openServer.Enabled != nil && !*openServer.Enabled {
+			disabled = true
+		}
+
 		server := &mcp.Server{
 			Name:     name,
 			URL:      openServer.URL,
 			Headers:  openServer.Headers,
-			Disabled: openServer.Disabled,
+			Disabled: disabled,
 		}
 
 		// Split Command []string into Command string + Args []string
@@ -136,11 +145,19 @@ func (t *MCPTranslator) FromCanonical(cfg *mcp.Config) ([]byte, error) {
 	}
 
 	for name, server := range cfg.Servers {
+		// Convert Disabled (negative) to Enabled (positive)
+		// Set Enabled only if explicitly disabled, otherwise omit it
+		var enabled *bool
+		if server.Disabled {
+			f := false
+			enabled = &f
+		}
+
 		openServer := &MCPServer{
-			Name:     name,
-			URL:      server.URL,
-			Headers:  server.Headers,
-			Disabled: server.Disabled,
+			Name:    name,
+			URL:     server.URL,
+			Headers: server.Headers,
+			Enabled: enabled,
 		}
 
 		// Join Command + Args into Command []string

@@ -210,7 +210,7 @@ func TestMCPTranslator_ToCanonical(t *testing.T) {
 				"mcp": {
 					"disabled-server": {
 						"command": ["cmd"],
-						"disabled": true
+						"enabled": false
 					}
 				}
 			}`,
@@ -456,8 +456,9 @@ func TestMCPTranslator_FromCanonical(t *testing.T) {
 				servers := result["mcp"].(map[string]any)
 				server := servers["disabled"].(map[string]any)
 
-				if server["disabled"] != true {
-					t.Errorf("disabled = %v, want true", server["disabled"])
+				// Canonical Disabled=true → OpenCode enabled=false
+				if server["enabled"] != false {
+					t.Errorf("enabled = %v, want false", server["enabled"])
 				}
 			},
 		},
@@ -620,7 +621,7 @@ func TestMCPTranslator_RoundTrip_OpenCodeToCanonical(t *testing.T) {
 				"url": "https://api.example.com/mcp",
 				"type": "remote",
 				"headers": {"Authorization": "Bearer secret"},
-				"disabled": true
+				"enabled": false
 			}
 		}
 	}`
