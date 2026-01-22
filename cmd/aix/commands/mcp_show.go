@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/doctor"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 )
@@ -87,8 +88,10 @@ func runMCPShow(_ *cobra.Command, args []string) error {
 		detail := extractServerDetail(serverAny, p.DisplayName())
 		if detail != nil {
 			// Apply masking if not showing secrets
-			detail.Env = maskSecrets(detail.Env, mcpShowShowSecrets)
-			detail.Headers = maskSecrets(detail.Headers, mcpShowShowSecrets)
+			if !mcpShowShowSecrets {
+				detail.Env = doctor.MaskSecrets(detail.Env)
+				detail.Headers = doctor.MaskSecrets(detail.Headers)
+			}
 			details[p.Name()] = detail
 		}
 	}
