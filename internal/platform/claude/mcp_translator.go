@@ -8,10 +8,21 @@ import (
 	"github.com/thoreinstein/aix/internal/mcp"
 )
 
+// Claude Code transport type constants.
+const (
+	// ClaudeTypeStdio is the Claude Code type for local process servers.
+	ClaudeTypeStdio = "stdio"
+	// ClaudeTypeHTTP is the Claude Code type for remote HTTP servers.
+	// Note: canonical format uses "sse" for this transport type.
+	ClaudeTypeHTTP = "http"
+)
+
 // MCPTranslator converts between canonical and Claude Code MCP formats.
 //
-// Claude Code uses a "mcpServers" key with a structure that closely matches
-// the canonical format, making translation mostly 1:1 field mapping.
+// Claude Code uses a "mcpServers" key with these differences from canonical:
+//   - Field "type" instead of "transport"
+//   - Value "http" instead of "sse" for remote servers
+//   - Name is stored as map key only, not inside server object
 type MCPTranslator struct{}
 
 // NewMCPTranslator creates a new Claude Code MCP translator.
@@ -29,8 +40,10 @@ func NewMCPTranslator() *MCPTranslator {
 //
 //	{"name": {...}, ...}
 //
-// The translation is nearly 1:1 as Claude Code uses the same field names
-// and types as the canonical format.
+// Mapping:
+//   - Claude "type" → canonical "transport"
+//   - Claude "http" → canonical "sse"
+//   - Claude "stdio" → canonical "stdio"
 func (t *MCPTranslator) ToCanonical(platformData []byte) (*mcp.Config, error) {
 	// First try to parse as MCPConfig (with mcpServers wrapper)
 	var claudeConfig MCPConfig
@@ -55,12 +68,15 @@ func (t *MCPTranslator) ToCanonical(platformData []byte) (*mcp.Config, error) {
 	// Convert to canonical format
 	config := mcp.NewConfig()
 	for name, claudeServer := range claudeConfig.MCPServers {
+		// Map Claude Type to canonical Transport
+		transport := claudeTypeToCanonicalTransport(claudeServer.Type, claudeServer.URL, claudeServer.Command)
+
 		server := &mcp.Server{
 			Name:      name,
 			Command:   claudeServer.Command,
 			Args:      claudeServer.Args,
 			URL:       claudeServer.URL,
-			Transport: claudeServer.Transport,
+			Transport: transport,
 			Env:       claudeServer.Env,
 			Headers:   claudeServer.Headers,
 			Platforms: claudeServer.Platforms,
@@ -72,11 +88,36 @@ func (t *MCPTranslator) ToCanonical(platformData []byte) (*mcp.Config, error) {
 	return config, nil
 }
 
+// claudeTypeToCanonicalTransport converts Claude Code's "type" to canonical "transport".
+// Claude uses "http" for remote servers, canonical uses "sse".
+func claudeTypeToCanonicalTransport(claudeType, url, command string) string {
+	switch claudeType {
+	case ClaudeTypeStdio:
+		return mcp.TransportStdio
+	case ClaudeTypeHTTP:
+		return mcp.TransportSSE
+	default:
+		// Infer from URL/Command if type not specified
+		if url != "" {
+			return mcp.TransportSSE
+		}
+		if command != "" {
+			return mcp.TransportStdio
+		}
+		return ""
+	}
+}
+
 // FromCanonical converts canonical MCP configuration to Claude Code format.
 //
 // Output format:
 //
 //	{"mcpServers": {"name": {...}, ...}}
+//
+// Mapping:
+//   - canonical "transport" → Claude "type"
+//   - canonical "sse" → Claude "http"
+//   - canonical "stdio" → Claude "stdio"
 //
 // The output is formatted with 2-space indentation for readability.
 func (t *MCPTranslator) FromCanonical(cfg *mcp.Config) ([]byte, error) {
@@ -90,12 +131,15 @@ func (t *MCPTranslator) FromCanonical(cfg *mcp.Config) ([]byte, error) {
 	}
 
 	for name, server := range cfg.Servers {
+		// Map canonical Transport to Claude Type
+		claudeType := canonicalTransportToClaudeType(server.Transport, server.URL, server.Command)
+
 		claudeServer := &MCPServer{
 			Name:      name,
+			Type:      claudeType,
 			Command:   server.Command,
 			Args:      server.Args,
 			URL:       server.URL,
-			Transport: server.Transport,
 			Env:       server.Env,
 			Headers:   server.Headers,
 			Platforms: server.Platforms,
@@ -111,6 +155,26 @@ func (t *MCPTranslator) FromCanonical(cfg *mcp.Config) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+// canonicalTransportToClaudeType converts canonical "transport" to Claude Code's "type".
+// Canonical uses "sse" for remote servers, Claude uses "http".
+func canonicalTransportToClaudeType(transport, url, command string) string {
+	switch transport {
+	case mcp.TransportStdio:
+		return ClaudeTypeStdio
+	case mcp.TransportSSE:
+		return ClaudeTypeHTTP
+	default:
+		// Infer from URL/Command if transport not specified
+		if url != "" {
+			return ClaudeTypeHTTP
+		}
+		if command != "" {
+			return ClaudeTypeStdio
+		}
+		return ""
+	}
 }
 
 // Platform returns the platform identifier for this translator.

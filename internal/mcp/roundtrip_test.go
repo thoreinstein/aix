@@ -65,10 +65,12 @@ var (
 	}
 
 	// minimalServer has only required fields.
-	// Note: Transport is inferred as "stdio" during OpenCode round-trip because Command is set.
+	// Transport is inferred as "stdio" during round-trip because Command is set.
+	// This applies to both Claude and OpenCode translators.
 	minimalServer = &mcp.Server{
-		Name:    "minimal",
-		Command: "simple-server",
+		Name:      "minimal",
+		Command:   "simple-server",
+		Transport: mcp.TransportStdio, // Expected after round-trip inference
 	}
 
 	// minimalServerWithTransport is minimal but with explicit transport for OpenCode tests.
@@ -245,12 +247,12 @@ func TestRoundTrip_Claude_OpenCode_CrossPlatform(t *testing.T) {
 			"github": {
 				"command": "npx",
 				"args": ["-y", "@modelcontextprotocol/server-github"],
-				"transport": "stdio",
+				"type": "stdio",
 				"env": {"GITHUB_TOKEN": "token123"}
 			},
 			"remote-api": {
 				"url": "https://api.example.com/mcp",
-				"transport": "sse",
+				"type": "http",
 				"headers": {"Authorization": "Bearer secret"}
 			}
 		}

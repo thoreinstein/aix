@@ -20,7 +20,7 @@ The canonical format provides a unified representation of MCP server configurati
 | `command` | `command` | `command[0]` | `string` | Executable path. OpenCode combines with args into single array |
 | `args` | `args` | `command[1:]` | `[]string` | Command arguments. OpenCode combines with command |
 | `url` | `url` | `url` | `string` | Remote server endpoint for SSE transport |
-| `transport` | `transport` | `type` | `string` | See [Transport Mapping](#transport-mapping) below |
+| `transport` | `type` | `type` | `string` | See [Transport Mapping](#transport-mapping) below |
 | `env` | `env` | `environment` | `map[string]string` | Environment variables for the server process |
 | `headers` | `headers` | `headers` | `map[string]string` | HTTP headers for SSE transport |
 | `platforms` | `platforms` | N/A | `[]string` | **LOSSY**: OpenCode does not support platform restrictions |
@@ -33,7 +33,7 @@ Transport types are mapped between different naming conventions:
 | Canonical | Claude Code | OpenCode | Description |
 |-----------|-------------|----------|-------------|
 | `stdio` | `stdio` | `local` | Local process via stdin/stdout |
-| `sse` | `sse` | `remote` | Remote server via Server-Sent Events |
+| `sse` | `http` | `remote` | Remote server via Server-Sent Events |
 
 ## Lossy Conversions
 
@@ -88,7 +88,7 @@ A typical local MCP server using stdio transport with environment variables.
     "github": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],
-      "transport": "stdio",
+      "type": "stdio",
       "env": {
         "GITHUB_TOKEN": "ghp_xxxxxxxxxxxx"
       }
@@ -138,7 +138,7 @@ A remote MCP server using SSE transport with authentication headers.
   "mcpServers": {
     "api-gateway": {
       "url": "https://api.example.com/mcp/v1",
-      "transport": "sse",
+      "type": "http",
       "headers": {
         "Authorization": "Bearer eyJhbGc..."
       }
@@ -186,7 +186,7 @@ A server restricted to macOS. Note that OpenCode loses the platform restriction.
   "mcpServers": {
     "macos-tools": {
       "command": "/usr/local/bin/macos-mcp-server",
-      "transport": "stdio",
+      "type": "stdio",
       "platforms": ["darwin"]
     }
   }

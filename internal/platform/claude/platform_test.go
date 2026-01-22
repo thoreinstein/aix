@@ -123,7 +123,7 @@ func TestClaudePlatform_PathMethods(t *testing.T) {
 
 	t.Run("MCPConfigPath", func(t *testing.T) {
 		got := p.MCPConfigPath()
-		want := filepath.Join(tmpDir, ".claude", "mcp_servers.json")
+		want := filepath.Join(tmpDir, ".claude", ".mcp.json")
 		if got != want {
 			t.Errorf("MCPConfigPath() = %q, want %q", got, want)
 		}

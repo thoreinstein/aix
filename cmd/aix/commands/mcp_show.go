@@ -121,8 +121,13 @@ func extractServerDetail(server any, platformName string) *serverDetail {
 
 // extractClaudeMCPServer extracts details from a Claude MCP server.
 func extractClaudeMCPServer(s *claude.MCPServer, platformName string) *serverDetail {
-	transport := s.Transport
-	if transport == "" {
+	// Map Claude type to canonical transport: stdio -> stdio, http -> sse
+	transport := s.Type
+	switch transport {
+	case "http":
+		transport = "sse"
+	case "":
+		// Infer transport from URL presence
 		if s.URL != "" {
 			transport = "sse"
 		} else {
