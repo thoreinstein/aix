@@ -15,6 +15,7 @@ var (
 	doctorJSON    bool
 	doctorQuiet   bool
 	doctorVerbose bool
+	doctorFix     bool
 )
 
 func init() {
@@ -24,6 +25,8 @@ func init() {
 		"suppress output, exit code only")
 	doctorCmd.Flags().BoolVar(&doctorVerbose, "verbose", false,
 		"show detailed check-by-check output")
+	doctorCmd.Flags().BoolVar(&doctorFix, "fix", false,
+		"automatically fix issues where possible")
 	rootCmd.AddCommand(doctorCmd)
 }
 
@@ -40,6 +43,9 @@ Output modes (mutually exclusive):
   --verbose   Show all checks including passed ones
   --quiet     No output, exit code only
   --json      Machine-readable JSON output
+
+Auto-fix mode:
+  --fix       Automatically fix issues where possible (e.g., file permissions)
 
 Exit codes:
   0 - All checks passed (no errors or warnings)
@@ -69,12 +75,50 @@ func validateDoctorFlags(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
+// checkRegistry holds check instances for fixing.
+// We need to keep references to run fixes after initial diagnosis.
+type checkRegistry struct {
+	pathPermissions *doctor.PathPermissionCheck
+}
+
 func runDoctor(_ *cobra.Command, _ []string) error {
 	runner := doctor.NewRunner()
+	registry := &checkRegistry{}
 
-	// TODO: Add checks here in future tickets (aix-6ei.1.1, 1.2, 1.4)
+	// Create and register checks, keeping references for fixing
+	registry.pathPermissions = doctor.NewPathPermissionCheck()
+	runner.AddCheck(registry.pathPermissions)
+	runner.AddCheck(doctor.NewPlatformCheck())
+	runner.AddCheck(doctor.NewConfigSyntaxCheck())
+	runner.AddCheck(doctor.NewConfigSemanticCheck())
 
 	report := runner.Run()
+
+	// If --fix is set and there are fixable issues, attempt fixes
+	if doctorFix {
+		fixResults := runFixes(registry, report)
+		if len(fixResults) > 0 {
+			if err := outputFixResults(fixResults); err != nil {
+				return err
+			}
+
+			// Re-run checks to show final state
+			if !doctorQuiet {
+				fmt.Println("\nRe-running checks...")
+			}
+
+			// Create a fresh runner and registry for re-check
+			runner = doctor.NewRunner()
+			registry = &checkRegistry{}
+			registry.pathPermissions = doctor.NewPathPermissionCheck()
+			runner.AddCheck(registry.pathPermissions)
+			runner.AddCheck(doctor.NewPlatformCheck())
+			runner.AddCheck(doctor.NewConfigSyntaxCheck())
+			runner.AddCheck(doctor.NewConfigSemanticCheck())
+
+			report = runner.Run()
+		}
+	}
 
 	if err := outputDoctorReport(report); err != nil {
 		return err
@@ -86,6 +130,64 @@ func runDoctor(_ *cobra.Command, _ []string) error {
 	}
 	if report.HasWarnings() {
 		return errDoctorWarnings
+	}
+	return nil
+}
+
+// runFixes attempts to fix all fixable issues and returns the results.
+func runFixes(registry *checkRegistry, report *doctor.DoctorReport) []doctor.FixResult {
+	var allResults []doctor.FixResult
+
+	// Check PathPermissionCheck for fixable issues
+	if registry.pathPermissions != nil && registry.pathPermissions.CanFix() {
+		results := registry.pathPermissions.Fix()
+		allResults = append(allResults, results...)
+	}
+
+	// Add other fixable checks here as they are implemented
+	// For now, only PathPermissionCheck supports fixing
+
+	return allResults
+}
+
+// outputFixResults displays the results of fix operations.
+func outputFixResults(results []doctor.FixResult) error {
+	if doctorQuiet {
+		return nil
+	}
+
+	if doctorJSON {
+		return outputFixResultsJSON(results)
+	}
+
+	return outputFixResultsText(results)
+}
+
+// outputFixResultsJSON outputs fix results as JSON.
+func outputFixResultsJSON(results []doctor.FixResult) error {
+	output := struct {
+		Fixes []doctor.FixResult `json:"fixes"`
+	}{
+		Fixes: results,
+	}
+
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(output); err != nil {
+		return fmt.Errorf("encoding fix results JSON: %w", err)
+	}
+	return nil
+}
+
+// outputFixResultsText outputs fix results as human-readable text.
+func outputFixResultsText(results []doctor.FixResult) error {
+	fmt.Println("Fix results:")
+	for _, r := range results {
+		if r.Fixed {
+			fmt.Printf("  ✓ Fixed: %s (%s)\n", r.Path, r.Description)
+		} else {
+			fmt.Printf("  ✗ Failed: %s - %s\n", r.Path, r.Description)
+		}
 	}
 	return nil
 }
@@ -127,6 +229,10 @@ func outputDoctorText(report *doctor.DoctorReport) error {
 		fmt.Printf("%s [%s] %s: %s\n", icon, result.Category, result.Name, result.Message)
 
 		if result.FixHint != "" && (result.Status == doctor.SeverityError || result.Status == doctor.SeverityWarning) {
+			if doctorFix && result.Fixable {
+				// Don't show hint for fixable issues when --fix was used (we already fixed them)
+				continue
+			}
 			fmt.Printf("  hint: %s\n", result.FixHint)
 		}
 	}
