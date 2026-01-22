@@ -14,18 +14,18 @@ func TestExitError_Error(t *testing.T) {
 	}{
 		{
 			name: "with underlying error",
-			err:  NewExitError(ErrNotFound, ExitGeneral),
+			err:  NewExitError(ErrNotFound, ExitUser),
 			want: "resource not found",
 		},
 		{
 			name: "with wrapped error",
-			err:  NewExitError(fmt.Errorf("loading config: %w", ErrInvalidConfig), ExitUsage),
+			err:  NewExitError(fmt.Errorf("loading config: %w", ErrInvalidConfig), ExitUser),
 			want: "loading config: invalid configuration",
 		},
 		{
 			name: "nil underlying error",
-			err:  NewExitError(nil, ExitMisuse),
-			want: "exit code 64",
+			err:  NewExitError(nil, ExitUser),
+			want: "exit code 1",
 		},
 		{
 			name: "success code with error",
@@ -51,25 +51,25 @@ func TestExitError_Unwrap(t *testing.T) {
 	}{
 		{
 			name:       "unwrap to sentinel error",
-			err:        NewExitError(ErrNotFound, ExitGeneral),
+			err:        NewExitError(ErrNotFound, ExitUser),
 			wantTarget: ErrNotFound,
 			wantIs:     true,
 		},
 		{
 			name:       "unwrap through wrapped error",
-			err:        NewExitError(fmt.Errorf("skill loading: %w", ErrMissingName), ExitUsage),
+			err:        NewExitError(fmt.Errorf("skill loading: %w", ErrMissingName), ExitUser),
 			wantTarget: ErrMissingName,
 			wantIs:     true,
 		},
 		{
 			name:       "no match for different sentinel",
-			err:        NewExitError(ErrNotFound, ExitGeneral),
+			err:        NewExitError(ErrNotFound, ExitUser),
 			wantTarget: ErrInvalidConfig,
 			wantIs:     false,
 		},
 		{
 			name:       "nil underlying error",
-			err:        NewExitError(nil, ExitGeneral),
+			err:        NewExitError(nil, ExitUser),
 			wantTarget: ErrNotFound,
 			wantIs:     false,
 		},
@@ -92,20 +92,20 @@ func TestExitError_As(t *testing.T) {
 	}{
 		{
 			name:     "direct ExitError",
-			err:      NewExitError(ErrNotFound, ExitGeneral),
-			wantCode: ExitGeneral,
+			err:      NewExitError(ErrNotFound, ExitUser),
+			wantCode: ExitUser,
 			wantAs:   true,
 		},
 		{
 			name:     "wrapped ExitError",
-			err:      fmt.Errorf("command failed: %w", NewExitError(ErrInvalidConfig, ExitUsage)),
-			wantCode: ExitUsage,
+			err:      fmt.Errorf("command failed: %w", NewExitError(ErrInvalidConfig, ExitUser)),
+			wantCode: ExitUser,
 			wantAs:   true,
 		},
 		{
-			name:     "ExitMisuse code",
-			err:      NewExitError(ErrInvalidToolSyntax, ExitMisuse),
-			wantCode: ExitMisuse,
+			name:     "ExitSystem code",
+			err:      NewExitError(ErrInvalidToolSyntax, ExitSystem),
+			wantCode: ExitSystem,
 			wantAs:   true,
 		},
 		{
@@ -140,9 +140,9 @@ func TestNewExitError(t *testing.T) {
 		{
 			name:     "with sentinel error",
 			err:      ErrNotFound,
-			code:     ExitGeneral,
+			code:     ExitUser,
 			wantErr:  ErrNotFound,
-			wantCode: ExitGeneral,
+			wantCode: ExitUser,
 		},
 		{
 			name:     "with nil error",
@@ -154,9 +154,9 @@ func TestNewExitError(t *testing.T) {
 		{
 			name:     "with custom error",
 			err:      errors.New("custom error"),
-			code:     ExitMisuse,
+			code:     ExitSystem,
 			wantErr:  errors.New("custom error"),
-			wantCode: ExitMisuse,
+			wantCode: ExitSystem,
 		},
 	}
 	for _, tt := range tests {
@@ -228,9 +228,8 @@ func TestExitCodeConstants(t *testing.T) {
 		want int
 	}{
 		{"ExitSuccess", ExitSuccess, 0},
-		{"ExitGeneral", ExitGeneral, 1},
-		{"ExitUsage", ExitUsage, 2},
-		{"ExitMisuse", ExitMisuse, 64},
+		{"ExitUser", ExitUser, 1},
+		{"ExitSystem", ExitSystem, 2},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -246,7 +245,7 @@ func TestErrorWrappingChain(t *testing.T) {
 	baseErr := ErrInvalidConfig
 	wrappedOnce := fmt.Errorf("parsing skill file: %w", baseErr)
 	wrappedTwice := fmt.Errorf("loading skill 'test': %w", wrappedOnce)
-	exitErr := NewExitError(wrappedTwice, ExitUsage)
+	exitErr := NewExitError(wrappedTwice, ExitUser)
 
 	// errors.Is should find the sentinel through the chain
 	if !errors.Is(exitErr, ErrInvalidConfig) {
@@ -258,8 +257,8 @@ func TestErrorWrappingChain(t *testing.T) {
 	if !errors.As(exitErr, &target) {
 		t.Error("errors.As() should find ExitError")
 	}
-	if target.Code != ExitUsage {
-		t.Errorf("ExitError.Code = %d, want %d", target.Code, ExitUsage)
+	if target.Code != ExitUser {
+		t.Errorf("ExitError.Code = %d, want %d", target.Code, ExitUser)
 	}
 
 	// Error message should contain the full chain
@@ -267,4 +266,53 @@ func TestErrorWrappingChain(t *testing.T) {
 	if got := exitErr.Error(); got != want {
 		t.Errorf("ExitError.Error() = %q, want %q", got, want)
 	}
+}
+
+func TestNewConstructors(t *testing.T) {
+	t.Run("NewExitErrorWithSuggestion", func(t *testing.T) {
+		err := errors.New("oops")
+		e := NewExitErrorWithSuggestion(err, 123, "try this")
+		if e.Err != err {
+			t.Errorf("Err = %v, want %v", e.Err, err)
+		}
+		if e.Code != 123 {
+			t.Errorf("Code = %d, want 123", e.Code)
+		}
+		if e.Suggestion != "try this" {
+			t.Errorf("Suggestion = %q, want 'try this'", e.Suggestion)
+		}
+	})
+
+	t.Run("NewUserError", func(t *testing.T) {
+		err := errors.New("user error")
+		e := NewUserError(err, "check input")
+		if e.Code != ExitUser {
+			t.Errorf("Code = %d, want %d", e.Code, ExitUser)
+		}
+		if e.Suggestion != "check input" {
+			t.Errorf("Suggestion = %q, want 'check input'", e.Suggestion)
+		}
+	})
+
+	t.Run("NewSystemError", func(t *testing.T) {
+		err := errors.New("system error")
+		e := NewSystemError(err, "check logs")
+		if e.Code != ExitSystem {
+			t.Errorf("Code = %d, want %d", e.Code, ExitSystem)
+		}
+		if e.Suggestion != "check logs" {
+			t.Errorf("Suggestion = %q, want 'check logs'", e.Suggestion)
+		}
+	})
+
+	t.Run("NewConfigError", func(t *testing.T) {
+		err := errors.New("config error")
+		e := NewConfigError(err)
+		if e.Code != ExitUser {
+			t.Errorf("Code = %d, want %d", e.Code, ExitUser)
+		}
+		if e.Suggestion != "Run: aix doctor" {
+			t.Errorf("Suggestion = %q, want 'Run: aix doctor'", e.Suggestion)
+		}
+	})
 }

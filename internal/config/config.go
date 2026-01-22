@@ -99,6 +99,14 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("unmarshaling config: %w", err)
 	}
 
+	// Apply defaults if not set by config
+	if cfg.Version == 0 {
+		cfg.Version = 1
+	}
+	if len(cfg.DefaultPlatforms) == 0 {
+		cfg.DefaultPlatforms = paths.Platforms()
+	}
+
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("validating config: %w", err)
 	}

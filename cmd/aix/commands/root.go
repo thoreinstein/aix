@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/config"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/paths"
 )
 
@@ -17,6 +18,9 @@ const version = "0.1.0"
 
 // platformFlag holds the value of the --platform flag.
 var platformFlag []string
+
+// configLoadErr holds any error that occurred during config loading.
+var configLoadErr error
 
 func init() {
 	cobra.OnInitialize(initConfig)
@@ -28,12 +32,16 @@ func init() {
 	// Add version flag
 	rootCmd.Version = version
 	rootCmd.SetVersionTemplate("aix version {{.Version}}\n")
+
+	// Silence errors and usage so we can control error output
+	rootCmd.SilenceErrors = true
+	rootCmd.SilenceUsage = true
 }
 
 func initConfig() {
 	config.Init()
-	// Ignore load errors - defaults will be used if no config file
-	_, _ = config.Load("")
+	// Capture load errors for later reporting
+	_, configLoadErr = config.Load("")
 }
 
 var rootCmd = &cobra.Command{
@@ -64,6 +72,9 @@ target all detected/installed platforms.`,
 
   See Also: aix init, aix doctor, aix config`,
 	PersistentPreRunE: validatePlatformFlag,
+	Run: func(cmd *cobra.Command, args []string) {
+		_ = cmd.Help()
+	},
 }
 
 // validatePlatformFlag checks that all specified platforms are valid.
@@ -71,6 +82,11 @@ func validatePlatformFlag(cmd *cobra.Command, _ []string) error {
 	// Skip validation for help and version commands
 	if cmd.Name() == "help" || cmd.Name() == "version" {
 		return nil
+	}
+
+	// Check for config load errors first
+	if configLoadErr != nil {
+		return errors.NewConfigError(configLoadErr)
 	}
 
 	// If no platforms specified, that's fine - we'll use detected platforms
@@ -87,9 +103,10 @@ func validatePlatformFlag(cmd *cobra.Command, _ []string) error {
 	}
 
 	if len(invalid) > 0 {
-		return fmt.Errorf("invalid platform(s): %s (valid: %s)",
+		err := fmt.Errorf("invalid platform(s): %s (valid: %s)",
 			strings.Join(invalid, ", "),
 			strings.Join(paths.Platforms(), ", "))
+		return errors.NewUserError(err, "Run 'aix --help' to see valid platforms")
 	}
 
 	return nil
