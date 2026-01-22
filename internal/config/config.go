@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/spf13/viper"
@@ -44,15 +45,33 @@ func Init() {
 	viper.SetDefault("default_platforms", paths.Platforms())
 }
 
-// Load reads the configuration file. Returns nil if no config file found
-// (defaults will be used). Returns error only for parse failures.
-func Load() error {
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; use defaults - this is fine
-			return nil
-		}
-		return err
+// Load reads the configuration file.
+// If path is provided, it reads from that specific file.
+// If path is empty, it searches in the default locations.
+// Returns the loaded configuration or default values if no file is found (when path is empty).
+func Load(path string) (*Config, error) {
+	if path != "" {
+		viper.SetConfigFile(path)
 	}
-	return nil
+
+	if err := viper.ReadInConfig(); err != nil {
+		// If config file not found...
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// If user specified a path, this is an error
+			if path != "" {
+				return nil, fmt.Errorf("config file not found at %s: %w", path, err)
+			}
+			// Otherwise (implicit load), it's fine to use defaults
+		} else {
+			// Real read error (parsing, permissions, etc)
+			return nil, fmt.Errorf("reading config file: %w", err)
+		}
+	}
+
+	var cfg Config
+	if err := viper.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("unmarshaling config: %w", err)
+	}
+
+	return &cfg, nil
 }

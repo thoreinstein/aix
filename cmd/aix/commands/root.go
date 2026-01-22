@@ -33,7 +33,7 @@ func init() {
 func initConfig() {
 	config.Init()
 	// Ignore load errors - defaults will be used if no config file
-	_ = config.Load()
+	_, _ = config.Load("")
 }
 
 var rootCmd = &cobra.Command{
