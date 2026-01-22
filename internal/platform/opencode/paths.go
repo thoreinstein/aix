@@ -66,7 +66,7 @@ func (p *OpenCodePaths) CommandDir() string {
 	if base == "" {
 		return ""
 	}
-	return filepath.Join(base, "commands")
+	return filepath.Join(base, "command")
 }
 
 // AgentDir returns the agents directory.
@@ -76,7 +76,7 @@ func (p *OpenCodePaths) AgentDir() string {
 	if base == "" {
 		return ""
 	}
-	return filepath.Join(base, "agents")
+	return filepath.Join(base, "agent")
 }
 
 // MCPConfigPath returns the path to the MCP servers configuration file.
