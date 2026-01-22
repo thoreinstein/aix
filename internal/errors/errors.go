@@ -5,20 +5,16 @@ import (
 	"fmt"
 )
 
-// Exit codes for CLI applications following Unix conventions.
+// Exit codes for CLI applications.
 const (
 	// ExitSuccess indicates the command completed successfully.
 	ExitSuccess = 0
 
-	// ExitGeneral indicates a general error occurred.
-	ExitGeneral = 1
+	// ExitUser indicates a user-related error (invalid input, configuration, etc.).
+	ExitUser = 1
 
-	// ExitUsage indicates a usage or argument error.
-	ExitUsage = 2
-
-	// ExitMisuse indicates the command was used incorrectly.
-	// This follows the BSD sysexits.h EX_USAGE convention.
-	ExitMisuse = 64
+	// ExitSystem indicates a system-related error (I/O, network, permissions, etc.).
+	ExitSystem = 2
 )
 
 // Sentinel errors for common failure conditions.
@@ -39,7 +35,7 @@ var (
 	ErrUnknownTool = errors.New("unknown tool")
 )
 
-// ExitError wraps an error with an exit code for CLI applications.
+// ExitError wraps an error with an exit code and optional suggestion for CLI applications.
 // It implements the error interface and supports unwrapping via errors.Unwrap.
 type ExitError struct {
 	// Err is the underlying error that caused the exit.
@@ -47,6 +43,9 @@ type ExitError struct {
 
 	// Code is the exit code to return to the operating system.
 	Code int
+
+	// Suggestion is an optional actionable suggestion for the user.
+	Suggestion string
 }
 
 // NewExitError creates an ExitError with the given underlying error and exit code.
@@ -55,6 +54,42 @@ func NewExitError(err error, code int) *ExitError {
 	return &ExitError{
 		Err:  err,
 		Code: code,
+	}
+}
+
+// NewExitErrorWithSuggestion creates an ExitError with a suggestion.
+func NewExitErrorWithSuggestion(err error, code int, suggestion string) *ExitError {
+	return &ExitError{
+		Err:        err,
+		Code:       code,
+		Suggestion: suggestion,
+	}
+}
+
+// NewUserError creates an ExitError with ExitUser code and a suggestion.
+func NewUserError(err error, suggestion string) *ExitError {
+	return &ExitError{
+		Err:        err,
+		Code:       ExitUser,
+		Suggestion: suggestion,
+	}
+}
+
+// NewSystemError creates an ExitError with ExitSystem code and a suggestion.
+func NewSystemError(err error, suggestion string) *ExitError {
+	return &ExitError{
+		Err:        err,
+		Code:       ExitSystem,
+		Suggestion: suggestion,
+	}
+}
+
+// NewConfigError creates an ExitError with ExitUser code and a standard suggestion.
+func NewConfigError(err error) *ExitError {
+	return &ExitError{
+		Err:        err,
+		Code:       ExitUser,
+		Suggestion: "Run: aix doctor",
 	}
 }
 
