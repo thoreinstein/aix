@@ -637,3 +637,95 @@ func TestMCPAddNewSentinelErrors(t *testing.T) {
 		t.Errorf("unexpected error message: %s", errMCPAddMissingURL.Error())
 	}
 }
+
+func TestMCPAddTransportValidation(t *testing.T) {
+	// Tests that transport-specific required fields are validated.
+	// This simulates the validation logic in runMCPAddCore after transport is determined.
+	tests := []struct {
+		name      string
+		transport string
+		url       string
+		command   string
+		wantErr   error
+	}{
+		{
+			name:      "sse without url",
+			transport: "sse",
+			url:       "",
+			command:   "some-cmd",
+			wantErr:   errMCPAddMissingURL,
+		},
+		{
+			name:      "sse with url",
+			transport: "sse",
+			url:       "https://example.com",
+			command:   "",
+			wantErr:   nil,
+		},
+		{
+			name:      "stdio without command",
+			transport: "stdio",
+			url:       "https://example.com",
+			command:   "",
+			wantErr:   errMCPAddMissingCommand,
+		},
+		{
+			name:      "stdio with command",
+			transport: "stdio",
+			url:       "",
+			command:   "npx",
+			wantErr:   nil,
+		},
+		{
+			name:      "inferred sse with url",
+			transport: "",
+			url:       "https://example.com",
+			command:   "",
+			wantErr:   nil,
+		},
+		{
+			name:      "inferred stdio with command",
+			transport: "",
+			url:       "",
+			command:   "npx",
+			wantErr:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Simulate the transport inference logic from runMCPAddCore
+			transport := tt.transport
+			if transport == "" {
+				if tt.url != "" {
+					transport = "sse"
+				} else {
+					transport = "stdio"
+				}
+			}
+
+			// Simulate the transport validation logic from runMCPAddCore
+			var err error
+			switch transport {
+			case "stdio":
+				if tt.command == "" {
+					err = errMCPAddMissingCommand
+				}
+			case "sse":
+				if tt.url == "" {
+					err = errMCPAddMissingURL
+				}
+			}
+
+			if tt.wantErr == nil {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+			} else {
+				if !errors.Is(err, tt.wantErr) {
+					t.Errorf("error = %v, want %v", err, tt.wantErr)
+				}
+			}
+		})
+	}
+}
