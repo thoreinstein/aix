@@ -33,10 +33,8 @@ By default, lists MCP servers for all detected platforms. Use the --platform fla
 to limit to specific platforms.
 
 Environment variables containing secrets (TOKEN, KEY, SECRET, PASSWORD, AUTH,
-CREDENTIAL, API_KEY) are masked by default. Use --show-secrets to reveal them.
-
-Examples:
-  # List all MCP servers
+CREDENTIAL, API_KEY) are masked by default. Use --show-secrets to reveal them.`,
+	Example: `  # List all MCP servers
   aix mcp list
 
   # List MCP servers for a specific platform
@@ -46,7 +44,11 @@ Examples:
   aix mcp list --json
 
   # Show secret values in environment variables
-  aix mcp list --show-secrets`,
+  aix mcp list --show-secrets
+
+  See Also:
+    aix mcp show     - Show details of a specific server
+    aix mcp add      - Add a new server`,
 	RunE: runMCPList,
 }
 

@@ -28,17 +28,19 @@ var mcpRemoveCmd = &cobra.Command{
 By default, removes the server from all detected platforms where it is configured.
 Use the --platform flag to target specific platforms.
 
-A confirmation prompt is shown before removal unless --force is specified.
-
-Examples:
-  # Remove MCP server from all platforms (with confirmation)
+A confirmation prompt is shown before removal unless --force is specified.`,
+	Example: `  # Remove MCP server from all platforms (with confirmation)
   aix mcp remove github
 
   # Remove MCP server without confirmation
   aix mcp remove github --force
 
   # Remove MCP server from a specific platform only
-  aix mcp remove github --platform claude`,
+  aix mcp remove github --platform claude
+
+  See Also:
+    aix mcp add      - Add a new server
+    aix mcp list     - List configured servers`,
 	Args: cobra.ExactArgs(1),
 	RunE: runMCPRemove,
 }

@@ -20,14 +20,16 @@ var mcpEnableCmd = &cobra.Command{
 	Short: "Enable a disabled MCP server",
 	Long: `Enable a previously disabled MCP server.
 
-The server will become active and available to the AI coding assistant.
-
-Examples:
-  # Enable on all platforms
+The server will become active and available to the AI coding assistant.`,
+	Example: `  # Enable on all platforms
   aix mcp enable github
 
   # Enable on specific platform
-  aix mcp enable github --platform=claude`,
+  aix mcp enable github --platform=claude
+
+  See Also:
+    aix mcp disable  - Disable a server
+    aix mcp list     - List configured servers`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(_ *cobra.Command, args []string) error {
 		return runMCPSetEnabledWithIO(args[0], true, os.Stdout)
@@ -40,14 +42,16 @@ var mcpDisableCmd = &cobra.Command{
 	Long: `Disable an MCP server without removing its configuration.
 
 The server will remain in the config but won't be loaded by the AI coding assistant.
-Use 'aix mcp enable' to re-enable it later.
-
-Examples:
-  # Disable on all platforms
+Use 'aix mcp enable' to re-enable it later.`,
+	Example: `  # Disable on all platforms
   aix mcp disable github
 
   # Disable on specific platform
-  aix mcp disable github --platform=opencode`,
+  aix mcp disable github --platform=opencode
+
+  See Also:
+    aix mcp enable   - Enable a server
+    aix mcp list     - List configured servers`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(_ *cobra.Command, args []string) error {
 		return runMCPSetEnabledWithIO(args[0], false, os.Stdout)
