@@ -420,7 +420,7 @@ func TestMCPConfigPath(t *testing.T) {
 		{
 			name:     "claude MCP config",
 			platform: PlatformClaude,
-			want:     filepath.Join(home, ".claude", "mcp_servers.json"),
+			want:     filepath.Join(home, ".claude", ".mcp.json"),
 		},
 		{
 			name:     "opencode MCP config",
