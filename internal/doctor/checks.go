@@ -624,3 +624,434 @@ func offsetToLineCol(data []byte, offset int) (line, col int) {
 	col = offset - lineStart + 1
 	return line, col
 }
+
+// ConfigSemanticCheck validates configuration file semantics beyond syntax.
+// It verifies that MCP server configurations are internally consistent and
+// that referenced executables exist.
+type ConfigSemanticCheck struct{}
+
+var _ Check = (*ConfigSemanticCheck)(nil)
+
+// NewConfigSemanticCheck creates a new ConfigSemanticCheck instance.
+func NewConfigSemanticCheck() *ConfigSemanticCheck {
+	return &ConfigSemanticCheck{}
+}
+
+// Name returns the unique identifier for this check.
+func (c *ConfigSemanticCheck) Name() string {
+	return "config-semantics"
+}
+
+// Category returns the grouping for this check.
+func (c *ConfigSemanticCheck) Category() string {
+	return "config"
+}
+
+// semanticIssue represents a single semantic validation problem.
+type semanticIssue struct {
+	Path       string   `json:"path"`
+	Platform   string   `json:"platform"`
+	Server     string   `json:"server,omitempty"`
+	Type       string   `json:"type"` // "missing_command", "transport_mismatch", "parse_error"
+	Problem    string   `json:"problem"`
+	Severity   Severity `json:"-"`
+	Suggestion string   `json:"suggestion,omitempty"`
+}
+
+// Run executes the semantic validation check across all installed platforms.
+func (c *ConfigSemanticCheck) Run() *CheckResult {
+	result := &CheckResult{
+		Name:     c.Name(),
+		Category: c.Category(),
+		Status:   SeverityPass,
+		Details:  make(map[string]any),
+	}
+
+	installed := platform.DetectInstalled()
+	if len(installed) == 0 {
+		result.Status = SeverityInfo
+		result.Message = "no platforms installed"
+		return result
+	}
+
+	var issues []semanticIssue
+	var checkedServers int
+
+	for _, p := range installed {
+		if p.MCPConfig == "" {
+			continue
+		}
+
+		serverIssues, serverCount := c.validateMCPConfig(p.MCPConfig, p.Name)
+		issues = append(issues, serverIssues...)
+		checkedServers += serverCount
+	}
+
+	return c.buildSemanticResult(issues, checkedServers)
+}
+
+// validateMCPConfig parses and validates an MCP config file.
+// Returns semantic issues found and the number of servers checked.
+func (c *ConfigSemanticCheck) validateMCPConfig(configPath, platformName string) ([]semanticIssue, int) {
+	var issues []semanticIssue
+
+	// Check if file exists first
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		// File doesn't exist is not a semantic error - already caught by syntax check
+		return nil, 0
+	}
+
+	// Read the raw config to handle platform-specific formats
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		// Read errors are not semantic issues
+		return nil, 0
+	}
+
+	// Empty file is valid (no servers)
+	if len(data) == 0 {
+		return nil, 0
+	}
+
+	// Parse servers based on platform format
+	servers, parseErr := c.parseServers(data, configPath, platformName)
+	if parseErr != nil {
+		// Parse failures are handled by syntax check, just note for context
+		issues = append(issues, semanticIssue{
+			Path:     configPath,
+			Platform: platformName,
+			Type:     "parse_error",
+			Problem:  "could not parse MCP servers (see config-syntax check)",
+			Severity: SeverityInfo,
+		})
+		return issues, 0
+	}
+
+	// Validate each server
+	for name, server := range servers {
+		serverIssues := c.validateServer(configPath, platformName, name, server)
+		issues = append(issues, serverIssues...)
+	}
+
+	return issues, len(servers)
+}
+
+// mcpServerInfo holds normalized server data for validation.
+type mcpServerInfo struct {
+	Command   string
+	Args      []string
+	URL       string
+	Transport string
+}
+
+// parseServers extracts MCP server configurations from platform-specific formats.
+func (c *ConfigSemanticCheck) parseServers(data []byte, configPath, platformName string) (map[string]*mcpServerInfo, error) {
+	servers := make(map[string]*mcpServerInfo)
+
+	switch platformName {
+	case paths.PlatformClaude:
+		return c.parseClaudeServers(data)
+	case paths.PlatformOpenCode:
+		return c.parseOpenCodeServers(data)
+	case paths.PlatformCodex:
+		return c.parseCodexServers(data)
+	case paths.PlatformGemini:
+		// Gemini uses TOML, skip for now as MCP support may differ
+		return servers, nil
+	default:
+		return servers, nil
+	}
+}
+
+// parseClaudeServers parses Claude Code's MCP config format.
+// Format: { "mcpServers": { "name": { "command": "...", "args": [...] } } }
+func (c *ConfigSemanticCheck) parseClaudeServers(data []byte) (map[string]*mcpServerInfo, error) {
+	var config struct {
+		MCPServers map[string]struct {
+			Command string   `json:"command"`
+			Args    []string `json:"args"`
+			URL     string   `json:"url"`
+			Type    string   `json:"type"`
+		} `json:"mcpServers"`
+	}
+
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+
+	servers := make(map[string]*mcpServerInfo)
+	for name, s := range config.MCPServers {
+		servers[name] = &mcpServerInfo{
+			Command:   s.Command,
+			Args:      s.Args,
+			URL:       s.URL,
+			Transport: s.Type,
+		}
+	}
+	return servers, nil
+}
+
+// parseOpenCodeServers parses OpenCode's MCP config format.
+// Format: { "mcp": { "name": { "command": ["cmd", "arg1"], "url": "..." } } }
+func (c *ConfigSemanticCheck) parseOpenCodeServers(data []byte) (map[string]*mcpServerInfo, error) {
+	var config struct {
+		MCP map[string]struct {
+			Command     []string          `json:"command"`
+			URL         string            `json:"url"`
+			Type        string            `json:"type"`
+			Environment map[string]string `json:"environment"`
+		} `json:"mcp"`
+	}
+
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+
+	servers := make(map[string]*mcpServerInfo)
+	for name, s := range config.MCP {
+		info := &mcpServerInfo{
+			URL:       s.URL,
+			Transport: s.Type,
+		}
+		if len(s.Command) > 0 {
+			info.Command = s.Command[0]
+			if len(s.Command) > 1 {
+				info.Args = s.Command[1:]
+			}
+		}
+		servers[name] = info
+	}
+	return servers, nil
+}
+
+// parseCodexServers parses Codex's MCP config format.
+// Format: { "servers": { "name": { "command": "...", "args": [...] } } }
+func (c *ConfigSemanticCheck) parseCodexServers(data []byte) (map[string]*mcpServerInfo, error) {
+	var config struct {
+		Servers map[string]struct {
+			Command string   `json:"command"`
+			Args    []string `json:"args"`
+			URL     string   `json:"url"`
+			Type    string   `json:"type"`
+		} `json:"servers"`
+	}
+
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+
+	servers := make(map[string]*mcpServerInfo)
+	for name, s := range config.Servers {
+		servers[name] = &mcpServerInfo{
+			Command:   s.Command,
+			Args:      s.Args,
+			URL:       s.URL,
+			Transport: s.Type,
+		}
+	}
+	return servers, nil
+}
+
+// validateServer checks a single MCP server configuration for semantic issues.
+func (c *ConfigSemanticCheck) validateServer(configPath, platformName, serverName string, server *mcpServerInfo) []semanticIssue {
+	var issues []semanticIssue
+
+	// Check for ambiguous configuration: both command and URL set
+	hasCommand := server.Command != ""
+	hasURL := server.URL != ""
+
+	if hasCommand && hasURL {
+		issues = append(issues, semanticIssue{
+			Path:       configPath,
+			Platform:   platformName,
+			Server:     serverName,
+			Type:       "transport_mismatch",
+			Problem:    "server has both command and URL configured",
+			Severity:   SeverityWarning,
+			Suggestion: "use either 'command' for local servers or 'url' for remote servers, not both",
+		})
+	}
+
+	// Determine effective transport type
+	isLocal := c.isLocalServer(server)
+	isRemote := c.isRemoteServer(server)
+
+	// Check transport consistency
+	if !isLocal && !isRemote {
+		issues = append(issues, semanticIssue{
+			Path:       configPath,
+			Platform:   platformName,
+			Server:     serverName,
+			Type:       "transport_mismatch",
+			Problem:    "server has neither command nor URL configured",
+			Severity:   SeverityError,
+			Suggestion: "add either 'command' for local servers or 'url' for remote servers",
+		})
+		return issues
+	}
+
+	// For local servers, check if command exists
+	if isLocal {
+		cmdIssues := c.validateCommand(configPath, platformName, serverName, server.Command)
+		issues = append(issues, cmdIssues...)
+	}
+
+	return issues
+}
+
+// isLocalServer returns true if the server is configured for local (stdio) transport.
+func (c *ConfigSemanticCheck) isLocalServer(server *mcpServerInfo) bool {
+	if server.Transport == "stdio" || server.Transport == "local" {
+		return true
+	}
+	if server.Transport == "" && server.Command != "" {
+		return true
+	}
+	return false
+}
+
+// isRemoteServer returns true if the server is configured for remote (sse) transport.
+func (c *ConfigSemanticCheck) isRemoteServer(server *mcpServerInfo) bool {
+	if server.Transport == "sse" || server.Transport == "http" || server.Transport == "remote" {
+		return true
+	}
+	if server.Transport == "" && server.URL != "" && server.Command == "" {
+		return true
+	}
+	return false
+}
+
+// validateCommand checks if an MCP server's command executable exists.
+func (c *ConfigSemanticCheck) validateCommand(configPath, platformName, serverName, command string) []semanticIssue {
+	if command == "" {
+		return nil
+	}
+
+	// Check if command exists as an absolute or relative path
+	if filepath.IsAbs(command) {
+		if _, err := os.Stat(command); os.IsNotExist(err) {
+			return []semanticIssue{{
+				Path:       configPath,
+				Platform:   platformName,
+				Server:     serverName,
+				Type:       "missing_command",
+				Problem:    "command executable not found: " + command,
+				Severity:   SeverityWarning,
+				Suggestion: "verify the executable path is correct",
+			}}
+		}
+		return nil
+	}
+
+	// For non-absolute paths, check PATH
+	if _, err := c.lookPath(command); err != nil {
+		return []semanticIssue{{
+			Path:       configPath,
+			Platform:   platformName,
+			Server:     serverName,
+			Type:       "missing_command",
+			Problem:    "command not found in PATH: " + command,
+			Severity:   SeverityWarning,
+			Suggestion: "ensure '" + command + "' is installed and in your PATH",
+		}}
+	}
+
+	return nil
+}
+
+// lookPath searches for an executable in PATH.
+// This is extracted as a method to allow testing.
+func (c *ConfigSemanticCheck) lookPath(command string) (string, error) {
+	pathEnv := os.Getenv("PATH")
+	if pathEnv == "" {
+		return "", os.ErrNotExist
+	}
+
+	for _, dir := range strings.Split(pathEnv, string(os.PathListSeparator)) {
+		if dir == "" {
+			continue
+		}
+		path := filepath.Join(dir, command)
+		if info, err := os.Stat(path); err == nil {
+			// Check if it's executable (not a directory)
+			if !info.IsDir() {
+				return path, nil
+			}
+		}
+	}
+	return "", os.ErrNotExist
+}
+
+// buildSemanticResult constructs the final CheckResult from semantic issues.
+func (c *ConfigSemanticCheck) buildSemanticResult(issues []semanticIssue, checkedServers int) *CheckResult {
+	result := &CheckResult{
+		Name:     c.Name(),
+		Category: c.Category(),
+		Status:   SeverityPass,
+		Details:  make(map[string]any),
+	}
+
+	result.Details["checked_servers"] = checkedServers
+
+	if len(issues) == 0 {
+		if checkedServers == 0 {
+			result.Status = SeverityInfo
+			result.Message = "no MCP servers configured"
+		} else {
+			result.Message = fmt.Sprintf("all %d MCP server(s) have valid configurations", checkedServers)
+		}
+		return result
+	}
+
+	// Find highest severity and categorize issues
+	var hasError, hasWarning bool
+	var errorCount, warningCount, infoCount int
+	issueDetails := make([]map[string]any, 0, len(issues))
+
+	for _, issue := range issues {
+		switch issue.Severity {
+		case SeverityError:
+			hasError = true
+			errorCount++
+		case SeverityWarning:
+			hasWarning = true
+			warningCount++
+		case SeverityInfo:
+			infoCount++
+		}
+
+		detail := map[string]any{
+			"path":     issue.Path,
+			"platform": issue.Platform,
+			"type":     issue.Type,
+			"problem":  issue.Problem,
+			"severity": issue.Severity.String(),
+		}
+		if issue.Server != "" {
+			detail["server"] = issue.Server
+		}
+		if issue.Suggestion != "" {
+			detail["suggestion"] = issue.Suggestion
+		}
+		issueDetails = append(issueDetails, detail)
+	}
+
+	result.Details["issues"] = issueDetails
+	result.Details["error_count"] = errorCount
+	result.Details["warning_count"] = warningCount
+	result.Details["info_count"] = infoCount
+
+	// Set overall status
+	if hasError {
+		result.Status = SeverityError
+		result.Message = fmt.Sprintf("found %d semantic error(s) in MCP configurations", errorCount)
+	} else if hasWarning {
+		result.Status = SeverityWarning
+		result.Message = fmt.Sprintf("found %d potential issue(s) in MCP configurations", warningCount)
+	} else {
+		result.Status = SeverityInfo
+		result.Message = fmt.Sprintf("found %d informational note(s)", infoCount)
+	}
+
+	return result
+}
