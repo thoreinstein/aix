@@ -13,23 +13,8 @@ var commandCmd = &cobra.Command{
 
 Slash commands extend AI assistant functionality with custom workflows,
 templates, and automated operations. Use subcommands to install, list,
-show, and remove commands across supported platforms.
-
-Available subcommands:
-  install   Install a slash command from local file or git repository
-  list      List installed slash commands
-  show      Show details of a specific slash command
-  remove    Remove a slash command from platforms
-  init      Scaffold a new slash command
-  validate  Validate a slash command file
-
-Examples:
-  # List all commands
-  aix command list
-
-  # Install a command from local file
-  aix command install ./my-command.md
-
-  # Show command details
-  aix command show review`,
+show, and remove commands across supported platforms.`,
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		return cmd.Help()
+	},
 }
