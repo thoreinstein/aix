@@ -25,17 +25,19 @@ var commandListCmd = &cobra.Command{
 	Long: `List all installed slash commands grouped by platform.
 
 By default, lists commands for all detected platforms. Use the --platform flag
-to limit to specific platforms.
-
-Examples:
-  # List all commands
+to limit to specific platforms.`,
+	Example: `  # List all commands
   aix command list
 
   # List commands for a specific platform
   aix command list --platform claude
 
   # Output as JSON
-  aix command list --json`,
+  aix command list --json
+
+  See Also:
+    aix command show     - Show command details
+    aix command install  - Install a new command`,
 	RunE: runCommandList,
 }
 

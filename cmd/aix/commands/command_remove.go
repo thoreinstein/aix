@@ -28,17 +28,19 @@ var commandRemoveCmd = &cobra.Command{
 By default, removes the command from all detected platforms where it is installed.
 Use the --platform flag to target specific platforms.
 
-A confirmation prompt is shown before removal unless --force is specified.
-
-Examples:
-  # Remove command from all platforms (with confirmation)
+A confirmation prompt is shown before removal unless --force is specified.`,
+	Example: `  # Remove command from all platforms (with confirmation)
   aix command remove review
 
   # Remove command without confirmation
   aix command remove review --force
 
   # Remove command from a specific platform only
-  aix command remove review --platform claude`,
+  aix command remove review --platform claude
+
+  See Also:
+    aix command install  - Install a command
+    aix command list     - List installed commands`,
 	Args: cobra.ExactArgs(1),
 	RunE: runCommandRemove,
 }
