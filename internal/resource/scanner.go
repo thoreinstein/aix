@@ -7,7 +7,9 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/mcp"
@@ -78,20 +80,66 @@ func (s *Scanner) ScanRepo(repoPath, repoName, repoURL string) ([]Resource, erro
 	return resources, nil
 }
 
-// ScanAll scans multiple repositories for resources.
+// ScanAll scans multiple repositories for resources concurrently.
+// It uses a worker pool limited to GOMAXPROCS to parallelize scanning.
 func (s *Scanner) ScanAll(repos []config.RepoConfig) ([]Resource, error) {
-	var resources []Resource
+	if len(repos) == 0 {
+		return nil, nil
+	}
 
+	// Limit concurrency to GOMAXPROCS or number of repos, whichever is smaller
+	workers := runtime.GOMAXPROCS(0)
+	if len(repos) < workers {
+		workers = len(repos)
+	}
+
+	// Channel to send work to workers
+	work := make(chan config.RepoConfig, len(repos))
+
+	// Collect results from workers
+	type scanResult struct {
+		resources []Resource
+		repoName  string
+	}
+	results := make(chan scanResult, len(repos))
+
+	// Start workers
+	var wg sync.WaitGroup
+	for range workers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for repo := range work {
+				repoResources, err := s.ScanRepo(repo.Path, repo.Name, repo.URL)
+				if err != nil {
+					s.logger.Warn("failed to scan repository",
+						"repo", repo.Name,
+						"path", repo.Path,
+						"error", err)
+					results <- scanResult{repoName: repo.Name}
+					continue
+				}
+				results <- scanResult{resources: repoResources, repoName: repo.Name}
+			}
+		}()
+	}
+
+	// Send work to workers
 	for _, repo := range repos {
-		repoResources, err := s.ScanRepo(repo.Path, repo.Name, repo.URL)
-		if err != nil {
-			s.logger.Warn("failed to scan repository",
-				"repo", repo.Name,
-				"path", repo.Path,
-				"error", err)
-			continue
-		}
-		resources = append(resources, repoResources...)
+		work <- repo
+	}
+	close(work)
+
+	// Close results channel when all workers are done
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// Collect all results
+	var resources []Resource
+	for result := range results {
+		resources = append(resources, result.resources...)
 	}
 
 	return resources, nil
@@ -113,6 +161,12 @@ func (s *Scanner) scanSkills(repoPath, repoName, repoURL string) ([]Resource, er
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
+		if os.IsPermission(err) {
+			s.logger.Warn("permission denied reading skills directory",
+				"path", skillsDir,
+				"error", err)
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -127,6 +181,11 @@ func (s *Scanner) scanSkills(repoPath, repoName, repoURL string) ([]Resource, er
 		file, err := os.Open(skillPath)
 		if err != nil {
 			if os.IsNotExist(err) {
+				continue
+			}
+			if os.IsPermission(err) {
+				s.logger.Warn("permission denied reading skill file",
+					"path", skillPath)
 				continue
 			}
 			s.logger.Warn("failed to open skill file",
@@ -178,6 +237,12 @@ func (s *Scanner) scanCommands(repoPath, repoName, repoURL string) ([]Resource, 
 	entries, err := os.ReadDir(commandsDir)
 	if err != nil {
 		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		if os.IsPermission(err) {
+			s.logger.Warn("permission denied reading commands directory",
+				"path", commandsDir,
+				"error", err)
 			return nil, nil
 		}
 		return nil, err
@@ -294,6 +359,12 @@ func (s *Scanner) scanAgents(repoPath, repoName, repoURL string) ([]Resource, er
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
+		if os.IsPermission(err) {
+			s.logger.Warn("permission denied reading agents directory",
+				"path", agentsDir,
+				"error", err)
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -399,6 +470,12 @@ func (s *Scanner) scanMCP(repoPath, repoName, repoURL string) ([]Resource, error
 	entries, err := os.ReadDir(mcpDir)
 	if err != nil {
 		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		if os.IsPermission(err) {
+			s.logger.Warn("permission denied reading mcp directory",
+				"path", mcpDir,
+				"error", err)
 			return nil, nil
 		}
 		return nil, err

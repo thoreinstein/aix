@@ -2,8 +2,10 @@ package resource
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/thoreinstein/aix/internal/config"
@@ -988,5 +990,270 @@ func TestNewScannerWithLogger(t *testing.T) {
 	scanner := NewScannerWithLogger(nil)
 	if scanner == nil {
 		t.Fatal("NewScannerWithLogger(nil) returned nil")
+	}
+}
+
+// createBenchmarkRepo creates a repository with the specified number of resources
+// for benchmarking purposes.
+func createBenchmarkRepo(b *testing.B, numSkills, numCommands, numAgents, numMCP int) string {
+	b.Helper()
+	dir := b.TempDir()
+
+	// Create skills
+	if numSkills > 0 {
+		skillsDir := filepath.Join(dir, "skills")
+		if err := os.MkdirAll(skillsDir, 0o755); err != nil {
+			b.Fatal(err)
+		}
+		for i := range numSkills {
+			skillDir := filepath.Join(skillsDir, fmt.Sprintf("skill-%d", i))
+			if err := os.MkdirAll(skillDir, 0o755); err != nil {
+				b.Fatal(err)
+			}
+			content := fmt.Sprintf("---\nname: skill-%d\ndescription: Benchmark skill %d\n---\n\nSkill content here.", i, i)
+			if err := os.WriteFile(filepath.Join(skillDir, "skill.md"), []byte(content), 0o644); err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+
+	// Create commands
+	if numCommands > 0 {
+		cmdsDir := filepath.Join(dir, "commands")
+		if err := os.MkdirAll(cmdsDir, 0o755); err != nil {
+			b.Fatal(err)
+		}
+		for i := range numCommands {
+			cmdDir := filepath.Join(cmdsDir, fmt.Sprintf("cmd-%d", i))
+			if err := os.MkdirAll(cmdDir, 0o755); err != nil {
+				b.Fatal(err)
+			}
+			content := fmt.Sprintf("---\nname: cmd-%d\ndescription: Benchmark command %d\n---\n\nCommand content.", i, i)
+			if err := os.WriteFile(filepath.Join(cmdDir, "command.md"), []byte(content), 0o644); err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+
+	// Create agents
+	if numAgents > 0 {
+		agentsDir := filepath.Join(dir, "agents")
+		if err := os.MkdirAll(agentsDir, 0o755); err != nil {
+			b.Fatal(err)
+		}
+		for i := range numAgents {
+			agentDir := filepath.Join(agentsDir, fmt.Sprintf("agent-%d", i))
+			if err := os.MkdirAll(agentDir, 0o755); err != nil {
+				b.Fatal(err)
+			}
+			content := fmt.Sprintf("---\nname: agent-%d\ndescription: Benchmark agent %d\n---\n\nAgent instructions.", i, i)
+			if err := os.WriteFile(filepath.Join(agentDir, "AGENT.md"), []byte(content), 0o644); err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+
+	// Create MCP servers
+	if numMCP > 0 {
+		mcpDir := filepath.Join(dir, "mcp")
+		if err := os.MkdirAll(mcpDir, 0o755); err != nil {
+			b.Fatal(err)
+		}
+		for i := range numMCP {
+			content := fmt.Sprintf(`{"name": "mcp-%d", "command": "npx", "args": ["-y", "@mcp/test-%d"]}`, i, i)
+			if err := os.WriteFile(filepath.Join(mcpDir, fmt.Sprintf("mcp-%d.json", i)), []byte(content), 0o644); err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+
+	return dir
+}
+
+func BenchmarkScanner_ScanRepo_Small(b *testing.B) {
+	// Small repo: 5 of each resource type (20 total)
+	repoPath := createBenchmarkRepo(b, 5, 5, 5, 5)
+	scanner := NewScanner()
+
+	b.ResetTimer()
+	for range b.N {
+		resources, err := scanner.ScanRepo(repoPath, "bench-repo", "https://github.com/bench/repo")
+		if err != nil {
+			b.Fatal(err)
+		}
+		if len(resources) != 20 {
+			b.Fatalf("expected 20 resources, got %d", len(resources))
+		}
+	}
+}
+
+func BenchmarkScanner_ScanRepo_Medium(b *testing.B) {
+	// Medium repo: 25 of each resource type (100 total)
+	repoPath := createBenchmarkRepo(b, 25, 25, 25, 25)
+	scanner := NewScanner()
+
+	b.ResetTimer()
+	for range b.N {
+		resources, err := scanner.ScanRepo(repoPath, "bench-repo", "https://github.com/bench/repo")
+		if err != nil {
+			b.Fatal(err)
+		}
+		if len(resources) != 100 {
+			b.Fatalf("expected 100 resources, got %d", len(resources))
+		}
+	}
+}
+
+func BenchmarkScanner_ScanRepo_Large(b *testing.B) {
+	// Large repo: 50 of each resource type (200 total)
+	repoPath := createBenchmarkRepo(b, 50, 50, 50, 50)
+	scanner := NewScanner()
+
+	b.ResetTimer()
+	for range b.N {
+		resources, err := scanner.ScanRepo(repoPath, "bench-repo", "https://github.com/bench/repo")
+		if err != nil {
+			b.Fatal(err)
+		}
+		if len(resources) != 200 {
+			b.Fatalf("expected 200 resources, got %d", len(resources))
+		}
+	}
+}
+
+func BenchmarkScanner_ScanAll_Sequential(b *testing.B) {
+	// Create 10 repos with 10 resources each (100 total)
+	repos := make([]config.RepoConfig, 0, 10)
+	for i := range 10 {
+		path := createBenchmarkRepo(b, 3, 3, 2, 2)
+		repos = append(repos, config.RepoConfig{
+			Path: path,
+			Name: fmt.Sprintf("repo-%d", i),
+			URL:  fmt.Sprintf("https://github.com/bench/repo-%d", i),
+		})
+	}
+	scanner := NewScanner()
+
+	b.ResetTimer()
+	for range b.N {
+		resources, err := scanner.ScanAll(repos)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if len(resources) != 100 {
+			b.Fatalf("expected 100 resources, got %d", len(resources))
+		}
+	}
+}
+
+func BenchmarkScanner_ScanAll_ManyRepos(b *testing.B) {
+	// Create 50 repos with 4 resources each (200 total)
+	// This tests the parallel scanning benefit
+	repos := make([]config.RepoConfig, 0, 50)
+	for i := range 50 {
+		path := createBenchmarkRepo(b, 1, 1, 1, 1)
+		repos = append(repos, config.RepoConfig{
+			Path: path,
+			Name: fmt.Sprintf("repo-%d", i),
+			URL:  fmt.Sprintf("https://github.com/bench/repo-%d", i),
+		})
+	}
+	scanner := NewScanner()
+
+	b.ResetTimer()
+	for range b.N {
+		resources, err := scanner.ScanAll(repos)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if len(resources) != 200 {
+			b.Fatalf("expected 200 resources, got %d", len(resources))
+		}
+	}
+}
+
+func TestScanner_ScanAll_ConcurrencyRace(t *testing.T) {
+	// This test is specifically for detecting race conditions
+	// Run with -race flag to verify concurrent access is safe
+
+	// Create multiple repos
+	repos := make([]config.RepoConfig, 0, 20)
+	for i := range 20 {
+		skills := map[string]string{
+			fmt.Sprintf("skill-%d", i): validSkillFrontmatter(fmt.Sprintf("skill-%d", i), "Test skill"),
+		}
+		commands := map[string]string{
+			fmt.Sprintf("cmd-%d", i): validCommandFrontmatter(fmt.Sprintf("cmd-%d", i), "Test command"),
+		}
+		path := createTestRepo(t, skills, commands, nil, nil)
+		repos = append(repos, config.RepoConfig{
+			Path: path,
+			Name: fmt.Sprintf("repo-%d", i),
+			URL:  fmt.Sprintf("https://github.com/test/repo-%d", i),
+		})
+	}
+
+	scanner := NewScanner()
+
+	// Run multiple times to increase chance of detecting races
+	for range 5 {
+		resources, err := scanner.ScanAll(repos)
+		if err != nil {
+			t.Fatalf("ScanAll() error = %v", err)
+		}
+
+		// Should have 40 resources (20 repos × 2 resources each)
+		if len(resources) != 40 {
+			t.Errorf("expected 40 resources, got %d", len(resources))
+		}
+	}
+}
+
+func TestScanner_ScanRepo_PermissionDenied(t *testing.T) {
+	// Skip on Windows where permission handling is different
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping permission test on Windows")
+	}
+
+	dir := t.TempDir()
+
+	// Create a skills directory with restricted permissions
+	skillsDir := filepath.Join(dir, "skills")
+	if err := os.MkdirAll(skillsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a valid skill first
+	validSkillDir := filepath.Join(skillsDir, "valid")
+	if err := os.MkdirAll(validSkillDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(validSkillDir, "skill.md"),
+		[]byte(validSkillFrontmatter("valid", "Valid skill")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a restricted skill directory
+	restrictedSkillDir := filepath.Join(skillsDir, "restricted")
+	if err := os.MkdirAll(restrictedSkillDir, 0o000); err != nil {
+		t.Fatal(err)
+	}
+
+	// Ensure cleanup restores permissions
+	t.Cleanup(func() {
+		_ = os.Chmod(restrictedSkillDir, 0o755)
+	})
+
+	scanner := NewScanner()
+	resources, err := scanner.ScanRepo(dir, "perm-repo", "")
+
+	// Should not return an error
+	if err != nil {
+		t.Fatalf("ScanRepo() should not error on permission denied: %v", err)
+	}
+
+	// Should still find the valid skill
+	if len(resources) != 1 {
+		t.Errorf("expected 1 resource (valid skill), got %d", len(resources))
 	}
 }
