@@ -1,0 +1,43 @@
+package repo
+
+import (
+	"fmt"
+
+	"github.com/cockroachdb/errors"
+	"github.com/spf13/cobra"
+
+	"github.com/thoreinstein/aix/internal/config"
+	"github.com/thoreinstein/aix/internal/repo"
+)
+
+func init() {
+	Cmd.AddCommand(removeCmd)
+}
+
+var removeCmd = &cobra.Command{
+	Use:   "remove <name>",
+	Short: "Remove a repository source",
+	Long: `Remove a repository from the configured sources.
+
+This removes both the configuration entry and the cached clone.`,
+	Example: `  aix repo remove community-skills`,
+	Args:    cobra.ExactArgs(1),
+	RunE:    runRemove,
+}
+
+func runRemove(_ *cobra.Command, args []string) error {
+	name := args[0]
+
+	configPath := config.DefaultConfigPath()
+	manager := repo.NewManager(configPath)
+
+	if err := manager.Remove(name); err != nil {
+		if errors.Is(err, repo.ErrNotFound) {
+			return fmt.Errorf("repository %q not found", name)
+		}
+		return fmt.Errorf("removing repository: %w", err)
+	}
+
+	fmt.Printf("✓ Repository %q removed\n", name)
+	return nil
+}

@@ -92,6 +92,15 @@ func Init() {
 	viper.SetDefault("default_platforms", paths.Platforms())
 }
 
+// DefaultConfigPath returns the default path for the config file.
+// This respects AIX_CONFIG_DIR if set, otherwise uses XDG config home.
+func DefaultConfigPath() string {
+	if envDir := os.Getenv("AIX_CONFIG_DIR"); envDir != "" {
+		return filepath.Join(envDir, "config.yaml")
+	}
+	return filepath.Join(paths.ConfigHome(), AppName, "config.yaml")
+}
+
 // Load reads the configuration file.
 // If path is provided, it reads from that specific file.
 // If path is empty, it searches in the default locations.
