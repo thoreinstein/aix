@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -17,11 +18,18 @@ import (
 
 // Sentinel errors for agent install operations.
 var (
-	errAgentInstallFailed = errors.New("failed to install agent to any platform")
-	errAgentNameRequired  = errors.New("agent name is required")
+	errAgentInstallFailed  = errors.New("failed to install agent to any platform")
+	errAgentNameRequired   = errors.New("agent name is required")
+	errAgentCollision      = errors.New("agent collision detected")
+	errAgentInstallPartial = errors.New("partial installation failure")
 )
 
+// agentInstallForce enables overwriting existing agents without confirmation.
+var agentInstallForce bool
+
 func init() {
+	agentInstallCmd.Flags().BoolVarP(&agentInstallForce, "force", "f", false,
+		"overwrite existing agent without confirmation")
 	agentCmd.AddCommand(agentInstallCmd)
 }
 
@@ -43,7 +51,10 @@ Example AGENT.md:
   description: Reviews code for quality and best practices
   ---
 
-  You are a code review expert. When reviewing code...`,
+  You are a code review expert. When reviewing code...
+
+Flags:
+  --force, -f     Overwrite existing agent without confirmation`,
 	Example: `  # Install from a file
   aix agent install ./my-agent/AGENT.md
 
@@ -51,7 +62,10 @@ Example AGENT.md:
   aix agent install ./my-agent/
 
   # Install to specific platform
-  aix agent install ./my-agent/ --platform claude`,
+  aix agent install ./my-agent/ --platform claude
+
+  # Force overwrite existing agent
+  aix agent install ./my-agent/ --force`,
 	Args: cobra.ExactArgs(1),
 	RunE: runAgentInstall,
 }
@@ -75,27 +89,116 @@ func runAgentInstall(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("reading agent file: %w", err)
 	}
 
+	// Track results for each platform
+	type installResult struct {
+		platform   string
+		installed  bool
+		collision  bool
+		targetPath string
+		errMsg     string
+	}
+	results := make([]installResult, 0, len(platforms))
+
 	// Install to each platform
-	installed := make([]string, 0, len(platforms))
 	for _, p := range platforms {
-		agent, err := parseAgentForPlatform(p.Name(), content)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: could not parse agent for %s: %v\n", p.Name(), err)
+		result := installResult{platform: p.Name()}
+
+		agent, parseErr := parseAgentForPlatform(p.Name(), content)
+		if parseErr != nil {
+			result.errMsg = fmt.Sprintf("could not parse agent: %v", parseErr)
+			results = append(results, result)
 			continue
 		}
 
-		if err := p.InstallAgent(agent); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: could not install agent to %s: %v\n", p.Name(), err)
+		// Get agent name for collision check
+		agentName := getAgentName(agent)
+		if agentName == "" {
+			result.errMsg = "agent name is required"
+			results = append(results, result)
 			continue
 		}
-		installed = append(installed, p.Name())
+
+		// Determine target path for error messages
+		result.targetPath = filepath.Join(p.AgentDir(), agentName+".md")
+
+		// Check for collision unless --force is set
+		existingAgent, getErr := p.GetAgent(agentName)
+		if getErr == nil && existingAgent != nil {
+			// Agent exists - check for idempotency
+			if agentsAreIdentical(agent, existingAgent) {
+				// Content is identical - succeed silently (idempotent)
+				result.installed = true
+				results = append(results, result)
+				continue
+			}
+
+			if !agentInstallForce {
+				// Collision detected and no --force
+				result.collision = true
+				results = append(results, result)
+				continue
+			}
+
+			// --force flag set, will overwrite
+			fmt.Fprintf(os.Stderr, "Warning: overwriting existing agent %q on %s\n", agentName, p.DisplayName())
+		}
+
+		// Perform installation
+		if installErr := p.InstallAgent(agent); installErr != nil {
+			result.errMsg = fmt.Sprintf("could not install agent: %v", installErr)
+			results = append(results, result)
+			continue
+		}
+
+		result.installed = true
+		results = append(results, result)
 	}
 
+	// Collect results
+	var installed, collisions []string
+	var otherErrors []string
+
+	for _, r := range results {
+		switch {
+		case r.installed:
+			installed = append(installed, r.platform)
+		case r.collision:
+			collisions = append(collisions, fmt.Sprintf("%s: %s", r.platform, r.targetPath))
+		case r.errMsg != "":
+			otherErrors = append(otherErrors, fmt.Sprintf("%s: %s", r.platform, r.errMsg))
+		}
+	}
+
+	// Report successful installations
+	if len(installed) > 0 {
+		fmt.Printf("Agent installed to: %v\n", installed)
+	}
+
+	// Report other errors as warnings (they don't block collision errors)
+	for _, e := range otherErrors {
+		fmt.Fprintf(os.Stderr, "Warning: %s\n", e)
+	}
+
+	// Handle collision errors
+	if len(collisions) > 0 {
+		fmt.Fprintf(os.Stderr, "\nAgent collision detected:\n")
+		for _, c := range collisions {
+			fmt.Fprintf(os.Stderr, "  - %s\n", c)
+		}
+		fmt.Fprintf(os.Stderr, "\nUse --force to overwrite existing agents.\n")
+
+		// If some platforms succeeded but others had collisions, return partial error
+		if len(installed) > 0 {
+			return errAgentInstallPartial
+		}
+		return errAgentCollision
+	}
+
+	// If nothing was installed
 	if len(installed) == 0 {
 		return errAgentInstallFailed
 	}
 
-	fmt.Printf("Agent installed to: %v\n", installed)
 	return nil
 }
 
@@ -165,4 +268,51 @@ func parseAgentForPlatform(platform string, content []byte) (any, error) {
 	default:
 		return nil, fmt.Errorf("unsupported platform: %s", platform)
 	}
+}
+
+// getAgentName extracts the name from a platform-specific agent struct.
+func getAgentName(agent any) string {
+	switch a := agent.(type) {
+	case *claude.Agent:
+		return a.Name
+	case *opencode.Agent:
+		return a.Name
+	default:
+		return ""
+	}
+}
+
+// agentsAreIdentical compares two agents for content equality.
+// Returns true if the agents have identical content (enabling idempotent installs).
+func agentsAreIdentical(newAgent, existingAgent any) bool {
+	switch new := newAgent.(type) {
+	case *claude.Agent:
+		existing, ok := existingAgent.(*claude.Agent)
+		if !ok {
+			return false
+		}
+		return new.Name == existing.Name &&
+			new.Description == existing.Description &&
+			normalizeInstructions(new.Instructions) == normalizeInstructions(existing.Instructions)
+
+	case *opencode.Agent:
+		existing, ok := existingAgent.(*opencode.Agent)
+		if !ok {
+			return false
+		}
+		return new.Name == existing.Name &&
+			new.Description == existing.Description &&
+			new.Mode == existing.Mode &&
+			new.Temperature == existing.Temperature &&
+			normalizeInstructions(new.Instructions) == normalizeInstructions(existing.Instructions)
+
+	default:
+		return false
+	}
+}
+
+// normalizeInstructions normalizes whitespace in instructions for comparison.
+// This handles minor formatting differences that shouldn't be considered collisions.
+func normalizeInstructions(s string) string {
+	return strings.TrimSpace(s)
 }
