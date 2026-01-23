@@ -227,6 +227,19 @@ func (p *ClaudePlatform) ValidateVariables(content string) error {
 	return ValidateVariables(content)
 }
 
+// --- Backup Methods ---
+
+// BackupPaths returns all config files/directories that should be backed up.
+// For Claude Code, this includes:
+//   - ~/.claude.json (MCP config)
+//   - ~/.claude/ directory (skills, commands, agents)
+func (p *ClaudePlatform) BackupPaths() []string {
+	return []string{
+		p.paths.MCPConfigPath(),
+		p.paths.BaseDir(),
+	}
+}
+
 // --- Status Methods ---
 
 // IsAvailable checks if Claude Code is available on this system.

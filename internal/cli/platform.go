@@ -125,6 +125,11 @@ type Platform interface {
 	UninstallAgent(name string) error
 	ListAgents() ([]AgentInfo, error)
 	GetAgent(name string) (any, error)
+
+	// Backup configuration
+	// BackupPaths returns all config files/directories that should be backed up.
+	// This includes MCP config files and platform-specific directories (skills, commands, agents).
+	BackupPaths() []string
 }
 
 // claudeAdapter wraps ClaudePlatform to implement the Platform interface.
@@ -317,6 +322,10 @@ func (a *claudeAdapter) GetAgent(name string) (any, error) {
 	return a.p.GetAgent(name)
 }
 
+func (a *claudeAdapter) BackupPaths() []string {
+	return a.p.BackupPaths()
+}
+
 // opencodeAdapter wraps OpenCodePlatform to implement the Platform interface.
 type opencodeAdapter struct {
 	p *opencode.OpenCodePlatform
@@ -503,6 +512,10 @@ func (a *opencodeAdapter) ListAgents() ([]AgentInfo, error) {
 
 func (a *opencodeAdapter) GetAgent(name string) (any, error) {
 	return a.p.GetAgent(name)
+}
+
+func (a *opencodeAdapter) BackupPaths() []string {
+	return a.p.BackupPaths()
 }
 
 // NewPlatform creates a Platform adapter for the given platform name.

@@ -73,6 +73,9 @@ func (m *statusMockPlatform) GetAgent(_ string) (any, error) {
 	return nil, errors.New("not implemented")
 }
 
+// Backup methods for cli.Platform interface
+func (m *statusMockPlatform) BackupPaths() []string { return []string{"/mock/backup"} }
+
 func TestValidateStatusFlags(t *testing.T) {
 	tests := []struct {
 		name        string

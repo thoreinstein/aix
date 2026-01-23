@@ -227,6 +227,19 @@ func (p *OpenCodePlatform) ValidateVariables(content string) error {
 	return ValidateVariables(content)
 }
 
+// --- Backup Methods ---
+
+// BackupPaths returns all config files/directories that should be backed up.
+// For OpenCode, this includes:
+//   - ~/.config/opencode/opencode.json (MCP config)
+//   - ~/.config/opencode/ directory (skills, commands, agents)
+func (p *OpenCodePlatform) BackupPaths() []string {
+	return []string{
+		p.paths.MCPConfigPath(),
+		p.paths.BaseDir(),
+	}
+}
+
 // --- Status Methods ---
 
 // IsAvailable checks if OpenCode is available on this system.
