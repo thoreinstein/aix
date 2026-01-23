@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -263,5 +265,123 @@ func TestAgentNameRegex(t *testing.T) {
 				t.Errorf("agentNameRegex.MatchString(%q) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestAgentInitFlags(t *testing.T) {
+	flags := []struct {
+		name      string
+		shorthand string
+	}{
+		{"name", ""},
+		{"description", "d"},
+		{"model", ""},
+		{"force", "f"},
+	}
+	for _, f := range flags {
+		flag := agentInitCmd.Flags().Lookup(f.name)
+		if flag == nil {
+			t.Errorf("flag --%s not found", f.name)
+			continue
+		}
+		if f.shorthand != "" && flag.Shorthand != f.shorthand {
+			t.Errorf("flag --%s shorthand = %q, want %q", f.name, flag.Shorthand, f.shorthand)
+		}
+	}
+}
+
+// resetAgentInitFlags resets all package-level flag variables to their default values.
+func resetAgentInitFlags() {
+	agentInitName = ""
+	agentInitDescription = ""
+	agentInitModel = ""
+	agentInitForce = false
+}
+
+func TestAgentInitCmd_NonInteractive(t *testing.T) {
+	tmpDir := t.TempDir()
+	targetDir := filepath.Join(tmpDir, "test-agent")
+
+	// Set flags for non-interactive execution
+	agentInitName = "test-agent"
+	agentInitDescription = "A test agent"
+	agentInitModel = ""
+	agentInitForce = false
+	t.Cleanup(resetAgentInitFlags)
+
+	// Run command with path argument
+	err := runAgentInit(agentInitCmd, []string{targetDir})
+	if err != nil {
+		t.Fatalf("runAgentInit failed: %v", err)
+	}
+
+	// Verify file exists
+	agentFile := filepath.Join(targetDir, "AGENT.md")
+	content, err := os.ReadFile(agentFile)
+	if err != nil {
+		t.Fatalf("failed to read agent file: %v", err)
+	}
+
+	// Verify content contains expected values
+	if !strings.Contains(string(content), "name: test-agent") {
+		t.Error("agent file should contain name")
+	}
+	if !strings.Contains(string(content), "description: A test agent") {
+		t.Error("agent file should contain description")
+	}
+}
+
+func TestAgentInitCmd_ForceOverwrite(t *testing.T) {
+	tmpDir := t.TempDir()
+	targetDir := filepath.Join(tmpDir, "force-test")
+	agentFile := filepath.Join(targetDir, "AGENT.md")
+
+	// Create the directory and initial file
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		t.Fatalf("failed to create test directory: %v", err)
+	}
+	initialContent := "# Initial content\n"
+	if err := os.WriteFile(agentFile, []byte(initialContent), 0o644); err != nil {
+		t.Fatalf("failed to write initial file: %v", err)
+	}
+
+	// First, verify that without --force we get an error
+	agentInitName = "force-test"
+	agentInitDescription = "Force test agent"
+	agentInitModel = ""
+	agentInitForce = false
+	t.Cleanup(resetAgentInitFlags)
+
+	err := runAgentInit(agentInitCmd, []string{targetDir})
+	if err == nil {
+		t.Error("expected error when file exists and --force is not set")
+	}
+
+	// Verify original content is preserved
+	content, err := os.ReadFile(agentFile)
+	if err != nil {
+		t.Fatalf("failed to read agent file: %v", err)
+	}
+	if string(content) != initialContent {
+		t.Error("file should not be modified without --force")
+	}
+
+	// Now test with --force
+	agentInitForce = true
+	err = runAgentInit(agentInitCmd, []string{targetDir})
+	if err != nil {
+		t.Fatalf("runAgentInit with --force failed: %v", err)
+	}
+
+	// Verify content was overwritten
+	content, err = os.ReadFile(agentFile)
+	if err != nil {
+		t.Fatalf("failed to read agent file after force: %v", err)
+	}
+	if !strings.Contains(string(content), "name: force-test") {
+		t.Error("agent file should contain new name after --force")
+	}
+	if !strings.Contains(string(content), "description: Force test agent") {
+		t.Error("agent file should contain new description after --force")
 	}
 }
