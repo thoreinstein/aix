@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
@@ -80,8 +81,12 @@ func runAgentShowWithWriter(name string, w io.Writer) error {
 	for _, p := range platforms {
 		agentAny, err := p.GetAgent(name)
 		if err != nil {
-			// Agent not found on this platform, continue to next
-			continue
+			// Agent not found on this platform is expected - try next platform
+			if errors.Is(err, claude.ErrAgentNotFound) || errors.Is(err, opencode.ErrAgentNotFound) {
+				continue
+			}
+			// Other errors (permission, parse) should be reported
+			return fmt.Errorf("reading agent from %s: %w", p.DisplayName(), err)
 		}
 
 		// Build installation location

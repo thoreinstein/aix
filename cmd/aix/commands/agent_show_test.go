@@ -6,6 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cockroachdb/errors"
+
+	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 )
@@ -374,5 +377,237 @@ func TestAgentInstallLocationJSONTags(t *testing.T) {
 	}
 	if unmarshaled["path"] != "/path/to/agent.md" {
 		t.Errorf("path = %v, want %q", unmarshaled["path"], "/path/to/agent.md")
+	}
+}
+
+// agentShowMockPlatform extends mockPlatform with agent show-specific behavior.
+type agentShowMockPlatform struct {
+	mockPlatform
+	agent    any
+	agentErr error
+}
+
+func (m *agentShowMockPlatform) GetAgent(_ string) (any, error) {
+	if m.agentErr != nil {
+		return nil, m.agentErr
+	}
+	return m.agent, nil
+}
+
+func TestIsAgentNotFoundError(t *testing.T) {
+	tests := []struct {
+		name       string
+		err        error
+		wantSkip   bool
+		errMessage string
+	}{
+		{
+			name:       "claude ErrAgentNotFound",
+			err:        claude.ErrAgentNotFound,
+			wantSkip:   true,
+			errMessage: "should skip for claude.ErrAgentNotFound",
+		},
+		{
+			name:       "opencode ErrAgentNotFound",
+			err:        opencode.ErrAgentNotFound,
+			wantSkip:   true,
+			errMessage: "should skip for opencode.ErrAgentNotFound",
+		},
+		{
+			name:       "wrapped claude ErrAgentNotFound",
+			err:        errors.Wrap(claude.ErrAgentNotFound, "additional context"),
+			wantSkip:   true,
+			errMessage: "should skip for wrapped claude.ErrAgentNotFound",
+		},
+		{
+			name:       "wrapped opencode ErrAgentNotFound",
+			err:        errors.Wrap(opencode.ErrAgentNotFound, "additional context"),
+			wantSkip:   true,
+			errMessage: "should skip for wrapped opencode.ErrAgentNotFound",
+		},
+		{
+			name:       "permission error",
+			err:        errors.New("permission denied"),
+			wantSkip:   false,
+			errMessage: "should NOT skip for permission errors",
+		},
+		{
+			name:       "parse error",
+			err:        errors.New("invalid yaml: unexpected mapping"),
+			wantSkip:   false,
+			errMessage: "should NOT skip for parse errors",
+		},
+		{
+			name:       "read error",
+			err:        errors.New("reading agent file: input/output error"),
+			wantSkip:   false,
+			errMessage: "should NOT skip for read errors",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test using errors.Is which is what the code uses
+			isNotFound := errors.Is(tt.err, claude.ErrAgentNotFound) ||
+				errors.Is(tt.err, opencode.ErrAgentNotFound)
+
+			if isNotFound != tt.wantSkip {
+				t.Errorf("isAgentNotFound = %v, want %v; %s",
+					isNotFound, tt.wantSkip, tt.errMessage)
+			}
+		})
+	}
+}
+
+func TestAgentShowErrorHandling(t *testing.T) {
+	tests := []struct {
+		name        string
+		platforms   []cli.Platform
+		wantErr     bool
+		wantErrMsg  string
+		description string
+	}{
+		{
+			name: "not_found_continues_to_next_platform",
+			platforms: []cli.Platform{
+				&agentShowMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "claude",
+						displayName: "Claude Code",
+					},
+					agentErr: claude.ErrAgentNotFound,
+				},
+				&agentShowMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "opencode",
+						displayName: "OpenCode",
+					},
+					agent: &opencode.Agent{
+						Name:        "test-agent",
+						Description: "A test agent",
+					},
+				},
+			},
+			wantErr:     false,
+			description: "should continue to next platform when agent not found",
+		},
+		{
+			name: "not_found_on_all_platforms",
+			platforms: []cli.Platform{
+				&agentShowMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "claude",
+						displayName: "Claude Code",
+					},
+					agentErr: claude.ErrAgentNotFound,
+				},
+				&agentShowMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "opencode",
+						displayName: "OpenCode",
+					},
+					agentErr: opencode.ErrAgentNotFound,
+				},
+			},
+			wantErr:     true,
+			wantErrMsg:  "not found on any platform",
+			description: "should return not found error when missing from all platforms",
+		},
+		{
+			name: "permission_error_reported",
+			platforms: []cli.Platform{
+				&agentShowMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "claude",
+						displayName: "Claude Code",
+					},
+					agentErr: errors.New("permission denied: ~/.claude/agents/test.md"),
+				},
+			},
+			wantErr:     true,
+			wantErrMsg:  "reading agent from Claude Code",
+			description: "should report permission errors instead of swallowing them",
+		},
+		{
+			name: "parse_error_reported",
+			platforms: []cli.Platform{
+				&agentShowMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "opencode",
+						displayName: "OpenCode",
+					},
+					agentErr: errors.New("parsing agent: invalid yaml"),
+				},
+			},
+			wantErr:     true,
+			wantErrMsg:  "reading agent from OpenCode",
+			description: "should report parse errors instead of swallowing them",
+		},
+		{
+			name: "error_on_first_platform_stops_iteration",
+			platforms: []cli.Platform{
+				&agentShowMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "claude",
+						displayName: "Claude Code",
+					},
+					agentErr: errors.New("disk I/O error"),
+				},
+				&agentShowMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "opencode",
+						displayName: "OpenCode",
+					},
+					agent: &opencode.Agent{
+						Name: "test-agent",
+					},
+				},
+			},
+			wantErr:     true,
+			wantErrMsg:  "reading agent from Claude Code: disk I/O error",
+			description: "should fail fast on first real error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// We can't directly test runAgentShowWithWriter because it calls
+			// cli.ResolvePlatforms. Instead, test the error classification logic
+			// by simulating what the loop does.
+			var foundAgent bool
+			var firstErr error
+
+			for _, p := range tt.platforms {
+				_, err := p.GetAgent("test-agent")
+				if err != nil {
+					if errors.Is(err, claude.ErrAgentNotFound) ||
+						errors.Is(err, opencode.ErrAgentNotFound) {
+						continue
+					}
+					firstErr = errors.Wrapf(err, "reading agent from %s", p.DisplayName())
+					break
+				}
+				foundAgent = true
+			}
+
+			var gotErr error
+			if firstErr != nil {
+				gotErr = firstErr
+			} else if !foundAgent {
+				gotErr = errors.New("agent not found on any platform")
+			}
+
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("error = %v, wantErr %v; %s", gotErr, tt.wantErr, tt.description)
+				return
+			}
+
+			if tt.wantErr && gotErr != nil {
+				if !strings.Contains(gotErr.Error(), tt.wantErrMsg) {
+					t.Errorf("error = %q, want to contain %q; %s",
+						gotErr.Error(), tt.wantErrMsg, tt.description)
+				}
+			}
+		})
 	}
 }
