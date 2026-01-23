@@ -456,6 +456,3 @@ func outputStatusVerbose(w io.Writer, platforms []cli.Platform) error {
 
 	return nil
 }
-
-// ANSI color codes (additional to those in skill_list.go)
-const colorYellow = "\033[33m"
