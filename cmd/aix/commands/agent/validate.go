@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"bytes"
@@ -17,21 +17,21 @@ import (
 )
 
 var (
-	agentValidateStrict bool
-	agentValidateJSON   bool
+	validateStrict bool
+	validateJSON   bool
 )
 
-var errAgentValidationFailed = errors.New("validation failed")
+var errValidationFailed = errors.New("validation failed")
 
 func init() {
-	agentValidateCmd.Flags().BoolVar(&agentValidateStrict, "strict", false,
+	validateCmd.Flags().BoolVar(&validateStrict, "strict", false,
 		"enable strict validation mode")
-	agentValidateCmd.Flags().BoolVar(&agentValidateJSON, "json", false,
+	validateCmd.Flags().BoolVar(&validateJSON, "json", false,
 		"output results as JSON")
-	agentCmd.AddCommand(agentValidateCmd)
+	Cmd.AddCommand(validateCmd)
 }
 
-var agentValidateCmd = &cobra.Command{
+var validateCmd = &cobra.Command{
 	Use:   "validate <path>",
 	Short: "Validate an agent file",
 	Long: `Validate an agent definition file for required fields and format.
@@ -54,12 +54,12 @@ Examples:
   aix agent validate ./AGENT.md --json`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(_ *cobra.Command, args []string) error {
-		return runAgentValidate(args[0], os.Stdout)
+		return runValidate(args[0], os.Stdout)
 	},
 }
 
-// agentValidateResult represents the JSON output structure.
-type agentValidateResult struct {
+// validateResult represents the JSON output structure.
+type validateResult struct {
 	Valid      bool       `json:"valid"`
 	Agent      *agentInfo `json:"agent,omitempty"`
 	Errors     []string   `json:"errors,omitempty"`
@@ -75,29 +75,29 @@ type agentInfo struct {
 	Description string `json:"description,omitempty"`
 }
 
-func runAgentValidate(path string, w io.Writer) error {
+func runValidate(path string, w io.Writer) error {
 	// Resolve to absolute path for consistent error messages
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		absPath = path
 	}
 
-	result := &agentValidateResult{
+	result := &validateResult{
 		Path:       absPath,
-		StrictMode: agentValidateStrict,
+		StrictMode: validateStrict,
 	}
 
 	// Read file
 	content, readErr := os.ReadFile(absPath)
 	if readErr != nil {
-		result.ParseError = formatAgentReadError(readErr, absPath)
-		return outputAgentValidateResult(w, result)
+		result.ParseError = formatReadError(readErr, absPath)
+		return outputValidateResult(w, result)
 	}
 
 	// Check for empty file
 	if len(bytes.TrimSpace(content)) == 0 {
 		result.ParseError = "agent file is empty"
-		return outputAgentValidateResult(w, result)
+		return outputValidateResult(w, result)
 	}
 
 	// Parse frontmatter
@@ -108,7 +108,7 @@ func runAgentValidate(path string, w io.Writer) error {
 	body, parseErr := frontmatter.Parse(bytes.NewReader(content), &meta)
 	if parseErr != nil {
 		result.ParseError = fmt.Sprintf("invalid YAML frontmatter: %v", parseErr)
-		return outputAgentValidateResult(w, result)
+		return outputValidateResult(w, result)
 	}
 
 	// Create agent for validation (using claude.Agent as canonical)
@@ -124,30 +124,30 @@ func runAgentValidate(path string, w io.Writer) error {
 	}
 
 	// Validate
-	v := validator.New(agentValidateStrict)
+	v := validator.New(validateStrict)
 	valResult := v.Validate(agent, absPath)
 
 	// Collect errors and warnings
 	for _, e := range valResult.Errors {
-		result.Errors = append(result.Errors, formatAgentValidationIssue(e))
+		result.Errors = append(result.Errors, formatValidationIssue(e))
 	}
 	for _, warning := range valResult.Warnings {
-		result.Warnings = append(result.Warnings, formatAgentValidationIssue(warning))
+		result.Warnings = append(result.Warnings, formatValidationIssue(warning))
 	}
 
 	result.Valid = !valResult.HasErrors()
-	return outputAgentValidateResult(w, result)
+	return outputValidateResult(w, result)
 }
 
-func outputAgentValidateResult(w io.Writer, result *agentValidateResult) error {
-	if agentValidateJSON {
+func outputValidateResult(w io.Writer, result *validateResult) error {
+	if validateJSON {
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
 		if err := enc.Encode(result); err != nil {
 			return fmt.Errorf("encoding JSON: %w", err)
 		}
 		if !result.Valid || result.ParseError != "" {
-			return errAgentValidationFailed
+			return errValidationFailed
 		}
 		return nil
 	}
@@ -158,7 +158,7 @@ func outputAgentValidateResult(w io.Writer, result *agentValidateResult) error {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "  Parse error:")
 		fmt.Fprintf(w, "    - %s\n", result.ParseError)
-		return errAgentValidationFailed
+		return errValidationFailed
 	}
 
 	if !result.Valid {
@@ -191,13 +191,13 @@ func outputAgentValidateResult(w io.Writer, result *agentValidateResult) error {
 	}
 
 	if !result.Valid {
-		return errAgentValidationFailed
+		return errValidationFailed
 	}
 	return nil
 }
 
-// formatAgentReadError extracts a user-friendly message from read errors.
-func formatAgentReadError(err error, path string) string {
+// formatReadError extracts a user-friendly message from read errors.
+func formatReadError(err error, path string) string {
 	if os.IsNotExist(err) {
 		return "file not found: " + path
 	}
@@ -207,8 +207,8 @@ func formatAgentReadError(err error, path string) string {
 	return err.Error()
 }
 
-// formatAgentValidationIssue formats a validation issue for display.
-func formatAgentValidationIssue(issue validator.Issue) string {
+// formatValidationIssue formats a validation issue for display.
+func formatValidationIssue(issue validator.Issue) string {
 	if issue.Value == "" {
 		return fmt.Sprintf("%s: %s", issue.Field, issue.Message)
 	}

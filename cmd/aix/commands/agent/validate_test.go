@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestRunAgentValidate(t *testing.T) {
+func TestRunValidate(t *testing.T) {
 	tests := []struct {
 		name        string
 		content     string // file content, empty string means file doesn't exist
@@ -133,8 +133,8 @@ Instructions here.
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Reset flags before each test
-			agentValidateStrict = tt.strict
-			agentValidateJSON = tt.jsonOutput
+			validateStrict = tt.strict
+			validateJSON = tt.jsonOutput
 
 			dir := t.TempDir()
 			path := filepath.Join(dir, "AGENT.md")
@@ -147,17 +147,17 @@ Instructions here.
 			}
 
 			var buf bytes.Buffer
-			err := runAgentValidate(path, &buf)
+			err := runValidate(path, &buf)
 
 			// Check error
 			if (err != nil) != tt.wantErr {
-				t.Errorf("runAgentValidate() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("runValidate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			// Verify the specific error type when expected
 			if tt.wantErr && err != nil {
-				if !errors.Is(err, errAgentValidationFailed) {
-					t.Errorf("expected errAgentValidationFailed, got %v", err)
+				if !errors.Is(err, errValidationFailed) {
+					t.Errorf("expected errValidationFailed, got %v", err)
 				}
 			}
 
@@ -170,7 +170,7 @@ Instructions here.
 	}
 }
 
-func TestRunAgentValidate_JSONStructure(t *testing.T) {
+func TestRunValidate_JSONStructure(t *testing.T) {
 	tests := []struct {
 		name           string
 		content        string
@@ -232,8 +232,8 @@ Instructions.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			agentValidateStrict = tt.strict
-			agentValidateJSON = true
+			validateStrict = tt.strict
+			validateJSON = true
 
 			dir := t.TempDir()
 			path := filepath.Join(dir, "AGENT.md")
@@ -242,9 +242,9 @@ Instructions.
 			}
 
 			var buf bytes.Buffer
-			_ = runAgentValidate(path, &buf)
+			_ = runValidate(path, &buf)
 
-			var result agentValidateResult
+			var result validateResult
 			if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 				t.Fatalf("failed to parse JSON output: %v\nOutput:\n%s", err, buf.String())
 			}
@@ -287,10 +287,10 @@ Instructions.
 	}
 }
 
-func TestRunAgentValidate_OutputDetails(t *testing.T) {
+func TestRunValidate_OutputDetails(t *testing.T) {
 	t.Run("shows agent details on success", func(t *testing.T) {
-		agentValidateStrict = false
-		agentValidateJSON = false
+		validateStrict = false
+		validateJSON = false
 
 		content := `---
 name: detailed-agent
@@ -306,7 +306,7 @@ Instructions.
 		}
 
 		var buf bytes.Buffer
-		err := runAgentValidate(path, &buf)
+		err := runValidate(path, &buf)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -325,8 +325,8 @@ Instructions.
 	})
 
 	t.Run("shows errors list on validation failure", func(t *testing.T) {
-		agentValidateStrict = false
-		agentValidateJSON = false
+		validateStrict = false
+		validateJSON = false
 
 		content := `---
 description: No name field
@@ -341,7 +341,7 @@ Instructions.
 		}
 
 		var buf bytes.Buffer
-		_ = runAgentValidate(path, &buf)
+		_ = runValidate(path, &buf)
 
 		output := buf.String()
 
@@ -357,8 +357,8 @@ Instructions.
 	})
 
 	t.Run("shows parse error details", func(t *testing.T) {
-		agentValidateStrict = false
-		agentValidateJSON = false
+		validateStrict = false
+		validateJSON = false
 
 		content := `---
 invalid: yaml: content: [
@@ -371,7 +371,7 @@ invalid: yaml: content: [
 		}
 
 		var buf bytes.Buffer
-		_ = runAgentValidate(path, &buf)
+		_ = runValidate(path, &buf)
 
 		output := buf.String()
 
@@ -382,14 +382,14 @@ invalid: yaml: content: [
 	})
 }
 
-func TestRunAgentValidate_PermissionDenied(t *testing.T) {
+func TestRunValidate_PermissionDenied(t *testing.T) {
 	// Skip on systems where we can't reliably test permissions
 	if os.Geteuid() == 0 {
 		t.Skip("skipping permission test when running as root")
 	}
 
-	agentValidateStrict = false
-	agentValidateJSON = false
+	validateStrict = false
+	validateJSON = false
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "AGENT.md")
@@ -406,7 +406,7 @@ func TestRunAgentValidate_PermissionDenied(t *testing.T) {
 	})
 
 	var buf bytes.Buffer
-	err := runAgentValidate(path, &buf)
+	err := runValidate(path, &buf)
 
 	if err == nil {
 		t.Error("expected error for permission denied")
@@ -418,116 +418,27 @@ func TestRunAgentValidate_PermissionDenied(t *testing.T) {
 	}
 }
 
-func TestAgentValidateCommand_Metadata(t *testing.T) {
-	if agentValidateCmd.Use != "validate <path>" {
-		t.Errorf("Use = %q, want %q", agentValidateCmd.Use, "validate <path>")
+func TestValidateCommand_Metadata(t *testing.T) {
+	if validateCmd.Use != "validate <path>" {
+		t.Errorf("Use = %q, want %q", validateCmd.Use, "validate <path>")
 	}
 
-	if agentValidateCmd.Short == "" {
+	if validateCmd.Short == "" {
 		t.Error("Short should not be empty")
 	}
 
-	if agentValidateCmd.Long == "" {
+	if validateCmd.Long == "" {
 		t.Error("Long should not be empty")
 	}
 
 	// Verify flags are registered
-	strictFlag := agentValidateCmd.Flags().Lookup("strict")
+	strictFlag := validateCmd.Flags().Lookup("strict")
 	if strictFlag == nil {
 		t.Error("--strict flag not registered")
 	}
 
-	jsonFlag := agentValidateCmd.Flags().Lookup("json")
+	jsonFlag := validateCmd.Flags().Lookup("json")
 	if jsonFlag == nil {
 		t.Error("--json flag not registered")
 	}
-}
-
-func TestAgentValidateCommand_Integration(t *testing.T) {
-	t.Run("valid agent via command", func(t *testing.T) {
-		content := `---
-name: integration-test
-description: Testing command integration
----
-
-Instructions.
-`
-		dir := t.TempDir()
-		path := filepath.Join(dir, "AGENT.md")
-		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-			t.Fatalf("failed to write test file: %v", err)
-		}
-
-		output := captureStdout(t, func() {
-			agentValidateStrict = false
-			agentValidateJSON = false
-			rootCmd.SetArgs([]string{"agent", "validate", path})
-			err := rootCmd.Execute()
-			if err != nil {
-				t.Errorf("expected no error, got: %v", err)
-			}
-		})
-
-		if !strings.Contains(output, "✓ Agent 'integration-test' is valid") {
-			t.Errorf("expected success message, got:\n%s", output)
-		}
-	})
-
-	t.Run("invalid agent via command", func(t *testing.T) {
-		content := `---
-description: No name
----
-
-Instructions.
-`
-		dir := t.TempDir()
-		path := filepath.Join(dir, "AGENT.md")
-		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-			t.Fatalf("failed to write test file: %v", err)
-		}
-
-		output := captureStdout(t, func() {
-			agentValidateStrict = false
-			agentValidateJSON = false
-			rootCmd.SetArgs([]string{"agent", "validate", path})
-			err := rootCmd.Execute()
-			if err == nil {
-				t.Error("expected error for invalid agent")
-			}
-		})
-
-		if !strings.Contains(output, "✗ Agent") {
-			t.Errorf("expected failure message, got:\n%s", output)
-		}
-	})
-
-	t.Run("JSON output via command flag", func(t *testing.T) {
-		content := `---
-name: json-cmd-test
-description: Test
----
-
-Instructions.
-`
-		dir := t.TempDir()
-		path := filepath.Join(dir, "AGENT.md")
-		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-			t.Fatalf("failed to write test file: %v", err)
-		}
-
-		output := captureStdout(t, func() {
-			agentValidateStrict = false
-			agentValidateJSON = true
-			rootCmd.SetArgs([]string{"agent", "validate", "--json", path})
-			err := rootCmd.Execute()
-			if err != nil {
-				t.Errorf("expected no error, got: %v", err)
-			}
-		})
-
-		var result agentValidateResult
-		if err := json.Unmarshal([]byte(output), &result); err != nil {
-			t.Errorf("output should be valid JSON: %v\nOutput:\n%s", err, output)
-		}
-	})
 }

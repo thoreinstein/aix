@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"encoding/json"
@@ -9,17 +9,18 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/cli"
 )
 
-var agentListJSON bool
+var listJSON bool
 
 func init() {
-	agentListCmd.Flags().BoolVar(&agentListJSON, "json", false, "Output in JSON format")
-	agentCmd.AddCommand(agentListCmd)
+	listCmd.Flags().BoolVar(&listJSON, "json", false, "Output in JSON format")
+	Cmd.AddCommand(listCmd)
 }
 
-var agentListCmd = &cobra.Command{
+var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List installed agents",
 	Long: `List all installed agents grouped by platform.
@@ -36,38 +37,38 @@ Examples:
 
   # Output as JSON
   aix agent list --json`,
-	RunE: runAgentList,
+	RunE: runList,
 }
 
-// agentListOutput represents the JSON output format for agent list.
-type agentListOutput map[string][]agentInfoJSON
+// listOutput represents the JSON output format for agent list.
+type listOutput map[string][]infoJSON
 
-// agentInfoJSON represents an agent in JSON output format.
-type agentInfoJSON struct {
+// infoJSON represents an agent in JSON output format.
+type infoJSON struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-func runAgentList(_ *cobra.Command, _ []string) error {
-	return runAgentListWithWriter(os.Stdout)
+func runList(_ *cobra.Command, _ []string) error {
+	return runListWithWriter(os.Stdout)
 }
 
-// runAgentListWithWriter allows injecting a writer for testing.
-func runAgentListWithWriter(w io.Writer) error {
-	platforms, err := cli.ResolvePlatforms(GetPlatformFlag())
+// runListWithWriter allows injecting a writer for testing.
+func runListWithWriter(w io.Writer) error {
+	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
 		return err
 	}
 
-	if agentListJSON {
-		return outputAgentsJSON(w, platforms)
+	if listJSON {
+		return outputListJSON(w, platforms)
 	}
-	return outputAgentsTabular(w, platforms)
+	return outputListTabular(w, platforms)
 }
 
-// outputAgentsJSON outputs agents in JSON format.
-func outputAgentsJSON(w io.Writer, platforms []cli.Platform) error {
-	output := make(agentListOutput)
+// outputListJSON outputs agents in JSON format.
+func outputListJSON(w io.Writer, platforms []cli.Platform) error {
+	output := make(listOutput)
 
 	for _, p := range platforms {
 		agents, err := p.ListAgents()
@@ -75,9 +76,9 @@ func outputAgentsJSON(w io.Writer, platforms []cli.Platform) error {
 			return fmt.Errorf("listing agents for %s: %w", p.Name(), err)
 		}
 
-		infos := make([]agentInfoJSON, len(agents))
+		infos := make([]infoJSON, len(agents))
 		for i, a := range agents {
-			infos[i] = agentInfoJSON{
+			infos[i] = infoJSON{
 				Name:        a.Name,
 				Description: a.Description,
 			}
@@ -90,8 +91,17 @@ func outputAgentsJSON(w io.Writer, platforms []cli.Platform) error {
 	return enc.Encode(output)
 }
 
-// outputAgentsTabular outputs agents in tabular format grouped by platform.
-func outputAgentsTabular(w io.Writer, platforms []cli.Platform) error {
+// ANSI color codes.
+const (
+	colorReset = "\033[0m"
+	colorBold  = "\033[1m"
+	colorCyan  = "\033[36m"
+	colorGreen = "\033[32m"
+	colorGray  = "\033[90m"
+)
+
+// outputListTabular outputs agents in tabular format grouped by platform.
+func outputListTabular(w io.Writer, platforms []cli.Platform) error {
 	hasAgents := false
 
 	for i, p := range platforms {
@@ -134,4 +144,16 @@ func outputAgentsTabular(w io.Writer, platforms []cli.Platform) error {
 	}
 
 	return nil
+}
+
+// truncate shortens a string to maxLen runes, adding "..." if truncated.
+func truncate(s string, maxLen int) string {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
+		return s
+	}
+	if maxLen < 3 {
+		return string(runes[:maxLen])
+	}
+	return string(runes[:maxLen-3]) + "..."
 }

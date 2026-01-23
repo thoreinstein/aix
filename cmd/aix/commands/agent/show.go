@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"encoding/json"
@@ -10,25 +10,26 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 )
 
-const defaultAgentInstructionsPreviewLength = 200
+const defaultInstructionsPreviewLength = 200
 
 var (
-	agentShowJSON bool
-	agentShowFull bool
+	showJSON bool
+	showFull bool
 )
 
 func init() {
-	agentShowCmd.Flags().BoolVar(&agentShowJSON, "json", false, "Output as JSON")
-	agentShowCmd.Flags().BoolVar(&agentShowFull, "full", false, "Show complete instructions (default truncated)")
-	agentCmd.AddCommand(agentShowCmd)
+	showCmd.Flags().BoolVar(&showJSON, "json", false, "Output as JSON")
+	showCmd.Flags().BoolVar(&showFull, "full", false, "Show complete instructions (default truncated)")
+	Cmd.AddCommand(showCmd)
 }
 
-var agentShowCmd = &cobra.Command{
+var showCmd = &cobra.Command{
 	Use:   "show <name>",
 	Short: "Display detailed agent information",
 	Long: `Display detailed information about an installed agent.
@@ -42,41 +43,41 @@ Examples:
   aix agent show code-reviewer --json
   aix agent show code-reviewer --platform claude`,
 	Args: cobra.ExactArgs(1),
-	RunE: runAgentShow,
+	RunE: runShow,
 }
 
-// showAgentDetail holds unified agent information for display.
-type showAgentDetail struct {
-	Name          string                 `json:"name"`
-	Description   string                 `json:"description,omitempty"`
-	Instructions  string                 `json:"instructions,omitempty"`
-	Installations []agentInstallLocation `json:"installations"`
+// showDetail holds unified agent information for display.
+type showDetail struct {
+	Name          string            `json:"name"`
+	Description   string            `json:"description,omitempty"`
+	Instructions  string            `json:"instructions,omitempty"`
+	Installations []installLocation `json:"installations"`
 
 	// OpenCode-specific fields
 	Mode        string  `json:"mode,omitempty"`
 	Temperature float64 `json:"temperature,omitempty"`
 }
 
-// agentInstallLocation describes where an agent is installed.
-type agentInstallLocation struct {
+// installLocation describes where an agent is installed.
+type installLocation struct {
 	Platform string `json:"platform"`
 	Path     string `json:"path"`
 }
 
-func runAgentShow(_ *cobra.Command, args []string) error {
-	return runAgentShowWithWriter(args[0], os.Stdout)
+func runShow(_ *cobra.Command, args []string) error {
+	return runShowWithWriter(args[0], os.Stdout)
 }
 
-// runAgentShowWithWriter allows injecting a writer for testing.
-func runAgentShowWithWriter(name string, w io.Writer) error {
-	platforms, err := cli.ResolvePlatforms(GetPlatformFlag())
+// runShowWithWriter allows injecting a writer for testing.
+func runShowWithWriter(name string, w io.Writer) error {
+	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
 		return err
 	}
 
 	// Collect agent info from all platforms where it exists
-	var detail *showAgentDetail
-	installations := make([]agentInstallLocation, 0, len(platforms))
+	var detail *showDetail
+	installations := make([]installLocation, 0, len(platforms))
 
 	for _, p := range platforms {
 		agentAny, err := p.GetAgent(name)
@@ -91,14 +92,14 @@ func runAgentShowWithWriter(name string, w io.Writer) error {
 
 		// Build installation location
 		agentPath := filepath.Join(p.AgentDir(), name+".md")
-		installations = append(installations, agentInstallLocation{
+		installations = append(installations, installLocation{
 			Platform: p.DisplayName(),
 			Path:     agentPath,
 		})
 
 		// Extract agent details (use first found as canonical)
 		if detail == nil {
-			detail = extractAgentDetail(agentAny)
+			detail = extractDetail(agentAny)
 		}
 	}
 
@@ -109,19 +110,19 @@ func runAgentShowWithWriter(name string, w io.Writer) error {
 	detail.Installations = installations
 
 	// Truncate instructions unless --full is specified
-	if !agentShowFull && len(detail.Instructions) > defaultAgentInstructionsPreviewLength {
-		detail.Instructions = detail.Instructions[:defaultAgentInstructionsPreviewLength]
+	if !showFull && len(detail.Instructions) > defaultInstructionsPreviewLength {
+		detail.Instructions = detail.Instructions[:defaultInstructionsPreviewLength]
 	}
 
-	if agentShowJSON {
-		return outputAgentShowJSON(w, detail)
+	if showJSON {
+		return outputShowJSON(w, detail)
 	}
 
-	return outputAgentShowText(w, detail)
+	return outputShowText(w, detail)
 }
 
-// extractAgentDetail converts a platform-specific agent to the unified detail struct.
-func extractAgentDetail(agent any) *showAgentDetail {
+// extractDetail converts a platform-specific agent to the unified detail struct.
+func extractDetail(agent any) *showDetail {
 	switch a := agent.(type) {
 	case *claude.Agent:
 		return extractClaudeAgent(a)
@@ -133,8 +134,8 @@ func extractAgentDetail(agent any) *showAgentDetail {
 }
 
 // extractClaudeAgent extracts details from a Claude agent.
-func extractClaudeAgent(a *claude.Agent) *showAgentDetail {
-	return &showAgentDetail{
+func extractClaudeAgent(a *claude.Agent) *showDetail {
+	return &showDetail{
 		Name:         a.Name,
 		Description:  a.Description,
 		Instructions: a.Instructions,
@@ -142,8 +143,8 @@ func extractClaudeAgent(a *claude.Agent) *showAgentDetail {
 }
 
 // extractOpenCodeAgent extracts details from an OpenCode agent.
-func extractOpenCodeAgent(a *opencode.Agent) *showAgentDetail {
-	return &showAgentDetail{
+func extractOpenCodeAgent(a *opencode.Agent) *showDetail {
+	return &showDetail{
 		Name:         a.Name,
 		Description:  a.Description,
 		Mode:         a.Mode,
@@ -152,7 +153,7 @@ func extractOpenCodeAgent(a *opencode.Agent) *showAgentDetail {
 	}
 }
 
-func outputAgentShowJSON(w io.Writer, detail *showAgentDetail) error {
+func outputShowJSON(w io.Writer, detail *showDetail) error {
 	data, err := json.MarshalIndent(detail, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshaling JSON: %w", err)
@@ -161,7 +162,7 @@ func outputAgentShowJSON(w io.Writer, detail *showAgentDetail) error {
 	return nil
 }
 
-func outputAgentShowText(w io.Writer, detail *showAgentDetail) error {
+func outputShowText(w io.Writer, detail *showDetail) error {
 	fmt.Fprintf(w, "Agent: %s\n", detail.Name)
 
 	if detail.Description != "" {
@@ -186,7 +187,7 @@ func outputAgentShowText(w io.Writer, detail *showAgentDetail) error {
 	if detail.Instructions != "" {
 		fmt.Fprintln(w, "\nInstructions Preview:")
 		fmt.Fprintf(w, "  %s\n", detail.Instructions)
-		if !agentShowFull {
+		if !showFull {
 			fmt.Fprintln(w, "  [truncated, use --full for complete output]")
 		}
 	}

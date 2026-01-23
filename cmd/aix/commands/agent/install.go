@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/platform/claude"
@@ -25,16 +26,16 @@ var (
 	errAgentInstallPartial = errors.New("partial installation failure")
 )
 
-// agentInstallForce enables overwriting existing agents without confirmation.
-var agentInstallForce bool
+// installForce enables overwriting existing agents without confirmation.
+var installForce bool
 
 func init() {
-	agentInstallCmd.Flags().BoolVarP(&agentInstallForce, "force", "f", false,
+	installCmd.Flags().BoolVarP(&installForce, "force", "f", false,
 		"overwrite existing agent without confirmation")
-	agentCmd.AddCommand(agentInstallCmd)
+	Cmd.AddCommand(installCmd)
 }
 
-var agentInstallCmd = &cobra.Command{
+var installCmd = &cobra.Command{
 	Use:   "install <source>",
 	Short: "Install an agent from a local path",
 	Long: `Install an AI coding agent from a local AGENT.md file.
@@ -68,12 +69,12 @@ Flags:
   # Force overwrite existing agent
   aix agent install ./my-agent/ --force`,
 	Args: cobra.ExactArgs(1),
-	RunE: runAgentInstall,
+	RunE: runInstall,
 }
 
-func runAgentInstall(_ *cobra.Command, args []string) error {
+func runInstall(_ *cobra.Command, args []string) error {
 	source := args[0]
-	platforms, err := cli.ResolvePlatforms(GetPlatformFlag())
+	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
 		return fmt.Errorf("resolving platforms: %w", err)
 	}
@@ -145,7 +146,7 @@ func runAgentInstall(_ *cobra.Command, args []string) error {
 				continue
 			}
 
-			if !agentInstallForce {
+			if !installForce {
 				// Collision detected and no --force
 				result.collision = true
 				results = append(results, result)

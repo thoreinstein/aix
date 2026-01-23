@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"bytes"
@@ -13,38 +13,38 @@ import (
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 )
 
-func TestAgentShowCommand_Metadata(t *testing.T) {
-	if agentShowCmd.Use != "show <name>" {
-		t.Errorf("Use = %q, want %q", agentShowCmd.Use, "show <name>")
+func TestShowCommand_Metadata(t *testing.T) {
+	if showCmd.Use != "show <name>" {
+		t.Errorf("Use = %q, want %q", showCmd.Use, "show <name>")
 	}
 
-	if agentShowCmd.Short == "" {
+	if showCmd.Short == "" {
 		t.Error("Short description should not be empty")
 	}
 
-	if agentShowCmd.Long == "" {
+	if showCmd.Long == "" {
 		t.Error("Long description should not be empty")
 	}
 
 	// Check flags exist
 	expectedFlags := []string{"json", "full"}
 	for _, flagName := range expectedFlags {
-		if agentShowCmd.Flags().Lookup(flagName) == nil {
+		if showCmd.Flags().Lookup(flagName) == nil {
 			t.Errorf("--%s flag should be defined", flagName)
 		}
 	}
 
 	// Verify Args validator is set (ExactArgs(1))
-	if agentShowCmd.Args == nil {
+	if showCmd.Args == nil {
 		t.Error("Args validator should be set")
 	}
 }
 
-func TestExtractAgentDetail_Claude(t *testing.T) {
+func TestExtractDetail_Claude(t *testing.T) {
 	tests := []struct {
 		name  string
 		agent *claude.Agent
-		want  *showAgentDetail
+		want  *showDetail
 	}{
 		{
 			name: "full agent",
@@ -53,7 +53,7 @@ func TestExtractAgentDetail_Claude(t *testing.T) {
 				Description:  "Reviews code for quality",
 				Instructions: "You are a code reviewer...",
 			},
-			want: &showAgentDetail{
+			want: &showDetail{
 				Name:         "code-reviewer",
 				Description:  "Reviews code for quality",
 				Instructions: "You are a code reviewer...",
@@ -64,7 +64,7 @@ func TestExtractAgentDetail_Claude(t *testing.T) {
 			agent: &claude.Agent{
 				Name: "simple-agent",
 			},
-			want: &showAgentDetail{
+			want: &showDetail{
 				Name: "simple-agent",
 			},
 		},
@@ -74,7 +74,7 @@ func TestExtractAgentDetail_Claude(t *testing.T) {
 				Name:         "instructions-only",
 				Instructions: "Do the thing.",
 			},
-			want: &showAgentDetail{
+			want: &showDetail{
 				Name:         "instructions-only",
 				Instructions: "Do the thing.",
 			},
@@ -104,11 +104,11 @@ func TestExtractAgentDetail_Claude(t *testing.T) {
 	}
 }
 
-func TestExtractAgentDetail_OpenCode(t *testing.T) {
+func TestExtractDetail_OpenCode(t *testing.T) {
 	tests := []struct {
 		name  string
 		agent *opencode.Agent
-		want  *showAgentDetail
+		want  *showDetail
 	}{
 		{
 			name: "full agent with all fields",
@@ -119,7 +119,7 @@ func TestExtractAgentDetail_OpenCode(t *testing.T) {
 				Temperature:  0.8,
 				Instructions: "You are a creative writer...",
 			},
-			want: &showAgentDetail{
+			want: &showDetail{
 				Name:         "creative-writer",
 				Description:  "Creative writing assistant",
 				Mode:         "chat",
@@ -134,7 +134,7 @@ func TestExtractAgentDetail_OpenCode(t *testing.T) {
 				Description:  "A basic agent",
 				Instructions: "Be helpful.",
 			},
-			want: &showAgentDetail{
+			want: &showDetail{
 				Name:         "basic-agent",
 				Description:  "A basic agent",
 				Instructions: "Be helpful.",
@@ -147,7 +147,7 @@ func TestExtractAgentDetail_OpenCode(t *testing.T) {
 				Mode:        "edit",
 				Temperature: 0.0,
 			},
-			want: &showAgentDetail{
+			want: &showDetail{
 				Name:        "precise-agent",
 				Mode:        "edit",
 				Temperature: 0.0,
@@ -177,34 +177,34 @@ func TestExtractAgentDetail_OpenCode(t *testing.T) {
 	}
 }
 
-func TestExtractAgentDetail_UnknownType(t *testing.T) {
-	// Test that extractAgentDetail returns nil for unknown types
-	got := extractAgentDetail("not an agent type")
+func TestExtractDetail_UnknownType(t *testing.T) {
+	// Test that extractDetail returns nil for unknown types
+	got := extractDetail("not an agent type")
 	if got != nil {
-		t.Errorf("extractAgentDetail() = %v, want nil for unknown type", got)
+		t.Errorf("extractDetail() = %v, want nil for unknown type", got)
 	}
 }
 
-func TestOutputAgentShowJSON(t *testing.T) {
-	detail := &showAgentDetail{
+func TestOutputShowJSON(t *testing.T) {
+	detail := &showDetail{
 		Name:         "test-agent",
 		Description:  "A test agent",
 		Mode:         "review",
 		Temperature:  0.5,
 		Instructions: "Test instructions.",
-		Installations: []agentInstallLocation{
+		Installations: []installLocation{
 			{Platform: "Claude Code", Path: "/path/to/agents/test-agent.md"},
 		},
 	}
 
 	var buf bytes.Buffer
-	err := outputAgentShowJSON(&buf, detail)
+	err := outputShowJSON(&buf, detail)
 	if err != nil {
-		t.Fatalf("outputAgentShowJSON() error = %v", err)
+		t.Fatalf("outputShowJSON() error = %v", err)
 	}
 
 	// Verify valid JSON
-	var unmarshaled showAgentDetail
+	var unmarshaled showDetail
 	if err := json.Unmarshal(buf.Bytes(), &unmarshaled); err != nil {
 		t.Fatalf("failed to unmarshal JSON output: %v", err)
 	}
@@ -226,22 +226,22 @@ func TestOutputAgentShowJSON(t *testing.T) {
 	}
 }
 
-func TestOutputAgentShowText(t *testing.T) {
+func TestOutputShowText(t *testing.T) {
 	tests := []struct {
 		name           string
-		detail         *showAgentDetail
+		detail         *showDetail
 		wantContains   []string
 		wantNotContain []string
 	}{
 		{
 			name: "full detail",
-			detail: &showAgentDetail{
+			detail: &showDetail{
 				Name:         "reviewer",
 				Description:  "Reviews code",
 				Mode:         "edit",
 				Temperature:  0.3,
 				Instructions: "Be thorough.",
-				Installations: []agentInstallLocation{
+				Installations: []installLocation{
 					{Platform: "OpenCode", Path: "/agents/reviewer.md"},
 				},
 			},
@@ -258,7 +258,7 @@ func TestOutputAgentShowText(t *testing.T) {
 		},
 		{
 			name: "minimal detail",
-			detail: &showAgentDetail{
+			detail: &showDetail{
 				Name: "minimal",
 			},
 			wantContains:   []string{"Agent: minimal"},
@@ -266,7 +266,7 @@ func TestOutputAgentShowText(t *testing.T) {
 		},
 		{
 			name: "claude agent (no mode/temperature)",
-			detail: &showAgentDetail{
+			detail: &showDetail{
 				Name:         "claude-agent",
 				Description:  "A Claude agent",
 				Instructions: "Do things.",
@@ -279,9 +279,9 @@ func TestOutputAgentShowText(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			err := outputAgentShowText(&buf, tt.detail)
+			err := outputShowText(&buf, tt.detail)
 			if err != nil {
-				t.Fatalf("outputAgentShowText() error = %v", err)
+				t.Fatalf("outputShowText() error = %v", err)
 			}
 
 			output := buf.String()
@@ -299,9 +299,9 @@ func TestOutputAgentShowText(t *testing.T) {
 	}
 }
 
-func TestShowAgentDetailJSONTags(t *testing.T) {
-	// Test that showAgentDetail has correct JSON tags and omitempty works
-	detail := showAgentDetail{
+func TestShowDetailJSONTags(t *testing.T) {
+	// Test that showDetail has correct JSON tags and omitempty works
+	detail := showDetail{
 		Name:         "test",
 		Instructions: "test instructions",
 		// Description, Mode, Temperature omitted
@@ -309,7 +309,7 @@ func TestShowAgentDetailJSONTags(t *testing.T) {
 
 	data, err := json.Marshal(detail)
 	if err != nil {
-		t.Fatalf("failed to marshal showAgentDetail: %v", err)
+		t.Fatalf("failed to marshal showDetail: %v", err)
 	}
 
 	var unmarshaled map[string]any
@@ -337,9 +337,9 @@ func TestShowAgentDetailJSONTags(t *testing.T) {
 	}
 }
 
-func TestAgentShowFlags(t *testing.T) {
+func TestShowFlags(t *testing.T) {
 	// Test that the flag variables exist and have correct defaults
-	jsonFlag := agentShowCmd.Flags().Lookup("json")
+	jsonFlag := showCmd.Flags().Lookup("json")
 	if jsonFlag == nil {
 		t.Fatal("--json flag not found")
 	}
@@ -347,7 +347,7 @@ func TestAgentShowFlags(t *testing.T) {
 		t.Errorf("--json default = %q, want %q", jsonFlag.DefValue, "false")
 	}
 
-	fullFlag := agentShowCmd.Flags().Lookup("full")
+	fullFlag := showCmd.Flags().Lookup("full")
 	if fullFlag == nil {
 		t.Fatal("--full flag not found")
 	}
@@ -356,15 +356,15 @@ func TestAgentShowFlags(t *testing.T) {
 	}
 }
 
-func TestAgentInstallLocationJSONTags(t *testing.T) {
-	loc := agentInstallLocation{
+func TestInstallLocationJSONTags(t *testing.T) {
+	loc := installLocation{
 		Platform: "Claude Code",
 		Path:     "/path/to/agent.md",
 	}
 
 	data, err := json.Marshal(loc)
 	if err != nil {
-		t.Fatalf("failed to marshal agentInstallLocation: %v", err)
+		t.Fatalf("failed to marshal installLocation: %v", err)
 	}
 
 	var unmarshaled map[string]any
@@ -380,14 +380,14 @@ func TestAgentInstallLocationJSONTags(t *testing.T) {
 	}
 }
 
-// agentShowMockPlatform extends mockPlatform with agent show-specific behavior.
-type agentShowMockPlatform struct {
+// showMockPlatform extends mockPlatform with agent show-specific behavior.
+type showMockPlatform struct {
 	mockPlatform
 	agent    any
 	agentErr error
 }
 
-func (m *agentShowMockPlatform) GetAgent(_ string) (any, error) {
+func (m *showMockPlatform) GetAgent(_ string) (any, error) {
 	if m.agentErr != nil {
 		return nil, m.agentErr
 	}
@@ -459,7 +459,7 @@ func TestIsAgentNotFoundError(t *testing.T) {
 	}
 }
 
-func TestAgentShowErrorHandling(t *testing.T) {
+func TestShowErrorHandling(t *testing.T) {
 	tests := []struct {
 		name        string
 		platforms   []cli.Platform
@@ -470,14 +470,14 @@ func TestAgentShowErrorHandling(t *testing.T) {
 		{
 			name: "not_found_continues_to_next_platform",
 			platforms: []cli.Platform{
-				&agentShowMockPlatform{
+				&showMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "claude",
 						displayName: "Claude Code",
 					},
 					agentErr: claude.ErrAgentNotFound,
 				},
-				&agentShowMockPlatform{
+				&showMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "opencode",
 						displayName: "OpenCode",
@@ -494,14 +494,14 @@ func TestAgentShowErrorHandling(t *testing.T) {
 		{
 			name: "not_found_on_all_platforms",
 			platforms: []cli.Platform{
-				&agentShowMockPlatform{
+				&showMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "claude",
 						displayName: "Claude Code",
 					},
 					agentErr: claude.ErrAgentNotFound,
 				},
-				&agentShowMockPlatform{
+				&showMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "opencode",
 						displayName: "OpenCode",
@@ -516,7 +516,7 @@ func TestAgentShowErrorHandling(t *testing.T) {
 		{
 			name: "permission_error_reported",
 			platforms: []cli.Platform{
-				&agentShowMockPlatform{
+				&showMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "claude",
 						displayName: "Claude Code",
@@ -531,7 +531,7 @@ func TestAgentShowErrorHandling(t *testing.T) {
 		{
 			name: "parse_error_reported",
 			platforms: []cli.Platform{
-				&agentShowMockPlatform{
+				&showMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "opencode",
 						displayName: "OpenCode",
@@ -546,14 +546,14 @@ func TestAgentShowErrorHandling(t *testing.T) {
 		{
 			name: "error_on_first_platform_stops_iteration",
 			platforms: []cli.Platform{
-				&agentShowMockPlatform{
+				&showMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "claude",
 						displayName: "Claude Code",
 					},
 					agentErr: errors.New("disk I/O error"),
 				},
-				&agentShowMockPlatform{
+				&showMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "opencode",
 						displayName: "OpenCode",
@@ -571,7 +571,7 @@ func TestAgentShowErrorHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// We can't directly test runAgentShowWithWriter because it calls
+			// We can't directly test runShowWithWriter because it calls
 			// cli.ResolvePlatforms. Instead, test the error classification logic
 			// by simulating what the loop does.
 			var foundAgent bool

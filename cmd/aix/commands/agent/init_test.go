@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestValidateAgentName(t *testing.T) {
+func TestValidateName(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -93,23 +93,23 @@ func TestValidateAgentName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateAgentName(tt.input)
+			err := validateName(tt.input)
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("validateAgentName(%q) expected error, got nil", tt.input)
+					t.Errorf("validateName(%q) expected error, got nil", tt.input)
 				} else if tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
-					t.Errorf("validateAgentName(%q) error = %q, want to contain %q", tt.input, err.Error(), tt.errMsg)
+					t.Errorf("validateName(%q) error = %q, want to contain %q", tt.input, err.Error(), tt.errMsg)
 				}
 			} else {
 				if err != nil {
-					t.Errorf("validateAgentName(%q) unexpected error: %v", tt.input, err)
+					t.Errorf("validateName(%q) unexpected error: %v", tt.input, err)
 				}
 			}
 		})
 	}
 }
 
-func TestSanitizeDefaultAgentName(t *testing.T) {
+func TestSanitizeDefaultName(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
@@ -179,30 +179,30 @@ func TestSanitizeDefaultAgentName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := sanitizeDefaultAgentName(tt.input)
+			got := sanitizeDefaultName(tt.input)
 			if got != tt.expected {
-				t.Errorf("sanitizeDefaultAgentName(%q) = %q, want %q", tt.input, got, tt.expected)
+				t.Errorf("sanitizeDefaultName(%q) = %q, want %q", tt.input, got, tt.expected)
 			}
 		})
 	}
 }
 
-func TestAgentInitCommand_Metadata(t *testing.T) {
-	if agentInitCmd.Use != "init [path]" {
-		t.Errorf("Use = %q, want %q", agentInitCmd.Use, "init [path]")
+func TestInitCommand_Metadata(t *testing.T) {
+	if initCmd.Use != "init [path]" {
+		t.Errorf("Use = %q, want %q", initCmd.Use, "init [path]")
 	}
 
-	if agentInitCmd.Short == "" {
+	if initCmd.Short == "" {
 		t.Error("Short description should not be empty")
 	}
 
 	// MaximumNArgs(1) allows 0 or 1 args
-	if agentInitCmd.Args == nil {
+	if initCmd.Args == nil {
 		t.Error("Args validator should be set")
 	}
 }
 
-func TestAgentNameRegex(t *testing.T) {
+func TestNameRegex(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
@@ -262,15 +262,15 @@ func TestAgentNameRegex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := agentNameRegex.MatchString(tt.input)
+			got := nameRegex.MatchString(tt.input)
 			if got != tt.want {
-				t.Errorf("agentNameRegex.MatchString(%q) = %v, want %v", tt.input, got, tt.want)
+				t.Errorf("nameRegex.MatchString(%q) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestAgentInitFlags(t *testing.T) {
+func TestInitFlags(t *testing.T) {
 	flags := []struct {
 		name      string
 		shorthand string
@@ -281,7 +281,7 @@ func TestAgentInitFlags(t *testing.T) {
 		{"force", "f"},
 	}
 	for _, f := range flags {
-		flag := agentInitCmd.Flags().Lookup(f.name)
+		flag := initCmd.Flags().Lookup(f.name)
 		if flag == nil {
 			t.Errorf("flag --%s not found", f.name)
 			continue
@@ -292,29 +292,29 @@ func TestAgentInitFlags(t *testing.T) {
 	}
 }
 
-// resetAgentInitFlags resets all package-level flag variables to their default values.
-func resetAgentInitFlags() {
-	agentInitName = ""
-	agentInitDescription = ""
-	agentInitModel = ""
-	agentInitForce = false
+// resetInitFlags resets all package-level flag variables to their default values.
+func resetInitFlags() {
+	initName = ""
+	initDescription = ""
+	initModel = ""
+	initForce = false
 }
 
-func TestAgentInitCmd_NonInteractive(t *testing.T) {
+func TestInitCmd_NonInteractive(t *testing.T) {
 	tmpDir := t.TempDir()
 	targetDir := filepath.Join(tmpDir, "test-agent")
 
 	// Set flags for non-interactive execution
-	agentInitName = "test-agent"
-	agentInitDescription = "A test agent"
-	agentInitModel = ""
-	agentInitForce = false
-	t.Cleanup(resetAgentInitFlags)
+	initName = "test-agent"
+	initDescription = "A test agent"
+	initModel = ""
+	initForce = false
+	t.Cleanup(resetInitFlags)
 
 	// Run command with path argument
-	err := runAgentInit(agentInitCmd, []string{targetDir})
+	err := runInit(initCmd, []string{targetDir})
 	if err != nil {
-		t.Fatalf("runAgentInit failed: %v", err)
+		t.Fatalf("runInit failed: %v", err)
 	}
 
 	// Verify file exists
@@ -333,7 +333,7 @@ func TestAgentInitCmd_NonInteractive(t *testing.T) {
 	}
 }
 
-func TestAgentInitCmd_ForceOverwrite(t *testing.T) {
+func TestInitCmd_ForceOverwrite(t *testing.T) {
 	tmpDir := t.TempDir()
 	targetDir := filepath.Join(tmpDir, "force-test")
 	agentFile := filepath.Join(targetDir, "AGENT.md")
@@ -348,13 +348,13 @@ func TestAgentInitCmd_ForceOverwrite(t *testing.T) {
 	}
 
 	// First, verify that without --force we get an error
-	agentInitName = "force-test"
-	agentInitDescription = "Force test agent"
-	agentInitModel = ""
-	agentInitForce = false
-	t.Cleanup(resetAgentInitFlags)
+	initName = "force-test"
+	initDescription = "Force test agent"
+	initModel = ""
+	initForce = false
+	t.Cleanup(resetInitFlags)
 
-	err := runAgentInit(agentInitCmd, []string{targetDir})
+	err := runInit(initCmd, []string{targetDir})
 	if err == nil {
 		t.Error("expected error when file exists and --force is not set")
 	}
@@ -369,10 +369,10 @@ func TestAgentInitCmd_ForceOverwrite(t *testing.T) {
 	}
 
 	// Now test with --force
-	agentInitForce = true
-	err = runAgentInit(agentInitCmd, []string{targetDir})
+	initForce = true
+	err = runInit(initCmd, []string{targetDir})
 	if err != nil {
-		t.Fatalf("runAgentInit with --force failed: %v", err)
+		t.Fatalf("runInit with --force failed: %v", err)
 	}
 
 	// Verify content was overwritten
@@ -388,21 +388,21 @@ func TestAgentInitCmd_ForceOverwrite(t *testing.T) {
 	}
 }
 
-func TestAgentInitCmd_ValidatesGenerated(t *testing.T) {
+func TestInitCmd_ValidatesGenerated(t *testing.T) {
 	// Create temp directory
 	tmpDir := t.TempDir()
 	targetDir := filepath.Join(tmpDir, "valid-agent")
 
 	// Set up non-interactive flags
-	agentInitName = "valid-agent"
-	agentInitDescription = "A valid test agent"
-	agentInitModel = ""
-	agentInitForce = false
-	t.Cleanup(resetAgentInitFlags)
+	initName = "valid-agent"
+	initDescription = "A valid test agent"
+	initModel = ""
+	initForce = false
+	t.Cleanup(resetInitFlags)
 
 	// Create agent
-	if err := runAgentInit(agentInitCmd, []string{targetDir}); err != nil {
-		t.Fatalf("runAgentInit failed: %v", err)
+	if err := runInit(initCmd, []string{targetDir}); err != nil {
+		t.Fatalf("runInit failed: %v", err)
 	}
 
 	// Verify the generated file exists
@@ -413,12 +413,12 @@ func TestAgentInitCmd_ValidatesGenerated(t *testing.T) {
 
 	// Run validation on the generated file
 	// Reset validation flags to defaults
-	agentValidateStrict = false
-	agentValidateJSON = true
+	validateStrict = false
+	validateJSON = true
 
 	var buf bytes.Buffer
-	if err := runAgentValidate(agentFile, &buf); err != nil {
-		t.Fatalf("runAgentValidate failed: %v", err)
+	if err := runValidate(agentFile, &buf); err != nil {
+		t.Fatalf("runValidate failed: %v", err)
 	}
 
 	// Parse the JSON result to verify validation passed
