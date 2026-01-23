@@ -98,3 +98,4 @@ formatters:
       - ".*_mock\\.go$"
       - ".*_Mock\\.go$"
       - ".*Mock.*\\.go$"
+      - "gen-doc.go$"
