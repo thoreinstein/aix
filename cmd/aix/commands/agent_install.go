@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
@@ -104,6 +105,11 @@ func runAgentInstall(_ *cobra.Command, args []string) error {
 
 	// Install to each platform
 	for _, p := range platforms {
+		// Ensure backup exists before modifying
+		if err := backup.EnsureBackedUp(p.Name(), p.BackupPaths()); err != nil {
+			return fmt.Errorf("backing up %s before install: %w", p.DisplayName(), err)
+		}
+
 		result := installResult{platform: p.Name()}
 
 		agent, parseErr := parseAgentForPlatform(p.Name(), content)
