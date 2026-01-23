@@ -1,12 +1,16 @@
 package resource
 
 import (
+	"errors"
 	"path/filepath"
 
 	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/repo"
 )
+
+// ErrNoReposConfigured is returned when no repositories are configured.
+var ErrNoReposConfigured = errors.New("no repositories configured")
 
 // FindByName scans all configured repositories and returns resources matching
 // the given name and type exactly. Returns an empty slice if no matches found.
@@ -20,7 +24,7 @@ func FindByName(name string, resourceType ResourceType) ([]Resource, error) {
 	}
 
 	if len(repos) == 0 {
-		return []Resource{}, nil
+		return nil, ErrNoReposConfigured
 	}
 
 	scanner := NewScanner()

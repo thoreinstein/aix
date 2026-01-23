@@ -101,6 +101,9 @@ func runInstall(_ *cobra.Command, args []string) error {
 	// Try repo lookup first
 	matches, err := resource.FindByName(source, resource.TypeAgent)
 	if err != nil {
+		if errors.Is(err, resource.ErrNoReposConfigured) {
+			return errors.New("no repositories configured. Run 'aix repo add <url>' to add one")
+		}
 		return fmt.Errorf("searching repositories: %w", err)
 	}
 
@@ -108,7 +111,14 @@ func runInstall(_ *cobra.Command, args []string) error {
 		return installFromRepo(source, matches)
 	}
 
-	// No matches in repos - check if it's a local path that exists
+	// No matches in repos - check if input might be a forgotten path
+	if mightBePath(source) {
+		if _, statErr := os.Stat(source); statErr == nil {
+			return fmt.Errorf("agent %q not found in repositories, but a local file exists at that path.\nDid you mean: aix agent install --file %s", source, source)
+		}
+	}
+
+	// Check if it's a local path that exists
 	if _, err := os.Stat(source); err == nil {
 		return installFromLocal(source)
 	}
@@ -128,6 +138,21 @@ func looksLikePath(source string) bool {
 	}
 	// On Windows, also check for backslash
 	if filepath.Separator != '/' && strings.Contains(source, "/") {
+		return true
+	}
+	return false
+}
+
+// mightBePath returns true if the input might be a path the user forgot the --file flag for.
+// This catches edge cases not handled by looksLikePath, like Windows-style paths on Unix
+// or files with .md extension.
+func mightBePath(s string) bool {
+	// Ends with .md extension
+	if strings.HasSuffix(strings.ToLower(s), ".md") {
+		return true
+	}
+	// Contains backslash (Windows paths, even on Unix)
+	if strings.Contains(s, "\\") {
 		return true
 	}
 	return false
