@@ -61,6 +61,11 @@ Define custom slash commands to automate common workflows and context gathering.
 *   [Command Syntax](guides/commands/#syntax)
 *   [Distribution](guides/commands/#sharing)
 
+### 📦 [Repositories](guides/repositories/)
+Discover and share AI resources using remote git repositories.
+*   [Adding Repositories](guides/repositories/#adding-a-repository)
+*   [Managing Sources](guides/repositories/#listing-repositories)
+
 ## Reference
 
 Need detailed command syntax? Check the **[API Reference](reference/)** for comprehensive documentation on every `aix` command.
@@ -68,6 +73,7 @@ Need detailed command syntax? Check the **[API Reference](reference/)** for comp
 *   [`aix mcp`](reference/mcp/)
 *   [`aix skill`](reference/skill/)
 *   [`aix command`](reference/command/)
+*   [`aix repo`](reference/repo/)
 
 ### 🛠️ [Troubleshooting](guides/troubleshooting/)
 Diagnose issues, fix permissions, and recover from configuration errors using `aix doctor` and `aix backup`.

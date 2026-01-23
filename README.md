@@ -123,6 +123,24 @@ aix command list
 aix command remove /deploy
 ```
 
+### Repository Management
+
+Discover and share AI resources from remote Git repositories.
+
+```bash
+# Add a repository source
+aix repo add https://github.com/thoreinstein/agents.git
+
+# List configured repositories
+aix repo list
+
+# Update repositories to get latest changes
+aix repo update
+
+# Remove a repository
+aix repo remove agents
+```
+
 ### Agent Management
 
 Manage AI agent configurations (primarily for Claude Code and OpenCode).
