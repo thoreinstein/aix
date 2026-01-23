@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/editor"
 )
 
 func init() {
@@ -45,9 +45,8 @@ func runAgentEdit(_ *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		// For now, just print the resolved path (editor launch is aix-ijn)
-		fmt.Printf("Resolved local agent file: %s\n", absPath)
-		return errors.New("editor launch not yet implemented (aix-ijn)")
+		fmt.Printf("Opening local agent file: %s\n", absPath)
+		return editor.Open(absPath)
 	}
 
 	// 2. Lookup as installed agent name
@@ -78,6 +77,6 @@ func runAgentEdit(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("agent file not found at %s", agentPath)
 	}
 
-	fmt.Printf("Resolved %s agent %q at %s\n", foundPlatform.DisplayName(), target, agentPath)
-	return errors.New("editor launch not yet implemented (aix-ijn)")
+	fmt.Printf("Opening %s agent %q...\n", foundPlatform.DisplayName(), target)
+	return editor.Open(agentPath)
 }

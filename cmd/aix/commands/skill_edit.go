@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/editor"
 )
 
 func init() {
@@ -65,7 +66,7 @@ func runSkillEdit(_ *cobra.Command, args []string) error {
 		}
 
 		fmt.Printf("Opening local skill at %s...\n", absPath)
-		return openInEditor(absPath)
+		return editor.Open(absPath)
 	}
 	// 2. Lookup as installed skill name
 	platforms, err := cli.ResolvePlatforms(GetPlatformFlag())
