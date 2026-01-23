@@ -76,7 +76,7 @@ mainSections = ["docs"]
   repoHost = "GitHub" # GitHub (default), Gitea, GitLab, Bitbucket, or BitbucketServer
   docsRepo = "https://github.com/thoreinstein/aix"
   docsRepoBranch = "main" # main (default), master, or <branch name>
-  docsRepoSubPath = "trees/documentation" # "" (none, default) or <sub path>
+  docsRepoSubPath = "aix-docs" # "" (none, default) or <sub path>
 
   krokiURL = "https://kroki.io" # "https://kroki.io" (default) or custom URL like http://localhost:8000.
 
