@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -46,6 +47,28 @@ func TestCacheHome(t *testing.T) {
 	}
 	if !filepath.IsAbs(got) {
 		t.Errorf("CacheHome() = %q, want absolute path", got)
+	}
+}
+
+func TestReposCacheDir(t *testing.T) {
+	got := ReposCacheDir()
+	if got == "" {
+		t.Error("ReposCacheDir() returned empty string")
+	}
+	if !filepath.IsAbs(got) {
+		t.Errorf("ReposCacheDir() = %q, want absolute path", got)
+	}
+
+	// Verify path ends with aix/repos
+	wantSuffix := filepath.Join("aix", "repos")
+	if !strings.HasSuffix(got, wantSuffix) {
+		t.Errorf("ReposCacheDir() = %q, want path ending with %q", got, wantSuffix)
+	}
+
+	// Verify it's under CacheHome
+	cacheHome := CacheHome()
+	if !strings.HasPrefix(got, cacheHome) {
+		t.Errorf("ReposCacheDir() = %q, want path under CacheHome %q", got, cacheHome)
 	}
 }
 

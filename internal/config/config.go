@@ -4,6 +4,8 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"regexp"
+	"time"
 
 	"github.com/cockroachdb/errors"
 	"github.com/spf13/viper"
@@ -14,16 +16,29 @@ import (
 // AppName is the application name used for config file naming.
 const AppName = "aix"
 
+// repoNamePattern validates repository names.
+// Names must be lowercase alphanumeric with hyphens, starting with a letter.
+var repoNamePattern = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
+
 // Config represents the top-level configuration structure.
 type Config struct {
 	Version          int                         `mapstructure:"version" yaml:"version"`
 	DefaultPlatforms []string                    `mapstructure:"default_platforms" yaml:"default_platforms"`
 	Platforms        map[string]PlatformOverride `mapstructure:"platforms" yaml:"platforms"`
+	Repos            map[string]RepoConfig       `mapstructure:"repos" yaml:"repos"`
 }
 
 // PlatformOverride contains configuration overrides for a specific platform.
 type PlatformOverride struct {
 	ConfigDir string `mapstructure:"config_dir" yaml:"config_dir"`
+}
+
+// RepoConfig contains configuration for a skill repository.
+type RepoConfig struct {
+	URL     string    `mapstructure:"url" yaml:"url"`
+	Name    string    `mapstructure:"name" yaml:"name"`
+	Path    string    `mapstructure:"path" yaml:"path"`
+	AddedAt time.Time `mapstructure:"added_at" yaml:"added_at"`
 }
 
 // Validate checks the configuration for errors.
@@ -41,6 +56,12 @@ func (c *Config) Validate() error {
 	for p := range c.Platforms {
 		if !paths.ValidPlatform(p) {
 			return errors.Newf("invalid platform override key: %s", p)
+		}
+	}
+
+	for name := range c.Repos {
+		if !repoNamePattern.MatchString(name) {
+			return errors.Newf("invalid repo name: %s", name)
 		}
 	}
 

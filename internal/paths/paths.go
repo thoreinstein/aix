@@ -84,6 +84,12 @@ func CacheHome() string {
 	return xdg.CacheHome
 }
 
+// ReposCacheDir returns the directory for cached repository clones.
+// Returns: <CacheHome>/aix/repos/
+func ReposCacheDir() string {
+	return filepath.Join(CacheHome(), "aix", "repos")
+}
+
 // ValidPlatform returns true if the platform name is recognized.
 func ValidPlatform(platform string) bool {
 	_, ok := platformGlobalConfigs[platform]
