@@ -20,7 +20,7 @@ var agentEditCmd = &cobra.Command{
 	Short: "Open agent file in $EDITOR",
 	Long: `Open the agent file in your default editor.
 
-Uses the $EDITOR environment variable. If not set, defaults to 'vi'.
+Uses the $EDITOR environment variable. If not set, defaults to 'nano'.
 If the agent is installed on multiple platforms, uses the first one found
 unless --platform is specified.
 
@@ -34,7 +34,7 @@ Examples:
 	RunE: runAgentEdit,
 }
 
-func runAgentEdit(_ *cobra.Command, args []string) error {
+func runAgentEdit(cmd *cobra.Command, args []string) error {
 	target := args[0]
 
 	// 1. Check if target is a local file path
@@ -45,8 +45,11 @@ func runAgentEdit(_ *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Opening local agent file: %s\n", absPath)
-		return editor.Open(absPath)
+		fmt.Fprintf(cmd.OutOrStdout(), "Opening local agent file: %s\n", absPath)
+		if err := editor.Open(absPath); err != nil {
+			return err
+		}
+		return validateAfterEdit(absPath, cmd)
 	}
 
 	// 2. Lookup as installed agent name
@@ -77,6 +80,21 @@ func runAgentEdit(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("agent file not found at %s", agentPath)
 	}
 
-	fmt.Printf("Opening %s agent %q...\n", foundPlatform.DisplayName(), target)
-	return editor.Open(agentPath)
+	fmt.Fprintf(cmd.OutOrStdout(), "Opening %s agent %q...\n", foundPlatform.DisplayName(), target)
+	if err := editor.Open(agentPath); err != nil {
+		return err
+	}
+	return validateAfterEdit(agentPath, cmd)
+}
+
+// validateAfterEdit runs validation on the edited agent file.
+// Validation errors are reported but don't fail the command since the user
+// already saved their changes.
+func validateAfterEdit(path string, cmd *cobra.Command) error {
+	w := cmd.OutOrStdout()
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Validating agent...")
+	// Ignore validation errors - user already saved their file
+	_ = runAgentValidate(path, w)
+	return nil
 }
