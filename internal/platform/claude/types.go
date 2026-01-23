@@ -229,3 +229,18 @@ type Agent struct {
 	// This field is not part of the YAML frontmatter.
 	Instructions string `yaml:"-" json:"-"`
 }
+
+// GetName returns the agent's name.
+func (a *Agent) GetName() string {
+	return a.Name
+}
+
+// GetDescription returns the agent's description.
+func (a *Agent) GetDescription() string {
+	return a.Description
+}
+
+// GetInstructions returns the agent's instructions.
+func (a *Agent) GetInstructions() string {
+	return a.Instructions
+}
