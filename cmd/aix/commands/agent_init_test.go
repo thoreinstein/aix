@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -383,5 +385,52 @@ func TestAgentInitCmd_ForceOverwrite(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "description: Force test agent") {
 		t.Error("agent file should contain new description after --force")
+	}
+}
+
+func TestAgentInitCmd_ValidatesGenerated(t *testing.T) {
+	// Create temp directory
+	tmpDir := t.TempDir()
+	targetDir := filepath.Join(tmpDir, "valid-agent")
+
+	// Set up non-interactive flags
+	agentInitName = "valid-agent"
+	agentInitDescription = "A valid test agent"
+	agentInitModel = ""
+	agentInitForce = false
+	t.Cleanup(resetAgentInitFlags)
+
+	// Create agent
+	if err := runAgentInit(agentInitCmd, []string{targetDir}); err != nil {
+		t.Fatalf("runAgentInit failed: %v", err)
+	}
+
+	// Verify the generated file exists
+	agentFile := filepath.Join(targetDir, "AGENT.md")
+	if _, err := os.Stat(agentFile); err != nil {
+		t.Fatalf("agent file not created: %v", err)
+	}
+
+	// Run validation on the generated file
+	// Reset validation flags to defaults
+	agentValidateStrict = false
+	agentValidateJSON = true
+
+	var buf bytes.Buffer
+	if err := runAgentValidate(agentFile, &buf); err != nil {
+		t.Fatalf("runAgentValidate failed: %v", err)
+	}
+
+	// Parse the JSON result to verify validation passed
+	var result struct {
+		Valid  bool     `json:"valid"`
+		Errors []string `json:"errors,omitempty"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
+		t.Fatalf("failed to parse validation result: %v", err)
+	}
+
+	if !result.Valid {
+		t.Errorf("generated agent failed validation: %v", result.Errors)
 	}
 }
