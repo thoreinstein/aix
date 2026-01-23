@@ -3,6 +3,7 @@ package commands
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
@@ -349,5 +350,177 @@ func TestOutputAgentsJSON_FormattedOutput(t *testing.T) {
 	}
 	if !strings.Contains(output, "  ") {
 		t.Error("JSON output should be formatted with indentation")
+	}
+}
+
+func TestOutputAgentsTabular_Error(t *testing.T) {
+	tests := []struct {
+		name        string
+		platforms   []cli.Platform
+		wantErrMsg  string
+		description string
+	}{
+		{
+			name: "permission_error",
+			platforms: []cli.Platform{
+				&agentListMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "claude",
+						displayName: "Claude Code",
+					},
+					agentErr: errors.New("permission denied: ~/.claude/agents"),
+				},
+			},
+			wantErrMsg:  "listing agents for claude: permission denied",
+			description: "should wrap permission errors with platform context",
+		},
+		{
+			name: "first_platform_error",
+			platforms: []cli.Platform{
+				&agentListMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "claude",
+						displayName: "Claude Code",
+					},
+					agentErr: errors.New("directory not found"),
+				},
+				&agentListMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "opencode",
+						displayName: "OpenCode",
+					},
+					agents: []cli.AgentInfo{
+						{Name: "agent", Description: "Test"},
+					},
+				},
+			},
+			wantErrMsg:  "listing agents for claude",
+			description: "should fail fast on first platform error",
+		},
+		{
+			name: "second_platform_error",
+			platforms: []cli.Platform{
+				&agentListMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "claude",
+						displayName: "Claude Code",
+					},
+					agents: []cli.AgentInfo{
+						{Name: "agent", Description: "Test"},
+					},
+				},
+				&agentListMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "opencode",
+						displayName: "OpenCode",
+					},
+					agentErr: errors.New("read error"),
+				},
+			},
+			wantErrMsg:  "listing agents for opencode: read error",
+			description: "should propagate errors from subsequent platforms",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			err := outputAgentsTabular(&buf, tt.platforms)
+
+			if err == nil {
+				t.Fatalf("expected error, got nil; %s", tt.description)
+			}
+
+			if !strings.Contains(err.Error(), tt.wantErrMsg) {
+				t.Errorf("error = %q, want to contain %q; %s",
+					err.Error(), tt.wantErrMsg, tt.description)
+			}
+		})
+	}
+}
+
+func TestOutputAgentsJSON_Error(t *testing.T) {
+	tests := []struct {
+		name        string
+		platforms   []cli.Platform
+		wantErrMsg  string
+		description string
+	}{
+		{
+			name: "permission_error",
+			platforms: []cli.Platform{
+				&agentListMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "claude",
+						displayName: "Claude Code",
+					},
+					agentErr: errors.New("permission denied: ~/.claude/agents"),
+				},
+			},
+			wantErrMsg:  "listing agents for claude: permission denied",
+			description: "should wrap permission errors with platform context",
+		},
+		{
+			name: "first_platform_error",
+			platforms: []cli.Platform{
+				&agentListMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "claude",
+						displayName: "Claude Code",
+					},
+					agentErr: errors.New("directory not found"),
+				},
+				&agentListMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "opencode",
+						displayName: "OpenCode",
+					},
+					agents: []cli.AgentInfo{
+						{Name: "agent", Description: "Test"},
+					},
+				},
+			},
+			wantErrMsg:  "listing agents for claude",
+			description: "should fail fast on first platform error",
+		},
+		{
+			name: "second_platform_error",
+			platforms: []cli.Platform{
+				&agentListMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "claude",
+						displayName: "Claude Code",
+					},
+					agents: []cli.AgentInfo{
+						{Name: "agent", Description: "Test"},
+					},
+				},
+				&agentListMockPlatform{
+					mockPlatform: mockPlatform{
+						name:        "opencode",
+						displayName: "OpenCode",
+					},
+					agentErr: errors.New("read error"),
+				},
+			},
+			wantErrMsg:  "listing agents for opencode: read error",
+			description: "should propagate errors from subsequent platforms",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			err := outputAgentsJSON(&buf, tt.platforms)
+
+			if err == nil {
+				t.Fatalf("expected error, got nil; %s", tt.description)
+			}
+
+			if !strings.Contains(err.Error(), tt.wantErrMsg) {
+				t.Errorf("error = %q, want to contain %q; %s",
+					err.Error(), tt.wantErrMsg, tt.description)
+			}
+		})
 	}
 }
