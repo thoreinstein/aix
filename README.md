@@ -1,5 +1,8 @@
 # aix
 
+[![CI](https://github.com/thoreinstein/aix/actions/workflows/ci.yml/badge.svg)](https://github.com/thoreinstein/aix/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/thoreinstein/aix/branch/main/graph/badge.svg)](https://codecov.io/gh/thoreinstein/aix)
+
 A unified CLI for managing AI coding assistant configurations across platforms.
 
 ## Overview
