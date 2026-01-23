@@ -49,7 +49,15 @@ Use the `scripts/deploy.sh` script.
 
 ## Installing Commands
 
-Install the command file to your assistants.
+### From a Repository
+The easiest way to install commands is from a configured [repository](guides/repositories/).
+
+```bash
+aix command install deploy
+```
+
+### From a Local File
+You can also install commands directly from a markdown file.
 
 ```bash
 aix command install ./deploy.md

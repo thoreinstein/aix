@@ -52,11 +52,27 @@ You are an expert at...
 
 Once you have a skill defined (or downloaded), install it to your active platforms.
 
+### From a Repository
+The recommended way to install skills is through a registered repository. Once you have [added a repository](guides/repositories/), you can install skills by name.
+
+```bash
+# Search and install a skill from your configured repos
+aix skill install git-workflow
+```
+
+### From Local Files
+You can also install skills directly from a local directory or file.
+
 ```bash
 # Install from a local directory
 aix skill install ./my-feature
+```
 
-# Install from a remote URL (planned feature)
+### From a Remote URL
+`aix` also supports installing skills directly from a raw `SKILL.md` URL.
+
+```bash
+# Install from a remote URL
 aix skill install https://example.com/skills/git-workflow.md
 ```
 
