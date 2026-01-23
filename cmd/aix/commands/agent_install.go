@@ -89,6 +89,9 @@ func runAgentInstall(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("reading agent file: %w", err)
 	}
 
+	// Track the agent name once successfully parsed (same for all platforms)
+	var agentName string
+
 	// Track results for each platform
 	type installResult struct {
 		platform   string
@@ -111,18 +114,22 @@ func runAgentInstall(_ *cobra.Command, args []string) error {
 		}
 
 		// Get agent name for collision check
-		agentName := getAgentName(agent)
-		if agentName == "" {
+		parsedName := getAgentName(agent)
+		if parsedName == "" {
 			result.errMsg = "agent name is required"
 			results = append(results, result)
 			continue
 		}
+		// Capture agent name on first successful parse (same for all platforms)
+		if agentName == "" {
+			agentName = parsedName
+		}
 
 		// Determine target path for error messages
-		result.targetPath = filepath.Join(p.AgentDir(), agentName+".md")
+		result.targetPath = filepath.Join(p.AgentDir(), parsedName+".md")
 
 		// Check for collision unless --force is set
-		existingAgent, getErr := p.GetAgent(agentName)
+		existingAgent, getErr := p.GetAgent(parsedName)
 		if getErr == nil && existingAgent != nil {
 			// Agent exists - check for idempotency
 			if agentsAreIdentical(agent, existingAgent) {
@@ -140,7 +147,7 @@ func runAgentInstall(_ *cobra.Command, args []string) error {
 			}
 
 			// --force flag set, will overwrite
-			fmt.Fprintf(os.Stderr, "Warning: overwriting existing agent %q on %s\n", agentName, p.DisplayName())
+			fmt.Fprintf(os.Stderr, "Warning: overwriting existing agent %q on %s\n", parsedName, p.DisplayName())
 		}
 
 		// Perform installation
@@ -171,7 +178,7 @@ func runAgentInstall(_ *cobra.Command, args []string) error {
 
 	// Report successful installations
 	if len(installed) > 0 {
-		fmt.Printf("Agent installed to: %v\n", installed)
+		fmt.Printf("Installed %s to %s\n", agentName, strings.Join(installed, ", "))
 	}
 
 	// Report other errors as warnings (they don't block collision errors)
