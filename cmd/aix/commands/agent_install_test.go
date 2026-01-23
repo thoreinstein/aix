@@ -259,3 +259,284 @@ Instructions.`
 		t.Errorf("error %q should contain 'unsupported platform'", err.Error())
 	}
 }
+
+func TestGetAgentName(t *testing.T) {
+	tests := []struct {
+		name  string
+		agent any
+		want  string
+	}{
+		{
+			name:  "claude agent",
+			agent: &claude.Agent{Name: "claude-agent"},
+			want:  "claude-agent",
+		},
+		{
+			name:  "opencode agent",
+			agent: &opencode.Agent{Name: "opencode-agent"},
+			want:  "opencode-agent",
+		},
+		{
+			name:  "unknown type",
+			agent: "not an agent",
+			want:  "",
+		},
+		{
+			name:  "nil",
+			agent: nil,
+			want:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getAgentName(tt.agent)
+			if got != tt.want {
+				t.Errorf("getAgentName() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAgentsAreIdentical_Claude(t *testing.T) {
+	tests := []struct {
+		name     string
+		newAgent *claude.Agent
+		existing *claude.Agent
+		want     bool
+	}{
+		{
+			name: "identical agents",
+			newAgent: &claude.Agent{
+				Name:         "test",
+				Description:  "A test agent",
+				Instructions: "Do something useful.",
+			},
+			existing: &claude.Agent{
+				Name:         "test",
+				Description:  "A test agent",
+				Instructions: "Do something useful.",
+			},
+			want: true,
+		},
+		{
+			name: "identical with whitespace differences",
+			newAgent: &claude.Agent{
+				Name:         "test",
+				Description:  "A test agent",
+				Instructions: "  Do something useful.  \n",
+			},
+			existing: &claude.Agent{
+				Name:         "test",
+				Description:  "A test agent",
+				Instructions: "Do something useful.",
+			},
+			want: true,
+		},
+		{
+			name: "different names",
+			newAgent: &claude.Agent{
+				Name:         "test-new",
+				Description:  "A test agent",
+				Instructions: "Do something useful.",
+			},
+			existing: &claude.Agent{
+				Name:         "test-old",
+				Description:  "A test agent",
+				Instructions: "Do something useful.",
+			},
+			want: false,
+		},
+		{
+			name: "different descriptions",
+			newAgent: &claude.Agent{
+				Name:         "test",
+				Description:  "New description",
+				Instructions: "Do something useful.",
+			},
+			existing: &claude.Agent{
+				Name:         "test",
+				Description:  "Old description",
+				Instructions: "Do something useful.",
+			},
+			want: false,
+		},
+		{
+			name: "different instructions",
+			newAgent: &claude.Agent{
+				Name:         "test",
+				Description:  "A test agent",
+				Instructions: "New instructions.",
+			},
+			existing: &claude.Agent{
+				Name:         "test",
+				Description:  "A test agent",
+				Instructions: "Old instructions.",
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := agentsAreIdentical(tt.newAgent, tt.existing)
+			if got != tt.want {
+				t.Errorf("agentsAreIdentical() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAgentsAreIdentical_OpenCode(t *testing.T) {
+	tests := []struct {
+		name     string
+		newAgent *opencode.Agent
+		existing *opencode.Agent
+		want     bool
+	}{
+		{
+			name: "identical agents",
+			newAgent: &opencode.Agent{
+				Name:         "test",
+				Description:  "A test agent",
+				Mode:         "chat",
+				Temperature:  0.7,
+				Instructions: "Do something useful.",
+			},
+			existing: &opencode.Agent{
+				Name:         "test",
+				Description:  "A test agent",
+				Mode:         "chat",
+				Temperature:  0.7,
+				Instructions: "Do something useful.",
+			},
+			want: true,
+		},
+		{
+			name: "different mode",
+			newAgent: &opencode.Agent{
+				Name:         "test",
+				Description:  "A test agent",
+				Mode:         "edit",
+				Temperature:  0.7,
+				Instructions: "Do something useful.",
+			},
+			existing: &opencode.Agent{
+				Name:         "test",
+				Description:  "A test agent",
+				Mode:         "chat",
+				Temperature:  0.7,
+				Instructions: "Do something useful.",
+			},
+			want: false,
+		},
+		{
+			name: "different temperature",
+			newAgent: &opencode.Agent{
+				Name:         "test",
+				Description:  "A test agent",
+				Mode:         "chat",
+				Temperature:  0.5,
+				Instructions: "Do something useful.",
+			},
+			existing: &opencode.Agent{
+				Name:         "test",
+				Description:  "A test agent",
+				Mode:         "chat",
+				Temperature:  0.7,
+				Instructions: "Do something useful.",
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := agentsAreIdentical(tt.newAgent, tt.existing)
+			if got != tt.want {
+				t.Errorf("agentsAreIdentical() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAgentsAreIdentical_TypeMismatch(t *testing.T) {
+	claudeAgent := &claude.Agent{
+		Name:         "test",
+		Description:  "A test agent",
+		Instructions: "Do something useful.",
+	}
+	opencodeAgent := &opencode.Agent{
+		Name:         "test",
+		Description:  "A test agent",
+		Instructions: "Do something useful.",
+	}
+
+	// Claude agent compared with OpenCode agent should return false
+	if agentsAreIdentical(claudeAgent, opencodeAgent) {
+		t.Error("expected false for type mismatch (claude vs opencode)")
+	}
+
+	// Opposite direction
+	if agentsAreIdentical(opencodeAgent, claudeAgent) {
+		t.Error("expected false for type mismatch (opencode vs claude)")
+	}
+
+	// Unknown types
+	if agentsAreIdentical("not an agent", claudeAgent) {
+		t.Error("expected false for unknown type")
+	}
+}
+
+func TestNormalizeInstructions(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "no change needed",
+			input: "Hello world",
+			want:  "Hello world",
+		},
+		{
+			name:  "leading whitespace",
+			input: "  Hello world",
+			want:  "Hello world",
+		},
+		{
+			name:  "trailing whitespace",
+			input: "Hello world  ",
+			want:  "Hello world",
+		},
+		{
+			name:  "leading and trailing newlines",
+			input: "\n\nHello world\n\n",
+			want:  "Hello world",
+		},
+		{
+			name:  "mixed whitespace",
+			input: "  \n  Hello world  \n  ",
+			want:  "Hello world",
+		},
+		{
+			name:  "empty string",
+			input: "",
+			want:  "",
+		},
+		{
+			name:  "only whitespace",
+			input: "   \n\t  ",
+			want:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := normalizeInstructions(tt.input)
+			if got != tt.want {
+				t.Errorf("normalizeInstructions() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
