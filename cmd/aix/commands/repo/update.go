@@ -1,0 +1,104 @@
+package repo
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"strings"
+
+	"github.com/spf13/cobra"
+
+	"github.com/thoreinstein/aix/internal/config"
+	"github.com/thoreinstein/aix/internal/repo"
+)
+
+func init() {
+	Cmd.AddCommand(updateCmd)
+}
+
+var updateCmd = &cobra.Command{
+	Use:   "update [name]",
+	Short: "Update repository sources",
+	Long: `Update repository sources by pulling latest changes.
+
+If a name is provided, only that repository is updated.
+If no name is provided, all repositories are updated.`,
+	Example: `  # Update all repositories
+  aix repo update
+
+  # Update specific repository
+  aix repo update community-skills`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runUpdate,
+}
+
+func runUpdate(_ *cobra.Command, args []string) error {
+	return runUpdateWithIO(args, os.Stdout)
+}
+
+// runUpdateWithIO allows injecting a writer for testing.
+func runUpdateWithIO(args []string, w io.Writer) error {
+	var name string
+	if len(args) > 0 {
+		name = args[0]
+	}
+
+	// Get config path
+	configPath := config.DefaultConfigPath()
+
+	// Create manager
+	manager := repo.NewManager(configPath)
+
+	// Update specific repository
+	if name != "" {
+		fmt.Fprintf(w, "Updating %s... ", name)
+		if err := manager.Update(name); err != nil {
+			fmt.Fprintln(w, "\u2717 failed")
+			return handleUpdateError(name, err)
+		}
+		fmt.Fprintln(w, "\u2713 done")
+		return nil
+	}
+
+	// Update all repositories
+	repos, err := manager.List()
+	if err != nil {
+		return fmt.Errorf("listing repositories: %w", err)
+	}
+
+	if len(repos) == 0 {
+		fmt.Fprintln(w, "No repositories configured.")
+		return nil
+	}
+
+	var failed []string
+	for _, r := range repos {
+		fmt.Fprintf(w, "Updating %s... ", r.Name)
+		if err := manager.Update(r.Name); err != nil {
+			fmt.Fprintln(w, "\u2717 failed")
+			failed = append(failed, fmt.Sprintf("%s: %v", r.Name, err))
+			continue
+		}
+		fmt.Fprintln(w, "\u2713 done")
+	}
+
+	if len(failed) > 0 {
+		return fmt.Errorf("some repositories failed to update:\n  %s", joinErrors(failed))
+	}
+
+	return nil
+}
+
+// handleUpdateError returns a user-friendly error message for known error types.
+func handleUpdateError(name string, err error) error {
+	if errors.Is(err, repo.ErrNotFound) {
+		return fmt.Errorf("repository '%s' not found", name)
+	}
+	return fmt.Errorf("updating '%s': %w", name, err)
+}
+
+// joinErrors joins error strings with newline and indentation.
+func joinErrors(errs []string) string {
+	return strings.Join(errs, "\n  ")
+}
