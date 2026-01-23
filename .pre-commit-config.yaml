@@ -42,6 +42,18 @@ repos:
         language: system
         pass_filenames: false
         types: [go]
+      - id: gen-doc
+        name: generate documentation
+        entry: go run ./cmd/aix/main.go gen-doc --dir ./aix-docs/content/docs/reference/
+        language: system
+        pass_filenames: false
+        files: \.go$
+      - id: hugo-build
+        name: hugo build
+        entry: sh -c 'cd aix-docs && npm run build'
+        language: system
+        pass_filenames: false
+        files: ^aix-docs/
 
   # General file hygiene
   - repo: https://github.com/pre-commit/pre-commit-hooks
