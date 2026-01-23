@@ -8,6 +8,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 
+	"github.com/thoreinstein/aix/pkg/fileutil"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
 
@@ -135,7 +136,7 @@ func (m *AgentManager) Install(a *Agent) error {
 	}
 	agentPath := m.paths.AgentPath(a.Name)
 
-	if err := os.WriteFile(agentPath, []byte(content), 0o644); err != nil {
+	if err := fileutil.AtomicWriteFile(agentPath, []byte(content), 0o644); err != nil {
 		return errors.Wrap(err, "writing agent file")
 	}
 

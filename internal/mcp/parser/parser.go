@@ -13,6 +13,7 @@ import (
 	"github.com/cockroachdb/errors"
 
 	"github.com/thoreinstein/aix/internal/mcp"
+	"github.com/thoreinstein/aix/pkg/fileutil"
 )
 
 // Sentinel errors for parser operations.
@@ -120,35 +121,9 @@ func WriteFile(path string, cfg *mcp.Config) error {
 		return &ParseError{Path: path, Err: errors.Wrap(err, "creating directory")}
 	}
 
-	// Write to temp file in same directory for atomic rename
-	tmpFile, err := os.CreateTemp(dir, ".mcp-config-*.tmp")
-	if err != nil {
-		return &ParseError{Path: path, Err: errors.Wrap(err, "creating temp file")}
-	}
-	tmpPath := tmpFile.Name()
-
-	// Clean up temp file on any error
-	defer func() {
-		if tmpPath != "" {
-			os.Remove(tmpPath)
-		}
-	}()
-
-	if _, err := tmpFile.Write(data); err != nil {
-		tmpFile.Close()
-		return &ParseError{Path: path, Err: errors.Wrap(err, "writing temp file")}
+	if err := fileutil.AtomicWriteFile(path, data, 0o644); err != nil {
+		return &ParseError{Path: path, Err: err}
 	}
 
-	if err := tmpFile.Close(); err != nil {
-		return &ParseError{Path: path, Err: errors.Wrap(err, "closing temp file")}
-	}
-
-	// Atomic rename
-	if err := os.Rename(tmpPath, path); err != nil {
-		return &ParseError{Path: path, Err: errors.Wrap(err, "renaming temp file")}
-	}
-
-	// Clear tmpPath so defer doesn't try to remove the renamed file
-	tmpPath = ""
 	return nil
 }
