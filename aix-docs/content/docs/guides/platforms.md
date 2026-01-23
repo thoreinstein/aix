@@ -1,6 +1,6 @@
 ---
 title: "Platform Configuration"
-description: "How aix integrates with Claude, OpenCode, and Gemini"
+description: "How aix integrates with Claude, OpenCode, Gemini, and Codex"
 summary: "Understand where aix stores configurations and how it interacts with your existing AI tools."
 date: 2026-01-23T00:00:00+00:00
 lastmod: 2026-01-23T00:00:00+00:00
@@ -9,7 +9,7 @@ weight: 60
 toc: true
 seo:
   title: "Platform Configuration Guide - aix"
-  description: "Learn how aix manages configuration files for Claude Code, OpenCode, and Gemini CLI."
+  description: "Learn how aix manages configuration files for Claude Code, OpenCode, Gemini CLI, and Codex."
 ---
 
 `aix` works by managing the **native configuration files** of your installed AI assistants. It does not replace them; rather, it acts as a unified control plane that writes to the locations these tools expect.
@@ -75,6 +75,22 @@ Google's **Gemini CLI** integration in `aix` is planned to be file-based and to 
 
 *   **Separate MCP File**: Unlike Claude, Gemini CLI is planned to use a dedicated `mcp.yaml` which `aix` would manage directly.
 *   **Extensions**: Future versions of `aix` may install skills as Gemini "Extensions" if supported by the installed Gemini CLI version.
+
+---
+
+## Codex (Planned)
+
+> **Note:** Codex support is **planned** and is **not yet available**.
+
+The **Codex** integration is planned to follow the XDG standard, similar to OpenCode but with its own distinct configuration schema.
+
+### Planned File Locations
+
+| Scope | Path | Managed By `aix` (planned) |
+| :--- | :--- | :--- |
+| **Global Config** | `~/.config/codex/config.toml` | ✅ MCP Servers (planned) |
+| **Instructions** | `~/.config/codex/prompts/` | ✅ System Prompts (planned) |
+| **Skills Dir** | `~/.config/codex/skills/` | ✅ Skill Definitions (planned) |
 
 ---
 
