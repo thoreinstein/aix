@@ -17,20 +17,20 @@
 #   url = "/docs/lorem/"
 
 [[guide]]
-  name = "Lorem"
+  name = "Getting started"
   weight = 10
-  identifier = "lorem"
-  url = "/guide/lorem/"
+  identifier = "getting-started"
+  url = "/docs/getting-started/"
 
 [[tutorial]]
-  name = "Lorem"
+  name = "Skills guide"
   weight = 10
-  identifier = "lorem"
-  url = "/tutorial/lorem/"
+  identifier = "skills"
+  url = "/docs/guides/skills/"
 
 [[main]]
   name = "Docs"
-  url = "/docs/guides/example-guide/"
+  url = "/docs/getting-started/"
 # url = "/docs/1.0/prologue/introduction/"
   weight = 10
 
