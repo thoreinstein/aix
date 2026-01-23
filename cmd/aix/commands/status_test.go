@@ -63,6 +63,16 @@ func (m *statusMockPlatform) GetMCP(_ string) (any, error) {
 func (m *statusMockPlatform) EnableMCP(_ string) error  { return nil }
 func (m *statusMockPlatform) DisableMCP(_ string) error { return nil }
 
+func (m *statusMockPlatform) AgentDir() string              { return "/mock/agents" }
+func (m *statusMockPlatform) InstallAgent(_ any) error      { return nil }
+func (m *statusMockPlatform) UninstallAgent(_ string) error { return errors.New("not implemented") }
+func (m *statusMockPlatform) ListAgents() ([]cli.AgentInfo, error) {
+	return nil, errors.New("not implemented")
+}
+func (m *statusMockPlatform) GetAgent(_ string) (any, error) {
+	return nil, errors.New("not implemented")
+}
+
 func TestValidateStatusFlags(t *testing.T) {
 	tests := []struct {
 		name        string
