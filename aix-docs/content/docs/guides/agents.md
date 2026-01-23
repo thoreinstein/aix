@@ -38,6 +38,14 @@ To view the details of a specific agent, including its system prompt and active 
 aix agent show senior-dev
 ```
 
+## Discovering Agents
+
+Agents can also be discovered and installed from [repositories](guides/repositories/). When you add a repository, `aix` indexes any agent definitions found in the `agents/` subdirectory.
+
+```bash
+aix agent list --all  # Shows both installed and available from repos
+```
+
 ## Creating Agents
 
 *Support for creating new agents directly via `aix` is currently in preview.*
