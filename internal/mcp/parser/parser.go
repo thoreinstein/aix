@@ -5,11 +5,12 @@ package parser
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/cockroachdb/errors"
 
 	"github.com/thoreinstein/aix/internal/mcp"
 )
@@ -51,9 +52,9 @@ func Parse(data []byte) (*mcp.Config, error) {
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		var syntaxErr *json.SyntaxError
 		if errors.As(err, &syntaxErr) {
-			return nil, fmt.Errorf("%w: %v at offset %d", ErrInvalidJSON, err, syntaxErr.Offset)
+			return nil, errors.Wrapf(ErrInvalidJSON, "%v at offset %d", err, syntaxErr.Offset)
 		}
-		return nil, fmt.Errorf("%w: %v", ErrInvalidJSON, err)
+		return nil, errors.Wrap(ErrInvalidJSON, err.Error())
 	}
 
 	// Initialize Servers map if it was nil in the JSON
@@ -95,7 +96,7 @@ func Write(cfg *mcp.Config) ([]byte, error) {
 
 	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
-		return nil, fmt.Errorf("marshaling MCP config: %w", err)
+		return nil, errors.Wrap(err, "marshaling MCP config")
 	}
 
 	// Append newline for POSIX compliance
@@ -116,13 +117,13 @@ func WriteFile(path string, cfg *mcp.Config) error {
 	// Ensure parent directory exists
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return &ParseError{Path: path, Err: fmt.Errorf("creating directory: %w", err)}
+		return &ParseError{Path: path, Err: errors.Wrap(err, "creating directory")}
 	}
 
 	// Write to temp file in same directory for atomic rename
 	tmpFile, err := os.CreateTemp(dir, ".mcp-config-*.tmp")
 	if err != nil {
-		return &ParseError{Path: path, Err: fmt.Errorf("creating temp file: %w", err)}
+		return &ParseError{Path: path, Err: errors.Wrap(err, "creating temp file")}
 	}
 	tmpPath := tmpFile.Name()
 
@@ -135,16 +136,16 @@ func WriteFile(path string, cfg *mcp.Config) error {
 
 	if _, err := tmpFile.Write(data); err != nil {
 		tmpFile.Close()
-		return &ParseError{Path: path, Err: fmt.Errorf("writing temp file: %w", err)}
+		return &ParseError{Path: path, Err: errors.Wrap(err, "writing temp file")}
 	}
 
 	if err := tmpFile.Close(); err != nil {
-		return &ParseError{Path: path, Err: fmt.Errorf("closing temp file: %w", err)}
+		return &ParseError{Path: path, Err: errors.Wrap(err, "closing temp file")}
 	}
 
 	// Atomic rename
 	if err := os.Rename(tmpPath, path); err != nil {
-		return &ParseError{Path: path, Err: fmt.Errorf("renaming temp file: %w", err)}
+		return &ParseError{Path: path, Err: errors.Wrap(err, "renaming temp file")}
 	}
 
 	// Clear tmpPath so defer doesn't try to remove the renamed file

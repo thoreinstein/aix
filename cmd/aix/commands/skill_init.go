@@ -2,13 +2,13 @@ package commands
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/pkg/frontmatter"
@@ -121,7 +121,7 @@ func runSkillInit(_ *cobra.Command, args []string) error {
 		absPath, err = filepath.Abs(name)
 	}
 	if err != nil {
-		return fmt.Errorf("resolving path: %w", err)
+		return errors.Wrap(err, "resolving path")
 	}
 	targetDir := absPath // for display purposes
 
@@ -187,7 +187,7 @@ func runSkillInit(_ *cobra.Command, args []string) error {
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		fmt.Printf("Creating directory %s...\n", targetDir)
 		if err := os.MkdirAll(absPath, 0o755); err != nil {
-			return fmt.Errorf("creating directory: %w", err)
+			return errors.Wrap(err, "creating directory")
 		}
 	}
 
@@ -247,11 +247,11 @@ When the user asks to [do something], you should...
 
 	content, err := frontmatter.Format(meta, body)
 	if err != nil {
-		return fmt.Errorf("generating template: %w", err)
+		return errors.Wrap(err, "generating template")
 	}
 
 	if err := os.WriteFile(skillFile, content, 0o644); err != nil {
-		return fmt.Errorf("writing SKILL.md: %w", err)
+		return errors.Wrap(err, "writing SKILL.md")
 	}
 
 	// Create optional directories
@@ -260,11 +260,11 @@ When the user asks to [do something], you should...
 		for dir := range selectedDirs {
 			fullPath := filepath.Join(absPath, dir)
 			if err := os.MkdirAll(fullPath, 0o755); err != nil {
-				return fmt.Errorf("creating %s: %w", dir, err)
+				return errors.Wrapf(err, "creating %s", dir)
 			}
 			keepFile := filepath.Join(fullPath, ".keep")
 			if err := os.WriteFile(keepFile, []byte(""), 0o644); err != nil {
-				return fmt.Errorf("creating .keep in %s: %w", dir, err)
+				return errors.Wrapf(err, "creating .keep in %s", dir)
 			}
 		}
 	}
@@ -321,7 +321,7 @@ func validateSkillName(name string) error {
 	}
 
 	if len(name) > 64 {
-		return fmt.Errorf("skill name must be at most 64 characters (got %d)", len(name))
+		return errors.Newf("skill name must be at most 64 characters (got %d)", len(name))
 	}
 
 	if !skillNameRegex.MatchString(name) {

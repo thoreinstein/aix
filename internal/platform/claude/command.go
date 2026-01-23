@@ -2,11 +2,11 @@ package claude
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"strings"
+
+	"github.com/cockroachdb/errors"
 
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
@@ -46,7 +46,7 @@ func (m *CommandManager) List() ([]*Command, error) {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("reading commands directory: %w", err)
+		return nil, errors.Wrap(err, "reading commands directory")
 	}
 
 	// Count .md files for pre-allocation
@@ -71,13 +71,13 @@ func (m *CommandManager) List() ([]*Command, error) {
 
 		f, err := os.Open(cmdPath)
 		if err != nil {
-			return nil, fmt.Errorf("opening command file %q: %w", name, err)
+			return nil, errors.Wrapf(err, "opening command file %q", name)
 		}
 
 		cmd := &Command{Name: name}
 		if err := frontmatter.ParseHeader(f, cmd); err != nil {
 			f.Close()
-			return nil, fmt.Errorf("parsing command header %q: %w", name, err)
+			return nil, errors.Wrapf(err, "parsing command header %q", name)
 		}
 		f.Close()
 
@@ -104,12 +104,12 @@ func (m *CommandManager) Get(name string) (*Command, error) {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, ErrCommandNotFound
 		}
-		return nil, fmt.Errorf("reading command file: %w", err)
+		return nil, errors.Wrap(err, "reading command file")
 	}
 
 	cmd, err := parseCommandFile(data)
 	if err != nil {
-		return nil, fmt.Errorf("parsing command file: %w", err)
+		return nil, errors.Wrap(err, "parsing command file")
 	}
 
 	// Name is derived from filename, not frontmatter
@@ -131,17 +131,17 @@ func (m *CommandManager) Install(c *Command) error {
 	}
 
 	if err := os.MkdirAll(cmdDir, 0o755); err != nil {
-		return fmt.Errorf("creating commands directory: %w", err)
+		return errors.Wrap(err, "creating commands directory")
 	}
 
 	content, err := formatCommandFile(c)
 	if err != nil {
-		return fmt.Errorf("formatting command content: %w", err)
+		return errors.Wrap(err, "formatting command content")
 	}
 
 	cmdPath := m.paths.CommandPath(c.Name)
 	if err := os.WriteFile(cmdPath, []byte(content), 0o644); err != nil {
-		return fmt.Errorf("writing command file: %w", err)
+		return errors.Wrap(err, "writing command file")
 	}
 
 	return nil
@@ -163,7 +163,7 @@ func (m *CommandManager) Uninstall(name string) error {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil // Idempotent: already gone
 		}
-		return fmt.Errorf("removing command file: %w", err)
+		return errors.Wrap(err, "removing command file")
 	}
 
 	return nil
@@ -178,7 +178,7 @@ func parseCommandFile(data []byte) (*Command, error) {
 	// Parse with optional frontmatter
 	body, err := frontmatter.Parse(bytes.NewReader(data), cmd)
 	if err != nil {
-		return nil, fmt.Errorf("parsing frontmatter: %w", err)
+		return nil, errors.Wrap(err, "parsing frontmatter")
 	}
 
 	cmd.Instructions = strings.TrimSpace(string(body))

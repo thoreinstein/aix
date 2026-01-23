@@ -2,10 +2,10 @@ package commands
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/doctor"
@@ -187,7 +187,7 @@ func outputFixResultsJSON(results []doctor.FixResult) error {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(output); err != nil {
-		return fmt.Errorf("encoding fix results JSON: %w", err)
+		return errors.Wrap(err, "encoding fix results JSON")
 	}
 	return nil
 }
@@ -221,7 +221,7 @@ func outputDoctorJSON(report *doctor.DoctorReport) error {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(report); err != nil {
-		return fmt.Errorf("encoding JSON: %w", err)
+		return errors.Wrap(err, "encoding JSON")
 	}
 	return nil
 }

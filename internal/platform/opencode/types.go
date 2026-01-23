@@ -2,9 +2,9 @@ package opencode
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"gopkg.in/yaml.v3"
 )
 
@@ -134,7 +134,7 @@ func (c *CompatibilityMap) UnmarshalYAML(value *yaml.Node) error {
 		return nil
 	}
 
-	return fmt.Errorf("compatibility must be a map or list, got %s", value.Tag)
+	return errors.Newf("compatibility must be a map or list, got %s", value.Tag)
 }
 
 // Skill represents an OpenCode skill definition.

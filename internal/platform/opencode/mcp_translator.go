@@ -2,8 +2,8 @@ package opencode
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
+
+	"github.com/cockroachdb/errors"
 
 	"github.com/thoreinstein/aix/internal/mcp"
 )
@@ -52,14 +52,14 @@ func (t *MCPTranslator) ToCanonical(platformData []byte) (*mcp.Config, error) {
 	// First try to parse as MCPConfig (with mcp wrapper)
 	var openConfig MCPConfig
 	if err := json.Unmarshal(platformData, &openConfig); err != nil {
-		return nil, fmt.Errorf("parsing OpenCode MCP config: %w", err)
+		return nil, errors.Wrap(err, "parsing OpenCode MCP config")
 	}
 
 	// If mcp is nil, try parsing as a bare servers map
 	if openConfig.MCP == nil {
 		var servers map[string]*MCPServer
 		if err := json.Unmarshal(platformData, &servers); err != nil {
-			return nil, fmt.Errorf("parsing OpenCode MCP servers map: %w", err)
+			return nil, errors.Wrap(err, "parsing OpenCode MCP servers map")
 		}
 		openConfig.MCP = servers
 	}
@@ -194,7 +194,7 @@ func (t *MCPTranslator) FromCanonical(cfg *mcp.Config) ([]byte, error) {
 	// Marshal with indentation
 	data, err := json.MarshalIndent(openConfig, "", "  ")
 	if err != nil {
-		return nil, fmt.Errorf("marshaling OpenCode MCP config: %w", err)
+		return nil, errors.Wrap(err, "marshaling OpenCode MCP config")
 	}
 
 	return data, nil

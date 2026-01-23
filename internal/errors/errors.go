@@ -1,8 +1,9 @@
 package errors
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/cockroachdb/errors"
 )
 
 // Exit codes for CLI applications.
@@ -106,4 +107,10 @@ func (e *ExitError) Error() string {
 // to examine the error chain.
 func (e *ExitError) Unwrap() error {
 	return e.Err
+}
+
+// Newf creates a new error with a formatted message.
+// This is a passthrough to cockroachdb/errors.Newf.
+func Newf(format string, args ...interface{}) error {
+	return errors.Newf(format, args...)
 }

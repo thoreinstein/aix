@@ -1,10 +1,10 @@
 package claude
 
 import (
-	"errors"
-	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/cockroachdb/errors"
 )
 
 // Variables supported by Claude Code.
@@ -68,7 +68,7 @@ func ValidateVariables(content string) error {
 		return nil
 	}
 
-	return fmt.Errorf("%w: %s", ErrUnsupportedVariable, strings.Join(unsupported, ", "))
+	return errors.Wrapf(ErrUnsupportedVariable, "%s", strings.Join(unsupported, ", "))
 }
 
 // ListVariables returns all variables found in the content.

@@ -1,13 +1,13 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -157,7 +157,7 @@ func runConfigSet(_ *cobra.Command, args []string) error {
 			}
 		}
 		if len(invalid) > 0 {
-			return fmt.Errorf("invalid platform(s): %s (valid: %s)",
+			return errors.Newf("invalid platform(s): %s (valid: %s)",
 				strings.Join(invalid, ", "),
 				strings.Join(paths.Platforms(), ", "))
 		}
@@ -195,7 +195,7 @@ func runConfigList(_ *cobra.Command, _ []string) error {
 
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
-		return fmt.Errorf("marshaling config: %w", err)
+		return errors.Wrap(err, "marshaling config")
 	}
 
 	fmt.Print(string(data))
@@ -207,7 +207,7 @@ func runConfigEdit(_ *cobra.Command, _ []string) error {
 
 	// Check if config file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return fmt.Errorf("config file not found at %s\nRun 'aix init' to create it", configPath)
+		return errors.Newf("config file not found at %s\nRun 'aix init' to create it", configPath)
 	}
 
 	// Get editor from environment
@@ -223,7 +223,7 @@ func runConfigEdit(_ *cobra.Command, _ []string) error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("running editor: %w", err)
+		return errors.Wrap(err, "running editor")
 	}
 
 	return nil
@@ -253,17 +253,17 @@ func writeConfig() error {
 
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
-		return fmt.Errorf("marshaling config: %w", err)
+		return errors.Wrap(err, "marshaling config")
 	}
 
 	// Ensure directory exists
 	configDir := filepath.Dir(configPath)
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
-		return fmt.Errorf("creating config directory: %w", err)
+		return errors.Wrap(err, "creating config directory")
 	}
 
 	if err := os.WriteFile(configPath, data, 0o644); err != nil {
-		return fmt.Errorf("writing config file: %w", err)
+		return errors.Wrap(err, "writing config file")
 	}
 
 	return nil

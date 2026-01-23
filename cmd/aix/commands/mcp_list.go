@@ -7,6 +7,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
@@ -92,7 +93,7 @@ func outputMCPJSON(w io.Writer, platforms []cli.Platform) error {
 	for _, p := range platforms {
 		servers, err := p.ListMCP()
 		if err != nil {
-			return fmt.Errorf("listing MCP servers for %s: %w", p.Name(), err)
+			return errors.Wrapf(err, "listing MCP servers for %s", p.Name())
 		}
 
 		infos := make([]mcpServerInfoJSON, len(servers))
@@ -124,7 +125,7 @@ func outputMCPTabular(w io.Writer, platforms []cli.Platform) error {
 	for i, p := range platforms {
 		servers, err := p.ListMCP()
 		if err != nil {
-			return fmt.Errorf("listing MCP servers for %s: %w", p.Name(), err)
+			return errors.Wrapf(err, "listing MCP servers for %s", p.Name())
 		}
 
 		if len(servers) > 0 {

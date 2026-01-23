@@ -2,9 +2,9 @@ package claude
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"gopkg.in/yaml.v3"
 )
 
@@ -124,7 +124,7 @@ func (t *ToolList) UnmarshalYAML(value *yaml.Node) error {
 		return nil
 	}
 
-	return fmt.Errorf("allowed-tools must be a string or list of strings, got %s", value.Tag)
+	return errors.Newf("allowed-tools must be a string or list of strings, got %s", value.Tag)
 }
 
 // String returns the space-delimited string representation.

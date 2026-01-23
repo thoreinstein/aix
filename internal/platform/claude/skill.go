@@ -2,12 +2,12 @@ package claude
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/cockroachdb/errors"
 
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
@@ -43,7 +43,7 @@ func (m *SkillManager) List() ([]*Skill, error) {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("reading skill directory: %w", err)
+		return nil, errors.Wrap(err, "reading skill directory")
 	}
 
 	// Count directories for pre-allocation
@@ -73,13 +73,13 @@ func (m *SkillManager) List() ([]*Skill, error) {
 
 		f, err := os.Open(skillPath)
 		if err != nil {
-			return nil, fmt.Errorf("opening skill file %q: %w", name, err)
+			return nil, errors.Wrapf(err, "opening skill file %q", name)
 		}
 
 		skill := &Skill{Name: name}
 		if err := frontmatter.ParseHeader(f, skill); err != nil {
 			f.Close()
-			return nil, fmt.Errorf("parsing skill header %q: %w", name, err)
+			return nil, errors.Wrapf(err, "parsing skill header %q", name)
 		}
 		f.Close()
 
@@ -106,12 +106,12 @@ func (m *SkillManager) Get(name string) (*Skill, error) {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, ErrSkillNotFound
 		}
-		return nil, fmt.Errorf("reading skill file: %w", err)
+		return nil, errors.Wrap(err, "reading skill file")
 	}
 
 	skill, err := parseSkillFile(data)
 	if err != nil {
-		return nil, fmt.Errorf("parsing skill file: %w", err)
+		return nil, errors.Wrap(err, "parsing skill file")
 	}
 
 	// Ensure name matches directory name
@@ -135,18 +135,18 @@ func (m *SkillManager) Install(s *Skill) error {
 	// Create skill directory
 	skillDir := filepath.Dir(skillPath)
 	if err := os.MkdirAll(skillDir, 0o755); err != nil {
-		return fmt.Errorf("creating skill directory: %w", err)
+		return errors.Wrap(err, "creating skill directory")
 	}
 
 	// Generate skill file content
 	content, err := formatSkillFile(s)
 	if err != nil {
-		return fmt.Errorf("formatting skill file: %w", err)
+		return errors.Wrap(err, "formatting skill file")
 	}
 
 	// Write skill file
 	if err := os.WriteFile(skillPath, content, 0o644); err != nil {
-		return fmt.Errorf("writing skill file: %w", err)
+		return errors.Wrap(err, "writing skill file")
 	}
 
 	return nil
@@ -167,7 +167,7 @@ func (m *SkillManager) Uninstall(name string) error {
 	// Remove the skill directory (parent of SKILL.md)
 	skillDir := filepath.Dir(skillPath)
 	if err := os.RemoveAll(skillDir); err != nil {
-		return fmt.Errorf("removing skill directory: %w", err)
+		return errors.Wrap(err, "removing skill directory")
 	}
 
 	return nil
@@ -189,7 +189,7 @@ func parseSkillFile(data []byte) (*Skill, error) {
 	// Skills require frontmatter, so use MustParse
 	body, err := frontmatter.MustParse(bytes.NewReader(data), &skill)
 	if err != nil {
-		return nil, fmt.Errorf("parsing frontmatter: %w", err)
+		return nil, errors.Wrap(err, "parsing frontmatter")
 	}
 
 	// Set body content, trimming leading/trailing whitespace

@@ -2,9 +2,10 @@ package commands
 
 import (
 	"bytes"
-	"errors"
 	"strings"
 	"testing"
+
+	"github.com/cockroachdb/errors"
 
 	"github.com/thoreinstein/aix/internal/cli"
 )

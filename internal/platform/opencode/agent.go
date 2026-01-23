@@ -2,11 +2,11 @@ package opencode
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/cockroachdb/errors"
 
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
@@ -42,7 +42,7 @@ func (m *AgentManager) List() ([]*Agent, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("reading agent directory: %w", err)
+		return nil, errors.Wrap(err, "reading agent directory")
 	}
 
 	// Count markdown files for pre-allocation
@@ -67,13 +67,13 @@ func (m *AgentManager) List() ([]*Agent, error) {
 
 		f, err := os.Open(agentPath)
 		if err != nil {
-			return nil, fmt.Errorf("opening agent file %q: %w", name, err)
+			return nil, errors.Wrapf(err, "opening agent file %q", name)
 		}
 
 		agent := &Agent{Name: name}
 		if err := frontmatter.ParseHeader(f, agent); err != nil {
 			f.Close()
-			return nil, fmt.Errorf("parsing agent header %q: %w", name, err)
+			return nil, errors.Wrapf(err, "parsing agent header %q", name)
 		}
 		f.Close()
 
@@ -100,12 +100,12 @@ func (m *AgentManager) Get(name string) (*Agent, error) {
 		if os.IsNotExist(err) {
 			return nil, ErrAgentNotFound
 		}
-		return nil, fmt.Errorf("reading agent file: %w", err)
+		return nil, errors.Wrap(err, "reading agent file")
 	}
 
 	agent, err := parseAgentContent(data)
 	if err != nil {
-		return nil, fmt.Errorf("parsing agent %q: %w", name, err)
+		return nil, errors.Wrapf(err, "parsing agent %q", name)
 	}
 
 	agent.Name = name
@@ -126,17 +126,17 @@ func (m *AgentManager) Install(a *Agent) error {
 	}
 
 	if err := os.MkdirAll(agentDir, 0o755); err != nil {
-		return fmt.Errorf("creating agent directory: %w", err)
+		return errors.Wrap(err, "creating agent directory")
 	}
 
 	content, err := formatAgentContent(a)
 	if err != nil {
-		return fmt.Errorf("formatting agent content: %w", err)
+		return errors.Wrap(err, "formatting agent content")
 	}
 	agentPath := m.paths.AgentPath(a.Name)
 
 	if err := os.WriteFile(agentPath, []byte(content), 0o644); err != nil {
-		return fmt.Errorf("writing agent file: %w", err)
+		return errors.Wrap(err, "writing agent file")
 	}
 
 	return nil
@@ -156,7 +156,7 @@ func (m *AgentManager) Uninstall(name string) error {
 
 	err := os.Remove(agentPath)
 	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("removing agent file: %w", err)
+		return errors.Wrap(err, "removing agent file")
 	}
 
 	return nil
@@ -190,7 +190,7 @@ func (m *AgentManager) Names() ([]string, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("reading agent directory: %w", err)
+		return nil, errors.Wrap(err, "reading agent directory")
 	}
 
 	// Count markdown files for pre-allocation
@@ -236,7 +236,7 @@ func parseAgentContent(data []byte) (*Agent, error) {
 	// Parse with optional frontmatter
 	body, err := frontmatter.Parse(bytes.NewReader(data), agent)
 	if err != nil {
-		return nil, fmt.Errorf("parsing frontmatter: %w", err)
+		return nil, errors.Wrap(err, "parsing frontmatter")
 	}
 
 	agent.Instructions = strings.TrimSpace(string(body))

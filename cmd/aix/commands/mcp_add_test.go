@@ -1,9 +1,10 @@
 package commands
 
 import (
-	"errors"
 	"strings"
 	"testing"
+
+	"github.com/cockroachdb/errors"
 )
 
 func TestParseKeyValueSlice(t *testing.T) {

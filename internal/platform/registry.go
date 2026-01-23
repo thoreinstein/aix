@@ -1,9 +1,10 @@
 package platform
 
 import (
-	"errors"
 	"sort"
 	"sync"
+
+	"github.com/cockroachdb/errors"
 
 	"github.com/thoreinstein/aix/internal/paths"
 )

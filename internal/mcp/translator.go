@@ -1,6 +1,6 @@
 package mcp
 
-import "errors"
+import "github.com/cockroachdb/errors"
 
 // Translator converts between canonical and platform-specific MCP formats.
 //
