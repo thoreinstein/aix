@@ -69,6 +69,9 @@ Need detailed command syntax? Check the **[API Reference](reference/)** for comp
 *   [`aix skill`](reference/skill/)
 *   [`aix command`](reference/command/)
 
+### 🛠️ [Troubleshooting](guides/troubleshooting/)
+Diagnose issues, fix permissions, and recover from configuration errors using `aix doctor` and `aix backup`.
+
 ## Resources
 
 *   [Architecture Decisions](https://github.com/thoreinstein/aix/blob/main/docs/adr/001-unified-agent-cli.md)

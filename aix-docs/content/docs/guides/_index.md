@@ -20,6 +20,7 @@ Welcome to the `aix` guides. Here you'll find detailed instructions on how to co
 *   **[MCP Servers](mcp/)**: Connect your agents to external tools and databases.
 *   **[Slash Commands](commands/)**: Automate repetitive tasks with custom commands.
 *   **[Agents](agents/)**: Manage full agent personas and profiles.
+*   **[Troubleshooting](troubleshooting/)**: Fix common configuration and permission issues.
 
 ## Advanced Topics
 
