@@ -10,6 +10,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
 )
 
@@ -77,6 +78,12 @@ func runMCPRemoveWithIO(args []string, w io.Writer, r io.Reader) error {
 
 	var failed []string
 	for _, p := range platforms {
+		// Ensure backup exists before modifying
+		if err := backup.EnsureBackedUp(p.Name(), p.BackupPaths()); err != nil {
+			failed = append(failed, fmt.Sprintf("%s: backup failed: %v", p.DisplayName(), err))
+			continue
+		}
+
 		// Check if server exists on this platform
 		_, err := p.GetMCP(name)
 		if err != nil {

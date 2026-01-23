@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
 )
 
@@ -74,6 +75,12 @@ func runAgentRemoveWithIO(args []string, w io.Writer, r io.Reader) error {
 	// Remove from each platform
 	var failed []string
 	for _, p := range installedOn {
+		// Ensure backup exists before modifying
+		if err := backup.EnsureBackedUp(p.Name(), p.BackupPaths()); err != nil {
+			failed = append(failed, fmt.Sprintf("%s: backup failed: %v", p.DisplayName(), err))
+			continue
+		}
+
 		fmt.Fprintf(w, "Removing from %s... ", p.DisplayName())
 		if err := p.UninstallAgent(name); err != nil {
 			fmt.Fprintln(w, "failed")

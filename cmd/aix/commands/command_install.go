@@ -10,6 +10,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/command/parser"
 	"github.com/thoreinstein/aix/internal/command/validator"
@@ -208,6 +209,11 @@ func installCommandFromLocal(source string) error {
 	// Install to each platform
 	var installedCount int
 	for _, plat := range platforms {
+		// Ensure backup exists before modifying
+		if err := backup.EnsureBackedUp(plat.Name(), plat.BackupPaths()); err != nil {
+			return errors.Wrapf(err, "backing up %s before install", plat.DisplayName())
+		}
+
 		fmt.Printf("Installing '%s' to %s... ", (*cmd).Name, plat.DisplayName())
 
 		// Convert command to platform-specific type

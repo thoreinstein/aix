@@ -8,6 +8,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
 )
 
@@ -90,6 +91,12 @@ func runMCPSetEnabledWithIO(name string, enabled bool, w io.Writer) error {
 		}
 
 		foundAny = true
+
+		// Ensure backup exists before modifying
+		if err := backup.EnsureBackedUp(plat.Name(), plat.BackupPaths()); err != nil {
+			fmt.Fprintf(w, "  %s: backup failed: %v\n", plat.Name(), err)
+			continue
+		}
 
 		if enabled {
 			err = plat.EnableMCP(name)

@@ -9,6 +9,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
@@ -174,6 +175,11 @@ func runMCPAddCore(args []string) error {
 	// Add to each platform
 	var addedCount int
 	for _, plat := range platforms {
+		// Ensure backup exists before modifying
+		if err := backup.EnsureBackedUp(plat.Name(), plat.BackupPaths()); err != nil {
+			return errors.Wrapf(err, "backing up %s before add", plat.DisplayName())
+		}
+
 		fmt.Printf("Adding '%s' to %s... ", name, plat.DisplayName())
 
 		// Create platform-specific server and add it
