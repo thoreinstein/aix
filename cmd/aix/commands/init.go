@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
@@ -91,7 +92,7 @@ func runInit(_ *cobra.Command, _ []string) error {
 	// Create config directory
 	configDir := filepath.Dir(configPath)
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
-		return fmt.Errorf("creating config directory: %w", err)
+		return errors.Wrap(err, "creating config directory")
 	}
 
 	// Write config file
@@ -102,11 +103,11 @@ func runInit(_ *cobra.Command, _ []string) error {
 
 	data, err := yaml.Marshal(&cfg)
 	if err != nil {
-		return fmt.Errorf("marshaling config: %w", err)
+		return errors.Wrap(err, "marshaling config")
 	}
 
 	if err := os.WriteFile(configPath, data, 0o644); err != nil {
-		return fmt.Errorf("writing config file: %w", err)
+		return errors.Wrap(err, "writing config file")
 	}
 
 	fmt.Printf("Created %s\n", configPath)

@@ -2,9 +2,9 @@
 package cli
 
 import (
-	"errors"
-	"fmt"
 	"strings"
+
+	"github.com/cockroachdb/errors"
 
 	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/platform"
@@ -133,7 +133,7 @@ func (a *claudeAdapter) IsAvailable() bool {
 func (a *claudeAdapter) InstallSkill(skill any) error {
 	s, ok := skill.(*claude.Skill)
 	if !ok {
-		return fmt.Errorf("expected *claude.Skill, got %T", skill)
+		return errors.Newf("expected *claude.Skill, got %T", skill)
 	}
 	return a.p.InstallSkill(s)
 }
@@ -174,7 +174,7 @@ func (a *claudeAdapter) CommandDir() string {
 func (a *claudeAdapter) InstallCommand(cmd any) error {
 	c, ok := cmd.(*claude.Command)
 	if !ok {
-		return fmt.Errorf("expected *claude.Command, got %T", cmd)
+		return errors.Newf("expected *claude.Command, got %T", cmd)
 	}
 	return a.p.InstallCommand(c)
 }
@@ -211,7 +211,7 @@ func (a *claudeAdapter) MCPConfigPath() string {
 func (a *claudeAdapter) AddMCP(server any) error {
 	s, ok := server.(*claude.MCPServer)
 	if !ok {
-		return fmt.Errorf("expected *claude.MCPServer, got %T", server)
+		return errors.Newf("expected *claude.MCPServer, got %T", server)
 	}
 	return a.p.AddMCP(s)
 }
@@ -286,7 +286,7 @@ func (a *opencodeAdapter) IsAvailable() bool {
 func (a *opencodeAdapter) InstallSkill(skill any) error {
 	s, ok := skill.(*opencode.Skill)
 	if !ok {
-		return fmt.Errorf("expected *opencode.Skill, got %T", skill)
+		return errors.Newf("expected *opencode.Skill, got %T", skill)
 	}
 	return a.p.InstallSkill(s)
 }
@@ -327,7 +327,7 @@ func (a *opencodeAdapter) CommandDir() string {
 func (a *opencodeAdapter) InstallCommand(cmd any) error {
 	c, ok := cmd.(*opencode.Command)
 	if !ok {
-		return fmt.Errorf("expected *opencode.Command, got %T", cmd)
+		return errors.Newf("expected *opencode.Command, got %T", cmd)
 	}
 	return a.p.InstallCommand(c)
 }
@@ -364,7 +364,7 @@ func (a *opencodeAdapter) MCPConfigPath() string {
 func (a *opencodeAdapter) AddMCP(server any) error {
 	s, ok := server.(*opencode.MCPServer)
 	if !ok {
-		return fmt.Errorf("expected *opencode.MCPServer, got %T", server)
+		return errors.Newf("expected *opencode.MCPServer, got %T", server)
 	}
 	return a.p.AddMCP(s)
 }
@@ -426,7 +426,7 @@ func NewPlatform(name string) (Platform, error) {
 	case paths.PlatformOpenCode:
 		return &opencodeAdapter{p: opencode.NewOpenCodePlatform()}, nil
 	default:
-		return nil, fmt.Errorf("%w: %s", ErrUnknownPlatform, name)
+		return nil, errors.Wrapf(ErrUnknownPlatform, "%s", name)
 	}
 }
 
@@ -476,8 +476,7 @@ func ResolvePlatforms(names []string) ([]Platform, error) {
 	}
 
 	if len(invalid) > 0 {
-		return nil, fmt.Errorf("%w: %s (valid: %s)",
-			ErrUnknownPlatform,
+		return nil, errors.Wrapf(ErrUnknownPlatform, "%s (valid: %s)",
 			strings.Join(invalid, ", "),
 			strings.Join(paths.Platforms(), ", "))
 	}

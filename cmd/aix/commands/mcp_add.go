@@ -2,11 +2,11 @@ package commands
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
@@ -152,7 +152,7 @@ func runMCPAddCore(args []string) error {
 			return errMCPAddMissingURL
 		}
 	default:
-		return fmt.Errorf("invalid --transport %q: must be 'stdio' or 'sse'", transport)
+		return errors.Newf("invalid --transport %q: must be 'stdio' or 'sse'", transport)
 	}
 
 	// Get target platforms
@@ -165,7 +165,7 @@ func runMCPAddCore(args []string) error {
 	if !mcpAddForce {
 		for _, plat := range platforms {
 			if _, err := plat.GetMCP(name); err == nil {
-				return fmt.Errorf("server %q already exists on %s (use --force to overwrite)",
+				return errors.Newf("server %q already exists on %s (use --force to overwrite)",
 					name, plat.DisplayName())
 			}
 		}
@@ -179,7 +179,7 @@ func runMCPAddCore(args []string) error {
 		// Create platform-specific server and add it
 		if err := addMCPToPlatform(plat, name, command, cmdArgs, transport, envMap, headersMap); err != nil {
 			fmt.Println("failed")
-			return fmt.Errorf("failed to add to %s: %w", plat.DisplayName(), err)
+			return errors.Wrapf(err, "failed to add to %s", plat.DisplayName())
 		}
 
 		fmt.Println("done")
@@ -204,7 +204,7 @@ func runMCPAddInteractive(_ *cobra.Command) error {
 	fmt.Print("Enter server name: ")
 	name, err := reader.ReadString('\n')
 	if err != nil {
-		return fmt.Errorf("reading server name: %w", err)
+		return errors.Wrap(err, "reading server name")
 	}
 	name = strings.TrimSpace(name)
 	if name == "" {
@@ -218,7 +218,7 @@ func runMCPAddInteractive(_ *cobra.Command) error {
 	fmt.Print("Choice [1]: ")
 	choice, err := reader.ReadString('\n')
 	if err != nil {
-		return fmt.Errorf("reading transport choice: %w", err)
+		return errors.Wrap(err, "reading transport choice")
 	}
 	choice = strings.TrimSpace(choice)
 	if choice == "" {
@@ -235,7 +235,7 @@ func runMCPAddInteractive(_ *cobra.Command) error {
 		fmt.Print("Enter command: ")
 		command, err = reader.ReadString('\n')
 		if err != nil {
-			return fmt.Errorf("reading command: %w", err)
+			return errors.Wrap(err, "reading command")
 		}
 		command = strings.TrimSpace(command)
 		if command == "" {
@@ -245,7 +245,7 @@ func runMCPAddInteractive(_ *cobra.Command) error {
 		fmt.Print("Enter arguments (space-separated, or empty): ")
 		argsLine, err := reader.ReadString('\n')
 		if err != nil {
-			return fmt.Errorf("reading arguments: %w", err)
+			return errors.Wrap(err, "reading arguments")
 		}
 		argsLine = strings.TrimSpace(argsLine)
 		if argsLine != "" {
@@ -256,7 +256,7 @@ func runMCPAddInteractive(_ *cobra.Command) error {
 		fmt.Print("Enter URL: ")
 		url, err = reader.ReadString('\n')
 		if err != nil {
-			return fmt.Errorf("reading URL: %w", err)
+			return errors.Wrap(err, "reading URL")
 		}
 		url = strings.TrimSpace(url)
 		if url == "" {
@@ -266,7 +266,7 @@ func runMCPAddInteractive(_ *cobra.Command) error {
 		fmt.Print("Enter headers (KEY=VALUE, comma-separated, or empty): ")
 		headersLine, err := reader.ReadString('\n')
 		if err != nil {
-			return fmt.Errorf("reading headers: %w", err)
+			return errors.Wrap(err, "reading headers")
 		}
 		headersLine = strings.TrimSpace(headersLine)
 		if headersLine != "" {
@@ -278,7 +278,7 @@ func runMCPAddInteractive(_ *cobra.Command) error {
 	fmt.Print("Enter environment variables (KEY=VALUE, comma-separated, or empty): ")
 	envLine, err := reader.ReadString('\n')
 	if err != nil {
-		return fmt.Errorf("reading environment variables: %w", err)
+		return errors.Wrap(err, "reading environment variables")
 	}
 	envLine = strings.TrimSpace(envLine)
 	var env map[string]string
@@ -294,7 +294,7 @@ func runMCPAddInteractive(_ *cobra.Command) error {
 	fmt.Print("Choice [1]: ")
 	platChoice, err := reader.ReadString('\n')
 	if err != nil {
-		return fmt.Errorf("reading platform choice: %w", err)
+		return errors.Wrap(err, "reading platform choice")
 	}
 	platChoice = strings.TrimSpace(platChoice)
 
@@ -384,7 +384,7 @@ func addMCPToPlatform(
 		return plat.AddMCP(server)
 
 	default:
-		return fmt.Errorf("unsupported platform: %s", plat.Name())
+		return errors.Newf("unsupported platform: %s", plat.Name())
 	}
 }
 
@@ -399,7 +399,7 @@ func parseKeyValueSlice(entries []string, flagName string) (map[string]string, e
 	for _, entry := range entries {
 		key, value, found := strings.Cut(entry, "=")
 		if !found || key == "" {
-			return nil, fmt.Errorf("invalid %s format %q: expected KEY=VALUE", flagName, entry)
+			return nil, errors.Newf("invalid %s format %q: expected KEY=VALUE", flagName, entry)
 		}
 		result[key] = value
 	}

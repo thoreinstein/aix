@@ -2,13 +2,13 @@ package commands
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/pkg/frontmatter"
@@ -93,7 +93,7 @@ func validateCommandName(name string) error {
 	}
 
 	if len(name) > 64 {
-		return fmt.Errorf("command name must be at most 64 characters (got %d)", len(name))
+		return errors.Newf("command name must be at most 64 characters (got %d)", len(name))
 	}
 
 	if !commandNameRegex.MatchString(name) {
@@ -135,7 +135,7 @@ func runCommandInit(_ *cobra.Command, args []string) error {
 		absPath, err = filepath.Abs(name)
 	}
 	if err != nil {
-		return fmt.Errorf("resolving path: %w", err)
+		return errors.Wrap(err, "resolving path")
 	}
 	targetDir := absPath // for display purposes
 
@@ -158,7 +158,7 @@ func runCommandInit(_ *cobra.Command, args []string) error {
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		fmt.Printf("Creating directory %s...\n", targetDir)
 		if err := os.MkdirAll(absPath, 0o755); err != nil {
-			return fmt.Errorf("creating directory: %w", err)
+			return errors.Wrap(err, "creating directory")
 		}
 	}
 
@@ -204,11 +204,11 @@ Your command instructions go here.
 
 	content, err := frontmatter.Format(meta, body)
 	if err != nil {
-		return fmt.Errorf("generating template: %w", err)
+		return errors.Wrap(err, "generating template")
 	}
 
 	if err := os.WriteFile(commandFile, content, 0o644); err != nil {
-		return fmt.Errorf("writing command.md: %w", err)
+		return errors.Wrap(err, "writing command.md")
 	}
 
 	// Print success message

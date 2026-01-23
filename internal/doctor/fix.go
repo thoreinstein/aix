@@ -3,6 +3,8 @@ package doctor
 import (
 	"fmt"
 	"os"
+
+	"github.com/cockroachdb/errors"
 )
 
 // Fixer is an optional interface that checks can implement to support auto-remediation.
@@ -94,14 +96,14 @@ func (f *PermissionFixer) fixIssue(issue pathIssue) FixResult {
 		targetPerm = secureDirPerm
 	default:
 		result.Description = "unknown type: " + issue.Type
-		result.Error = fmt.Errorf("cannot fix unknown type: %s", issue.Type)
+		result.Error = errors.Newf("cannot fix unknown type: %s", issue.Type)
 		return result
 	}
 
 	// Apply the fix
 	if err := os.Chmod(issue.Path, targetPerm); err != nil {
 		result.Description = fmt.Sprintf("failed to chmod %04o: %v", targetPerm, err)
-		result.Error = fmt.Errorf("chmod %04o %s: %w", targetPerm, issue.Path, err)
+		result.Error = errors.Wrapf(err, "chmod %04o %s", targetPerm, issue.Path)
 		return result
 	}
 

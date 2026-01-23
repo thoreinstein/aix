@@ -5,10 +5,10 @@ package frontmatter
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"io"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"gopkg.in/yaml.v3"
 )
 

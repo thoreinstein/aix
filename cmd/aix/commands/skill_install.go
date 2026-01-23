@@ -1,13 +1,13 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
@@ -101,7 +101,7 @@ func installFromGit(url string) error {
 	// Create temp directory for clone
 	tempDir, err := os.MkdirTemp("", "aix-skill-*")
 	if err != nil {
-		return fmt.Errorf("creating temp directory: %w", err)
+		return errors.Wrap(err, "creating temp directory")
 	}
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
@@ -115,7 +115,7 @@ func installFromGit(url string) error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("cloning repository: %w", err)
+		return errors.Wrap(err, "cloning repository")
 	}
 
 	return installFromLocal(tempDir)
@@ -134,7 +134,7 @@ func installFromLocal(skillPath string) error {
 
 	// Check if SKILL.md exists
 	if _, err := os.Stat(skillFile); os.IsNotExist(err) {
-		return fmt.Errorf("SKILL.md not found at %s", absPath)
+		return errors.Newf("SKILL.md not found at %s", absPath)
 	}
 
 	fmt.Println("Validating skill...")
@@ -143,7 +143,7 @@ func installFromLocal(skillPath string) error {
 	p := parser.New()
 	skill, err := p.ParseFile(skillFile)
 	if err != nil {
-		return fmt.Errorf("parsing skill: %w", err)
+		return errors.Wrap(err, "parsing skill")
 	}
 
 	// Validate the skill
@@ -167,7 +167,7 @@ func installFromLocal(skillPath string) error {
 	if !installForce {
 		for _, plat := range platforms {
 			if _, err := plat.GetSkill(skill.Name); err == nil {
-				return fmt.Errorf("skill %q already exists on %s (use --force to overwrite)",
+				return errors.Newf("skill %q already exists on %s (use --force to overwrite)",
 					skill.Name, plat.DisplayName())
 			}
 		}
@@ -183,7 +183,7 @@ func installFromLocal(skillPath string) error {
 
 		if err := plat.InstallSkill(platformSkill); err != nil {
 			fmt.Println("failed")
-			return fmt.Errorf("failed to install to %s: %w", plat.DisplayName(), err)
+			return errors.Wrapf(err, "failed to install to %s", plat.DisplayName())
 		}
 
 		fmt.Println("done")

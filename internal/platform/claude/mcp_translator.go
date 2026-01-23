@@ -2,8 +2,8 @@ package claude
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
+
+	"github.com/cockroachdb/errors"
 
 	"github.com/thoreinstein/aix/internal/mcp"
 )
@@ -48,14 +48,14 @@ func (t *MCPTranslator) ToCanonical(platformData []byte) (*mcp.Config, error) {
 	// First try to parse as MCPConfig (with mcpServers wrapper)
 	var claudeConfig MCPConfig
 	if err := json.Unmarshal(platformData, &claudeConfig); err != nil {
-		return nil, fmt.Errorf("parsing Claude Code MCP config: %w", err)
+		return nil, errors.Wrap(err, "parsing Claude Code MCP config")
 	}
 
 	// If mcpServers is nil, try parsing as a bare servers map
 	if claudeConfig.MCPServers == nil {
 		var servers map[string]*MCPServer
 		if err := json.Unmarshal(platformData, &servers); err != nil {
-			return nil, fmt.Errorf("parsing Claude Code MCP servers map: %w", err)
+			return nil, errors.Wrap(err, "parsing Claude Code MCP servers map")
 		}
 		claudeConfig.MCPServers = servers
 	}
@@ -151,7 +151,7 @@ func (t *MCPTranslator) FromCanonical(cfg *mcp.Config) ([]byte, error) {
 	// Marshal with indentation
 	data, err := json.MarshalIndent(claudeConfig, "", "  ")
 	if err != nil {
-		return nil, fmt.Errorf("marshaling Claude Code MCP config: %w", err)
+		return nil, errors.Wrap(err, "marshaling Claude Code MCP config")
 	}
 
 	return data, nil

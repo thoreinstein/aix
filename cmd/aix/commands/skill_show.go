@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
@@ -106,7 +107,7 @@ func runSkillShow(_ *cobra.Command, args []string) error {
 	}
 
 	if detail == nil {
-		return fmt.Errorf("skill %q not found on any platform", name)
+		return errors.Newf("skill %q not found on any platform", name)
 	}
 
 	detail.Installations = installations
@@ -186,7 +187,7 @@ func extractOpenCodeSkill(s *opencode.Skill) *showSkillDetail {
 func outputShowJSON(detail *showSkillDetail) error {
 	data, err := json.MarshalIndent(detail, "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshaling JSON: %w", err)
+		return errors.Wrap(err, "marshaling JSON")
 	}
 	fmt.Println(string(data))
 	return nil

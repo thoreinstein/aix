@@ -2,8 +2,9 @@
 package validator
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/cockroachdb/errors"
 )
 
 // Sentinel errors for validation failures.

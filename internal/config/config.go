@@ -2,10 +2,10 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/viper"
 
 	"github.com/thoreinstein/aix/internal/paths"
@@ -29,18 +29,18 @@ type PlatformOverride struct {
 // Validate checks the configuration for errors.
 func (c *Config) Validate() error {
 	if c.Version != 1 {
-		return fmt.Errorf("unsupported config version: %d", c.Version)
+		return errors.Newf("unsupported config version: %d", c.Version)
 	}
 
 	for _, p := range c.DefaultPlatforms {
 		if !paths.ValidPlatform(p) {
-			return fmt.Errorf("invalid default platform: %s", p)
+			return errors.Newf("invalid default platform: %s", p)
 		}
 	}
 
 	for p := range c.Platforms {
 		if !paths.ValidPlatform(p) {
-			return fmt.Errorf("invalid platform override key: %s", p)
+			return errors.Newf("invalid platform override key: %s", p)
 		}
 	}
 
@@ -85,18 +85,18 @@ func Load(path string) (*Config, error) {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// If user specified a path, this is an error
 			if path != "" {
-				return nil, fmt.Errorf("config file not found at %s: %w", path, err)
+				return nil, errors.Wrapf(err, "config file not found at %s", path)
 			}
 			// Otherwise (implicit load), it's fine to use defaults
 		} else {
 			// Real read error (parsing, permissions, etc)
-			return nil, fmt.Errorf("reading config file: %w", err)
+			return nil, errors.Wrap(err, "reading config file")
 		}
 	}
 
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("unmarshaling config: %w", err)
+		return nil, errors.Wrap(err, "unmarshaling config")
 	}
 
 	// Apply defaults if not set by config
@@ -108,7 +108,7 @@ func Load(path string) (*Config, error) {
 	}
 
 	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("validating config: %w", err)
+		return nil, errors.Wrap(err, "validating config")
 	}
 
 	return &cfg, nil
