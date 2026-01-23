@@ -68,6 +68,9 @@ By default, `aix` installs the skill to all configured platforms. You can restri
 aix skill install ./my-feature --platform opencode
 ```
 
+> **How does this work?**
+> `aix` reads your skill definition and translates it into the native configuration format for each platform. See the **[Platform Configuration](../platforms/)** guide for details on which files are modified.
+
 ## Managing Skills
 
 ### Listing Skills
