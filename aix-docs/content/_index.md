@@ -23,17 +23,14 @@ The AI coding assistant landscape is fragmented. Each platform has its own confi
 ## Core Features
 
 ### 🔌 MCP Servers
-
 Manage Model Context Protocol (MCP) servers to extend your agent's capabilities with external tools and data.
 [Learn more about MCP Servers](./docs/guides/mcp/)
 
 ### 🧠 Skills
-
 Create and share reusable agent capabilities (prompts + tools) that work across any supported platform.
 [Learn more about Skills](./docs/guides/skills/)
 
 ### ⚡ Slash Commands
-
 Define custom slash commands to automate common workflows and context gathering.
 [Learn more about Slash Commands](./docs/guides/commands/)
 
