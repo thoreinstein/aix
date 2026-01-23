@@ -24,14 +24,14 @@ Anthropic's **Claude Code** stores its configuration in your home directory.
 
 | Scope | Path | Managed By `aix` |
 | :--- | :--- | :--- |
-| **Global Config** | `~/.claude/config.json` | ✅ MCP Servers |
+| **Global Config** | `~/.claude.json` | ✅ MCP Servers |
 | **Instructions** | `~/.claude/CLAUDE.md` | ✅ Skills, Agents (User) |
 | **Project Config** | `<project-root>/CLAUDE.md` | ✅ Skills (Project) |
 | **History** | `~/.claude/history/` | ❌ (Ignored) |
 
 ### Integration Details
 
-*   **MCP Servers**: `aix mcp add` updates the `mcpServers` object in `~/.claude/config.json`.
+*   **MCP Servers**: `aix mcp add` updates the `mcpServers` object in `~/.claude.json`.
 *   **Skills & Agents**: `aix` compiles your installed skills into the `CLAUDE.md` system prompt file.
 *   **Slash Commands**: Custom commands are generated as executable scripts or instruction blocks that Claude can reference.
 
@@ -47,32 +47,34 @@ Anthropic's **Claude Code** stores its configuration in your home directory.
 | :--- | :--- | :--- |
 | **Global Config** | `~/.config/opencode/opencode.json` | ✅ MCP Servers, Settings |
 | **Instructions** | `~/.config/opencode/AGENTS.md` | ✅ Skills, Agents |
-| **Agents Dir** | `~/.config/opencode/agents/` | ✅ Agent Definitions |
+| **Agents Dir** | `~/.config/opencode/agent/` | ✅ Agent Definitions |
 
 ### Integration Details
 
 *   **MCP Servers**: `aix` manages the `mcpServers` section in `opencode.json`.
-*   **Agents**: `aix agent install` writes new agent definitions to the `agents/` subdirectory.
+*   **Agents**: `aix agent install` writes new agent definitions to the `agent/` subdirectory.
 *   **Translation**: `aix` automatically converts generic markdown prompts into OpenCode's specific agent format.
 
 ---
 
-## Gemini CLI
+## Gemini CLI (Planned)
 
-Google's **Gemini CLI** configuration is file-based and typically located in `~/.gemini/`.
+> **Note:** Gemini CLI support is **planned** and is **not yet available** in the current version of `aix`.
 
-### File Locations
+Google's **Gemini CLI** integration in `aix` is planned to be file-based and to use configuration files in `~/.gemini/`.
 
-| Scope | Path | Managed By `aix` |
+### Planned File Locations
+
+| Scope | Path | Managed By `aix` (planned) |
 | :--- | :--- | :--- |
-| **Global Config** | `~/.gemini/config.yaml` | ✅ Settings |
-| **MCP Config** | `~/.gemini/mcp.yaml` | ✅ MCP Servers |
-| **Instructions** | `~/.gemini/GEMINI.md` | ✅ System Prompts |
+| **Global Config** | `~/.gemini/config.yaml` | ✅ Settings (planned) |
+| **MCP Config** | `~/.gemini/mcp.yaml` | ✅ MCP Servers (planned) |
+| **Instructions** | `~/.gemini/GEMINI.md` | ✅ System Prompts (planned) |
 
-### Integration Details
+### Planned Integration Details
 
-*   **Separate MCP File**: Unlike Claude, Gemini CLI often uses a dedicated `mcp.yaml` which `aix` manages directly.
-*   **Extensions**: `aix` can install skills as Gemini "Extensions" if supported by the version installed.
+*   **Separate MCP File**: Unlike Claude, Gemini CLI is planned to use a dedicated `mcp.yaml` which `aix` would manage directly.
+*   **Extensions**: Future versions of `aix` may install skills as Gemini "Extensions" if supported by the installed Gemini CLI version.
 
 ---
 
