@@ -53,6 +53,9 @@ func TestAgentEditCmd_Metadata(t *testing.T) {
 }
 
 func TestAgentEdit_LocalPathResolution(t *testing.T) {
+	// Set EDITOR to a command that exits immediately without blocking
+	t.Setenv("EDITOR", "true")
+
 	// Create a temp file to test local path resolution
 	tmpFile, err := os.CreateTemp(t.TempDir(), "test-agent-*.md")
 	if err != nil {
@@ -60,15 +63,11 @@ func TestAgentEdit_LocalPathResolution(t *testing.T) {
 	}
 	tmpFile.Close()
 
-	// The command should resolve the local path but fail on editor launch
-	// (editor launch is out of scope for aix-m92)
+	// The command should resolve and "edit" the local path
+	// (with EDITOR=true, it just returns success immediately)
 	err = runAgentEdit(agentEditCmd, []string{tmpFile.Name()})
-	if err == nil {
-		t.Error("expected error (editor not implemented), got nil")
-	}
-	// Should fail with "editor launch not yet implemented", not "not found"
-	if err != nil && !strings.Contains(err.Error(), "editor launch") {
-		t.Errorf("expected editor launch error, got: %v", err)
+	if err != nil {
+		t.Errorf("expected success with EDITOR=true, got: %v", err)
 	}
 }
 
