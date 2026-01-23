@@ -1,13 +1,14 @@
 package skill
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/cockroachdb/errors"
+	cerrors "github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
@@ -99,19 +100,29 @@ func runInstall(_ *cobra.Command, args []string) error {
 	// Try repo lookup first
 	matches, err := resource.FindByName(source, resource.TypeSkill)
 	if err != nil {
-		return errors.Wrap(err, "searching repositories")
+		if errors.Is(err, resource.ErrNoReposConfigured) {
+			return errors.New("no repositories configured. Run 'aix repo add <url>' to add one")
+		}
+		return cerrors.Wrap(err, "searching repositories")
 	}
 
 	if len(matches) > 0 {
 		return installFromRepo(source, matches)
 	}
 
-	// No matches in repos - check if it's a local path that exists
+	// No matches in repos - check if input might be a forgotten path
+	if mightBePath(source) {
+		if _, statErr := os.Stat(source); statErr == nil {
+			return cerrors.Newf("skill %q not found in repositories, but a local file exists at that path.\nDid you mean: aix skill install --file %s", source, source)
+		}
+	}
+
+	// Check if it's a local path that exists
 	if _, err := os.Stat(source); err == nil {
 		return installFromLocal(source)
 	}
 
-	return errors.Newf("skill %q not found in any configured repository", source)
+	return cerrors.Newf("skill %q not found in any configured repository", source)
 }
 
 // looksLikePath returns true if the source appears to be a file path.
@@ -131,6 +142,21 @@ func looksLikePath(source string) bool {
 	return false
 }
 
+// mightBePath returns true if the input might be a path the user forgot the --file flag for.
+// This catches edge cases not handled by looksLikePath, like Windows-style paths on Unix
+// or files with .md extension.
+func mightBePath(s string) bool {
+	// Ends with .md extension
+	if strings.HasSuffix(strings.ToLower(s), ".md") {
+		return true
+	}
+	// Contains backslash (Windows paths, even on Unix)
+	if strings.Contains(s, "\\") {
+		return true
+	}
+	return false
+}
+
 // installFromRepo installs a skill from a configured repository.
 func installFromRepo(name string, matches []resource.Resource) error {
 	var selected *resource.Resource
@@ -141,7 +167,7 @@ func installFromRepo(name string, matches []resource.Resource) error {
 		// Multiple matches - prompt user to select
 		choice, err := cliprompt.SelectResourceDefault(name, matches)
 		if err != nil {
-			return errors.Wrap(err, "selecting resource")
+			return cerrors.Wrap(err, "selecting resource")
 		}
 		selected = choice
 	}
@@ -149,7 +175,7 @@ func installFromRepo(name string, matches []resource.Resource) error {
 	// Copy from cache to temp directory
 	tempDir, err := resource.CopyToTemp(selected)
 	if err != nil {
-		return errors.Wrap(err, "copying from repository cache")
+		return cerrors.Wrap(err, "copying from repository cache")
 	}
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
@@ -183,7 +209,7 @@ func installFromGit(url string) error {
 	// Create temp directory for clone
 	tempDir, err := os.MkdirTemp("", "aix-skill-*")
 	if err != nil {
-		return errors.Wrap(err, "creating temp directory")
+		return cerrors.Wrap(err, "creating temp directory")
 	}
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
@@ -197,7 +223,7 @@ func installFromGit(url string) error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "cloning repository")
+		return cerrors.Wrap(err, "cloning repository")
 	}
 
 	return installFromLocal(tempDir)
@@ -216,7 +242,7 @@ func installFromLocal(skillPath string) error {
 
 	// Check if SKILL.md exists
 	if _, err := os.Stat(skillFile); os.IsNotExist(err) {
-		return errors.Newf("SKILL.md not found at %s", absPath)
+		return cerrors.Newf("SKILL.md not found at %s", absPath)
 	}
 
 	fmt.Println("Validating skill...")
@@ -225,7 +251,7 @@ func installFromLocal(skillPath string) error {
 	p := parser.New()
 	skill, err := p.ParseFile(skillFile)
 	if err != nil {
-		return errors.Wrap(err, "parsing skill")
+		return cerrors.Wrap(err, "parsing skill")
 	}
 
 	// Validate the skill
@@ -249,7 +275,7 @@ func installFromLocal(skillPath string) error {
 	if !installForce {
 		for _, plat := range platforms {
 			if _, err := plat.GetSkill(skill.Name); err == nil {
-				return errors.Newf("skill %q already exists on %s (use --force to overwrite)",
+				return cerrors.Newf("skill %q already exists on %s (use --force to overwrite)",
 					skill.Name, plat.DisplayName())
 			}
 		}
@@ -260,7 +286,7 @@ func installFromLocal(skillPath string) error {
 	for _, plat := range platforms {
 		// Ensure backup exists before modifying
 		if err := backup.EnsureBackedUp(plat.Name(), plat.BackupPaths()); err != nil {
-			return errors.Wrapf(err, "backing up %s before install", plat.DisplayName())
+			return cerrors.Wrapf(err, "backing up %s before install", plat.DisplayName())
 		}
 
 		fmt.Printf("Installing '%s' to %s... ", skill.Name, plat.DisplayName())
@@ -270,7 +296,7 @@ func installFromLocal(skillPath string) error {
 
 		if err := plat.InstallSkill(platformSkill); err != nil {
 			fmt.Println("failed")
-			return errors.Wrapf(err, "failed to install to %s", plat.DisplayName())
+			return cerrors.Wrapf(err, "failed to install to %s", plat.DisplayName())
 		}
 
 		fmt.Println("done")
