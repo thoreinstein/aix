@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"bytes"
@@ -9,8 +9,8 @@ import (
 	"github.com/thoreinstein/aix/internal/cli"
 )
 
-// mockAgentPlatform implements cli.Platform for testing agent operations.
-type mockAgentPlatform struct {
+// removeMockPlatform implements cli.Platform for testing agent remove operations.
+type removeMockPlatform struct {
 	name          string
 	displayName   string
 	agents        map[string]any
@@ -18,39 +18,39 @@ type mockAgentPlatform struct {
 	uninstallName string // records the name passed to UninstallAgent
 }
 
-func (m *mockAgentPlatform) Name() string        { return m.name }
-func (m *mockAgentPlatform) DisplayName() string { return m.displayName }
-func (m *mockAgentPlatform) IsAvailable() bool   { return true }
+func (m *removeMockPlatform) Name() string        { return m.name }
+func (m *removeMockPlatform) DisplayName() string { return m.displayName }
+func (m *removeMockPlatform) IsAvailable() bool   { return true }
 
 // Skill methods
-func (m *mockAgentPlatform) SkillDir() string                     { return "/mock/skills" }
-func (m *mockAgentPlatform) InstallSkill(_ any) error             { return nil }
-func (m *mockAgentPlatform) UninstallSkill(_ string) error        { return nil }
-func (m *mockAgentPlatform) ListSkills() ([]cli.SkillInfo, error) { return nil, nil }
-func (m *mockAgentPlatform) GetSkill(_ string) (any, error)       { return nil, errors.New("not found") }
+func (m *removeMockPlatform) SkillDir() string                     { return "/mock/skills" }
+func (m *removeMockPlatform) InstallSkill(_ any) error             { return nil }
+func (m *removeMockPlatform) UninstallSkill(_ string) error        { return nil }
+func (m *removeMockPlatform) ListSkills() ([]cli.SkillInfo, error) { return nil, nil }
+func (m *removeMockPlatform) GetSkill(_ string) (any, error)       { return nil, errors.New("not found") }
 
 // Command methods
-func (m *mockAgentPlatform) CommandDir() string                       { return "/mock/commands" }
-func (m *mockAgentPlatform) InstallCommand(_ any) error               { return nil }
-func (m *mockAgentPlatform) UninstallCommand(_ string) error          { return nil }
-func (m *mockAgentPlatform) ListCommands() ([]cli.CommandInfo, error) { return nil, nil }
-func (m *mockAgentPlatform) GetCommand(_ string) (any, error)         { return nil, errors.New("not found") }
+func (m *removeMockPlatform) CommandDir() string                       { return "/mock/commands" }
+func (m *removeMockPlatform) InstallCommand(_ any) error               { return nil }
+func (m *removeMockPlatform) UninstallCommand(_ string) error          { return nil }
+func (m *removeMockPlatform) ListCommands() ([]cli.CommandInfo, error) { return nil, nil }
+func (m *removeMockPlatform) GetCommand(_ string) (any, error)         { return nil, errors.New("not found") }
 
 // MCP methods
-func (m *mockAgentPlatform) MCPConfigPath() string           { return "/mock/mcp.json" }
-func (m *mockAgentPlatform) AddMCP(_ any) error              { return nil }
-func (m *mockAgentPlatform) RemoveMCP(_ string) error        { return nil }
-func (m *mockAgentPlatform) ListMCP() ([]cli.MCPInfo, error) { return nil, nil }
-func (m *mockAgentPlatform) GetMCP(_ string) (any, error)    { return nil, errors.New("not found") }
-func (m *mockAgentPlatform) EnableMCP(_ string) error        { return nil }
-func (m *mockAgentPlatform) DisableMCP(_ string) error       { return nil }
+func (m *removeMockPlatform) MCPConfigPath() string           { return "/mock/mcp.json" }
+func (m *removeMockPlatform) AddMCP(_ any) error              { return nil }
+func (m *removeMockPlatform) RemoveMCP(_ string) error        { return nil }
+func (m *removeMockPlatform) ListMCP() ([]cli.MCPInfo, error) { return nil, nil }
+func (m *removeMockPlatform) GetMCP(_ string) (any, error)    { return nil, errors.New("not found") }
+func (m *removeMockPlatform) EnableMCP(_ string) error        { return nil }
+func (m *removeMockPlatform) DisableMCP(_ string) error       { return nil }
 
 // Agent methods
-func (m *mockAgentPlatform) AgentDir() string { return "/mock/agents" }
+func (m *removeMockPlatform) AgentDir() string { return "/mock/agents" }
 
-func (m *mockAgentPlatform) InstallAgent(_ any) error { return nil }
+func (m *removeMockPlatform) InstallAgent(_ any) error { return nil }
 
-func (m *mockAgentPlatform) UninstallAgent(name string) error {
+func (m *removeMockPlatform) UninstallAgent(name string) error {
 	m.uninstallName = name
 	if m.uninstallErr != nil {
 		return m.uninstallErr
@@ -59,7 +59,7 @@ func (m *mockAgentPlatform) UninstallAgent(name string) error {
 	return nil
 }
 
-func (m *mockAgentPlatform) ListAgents() ([]cli.AgentInfo, error) {
+func (m *removeMockPlatform) ListAgents() ([]cli.AgentInfo, error) {
 	agents := make([]cli.AgentInfo, 0, len(m.agents))
 	for name := range m.agents {
 		agents = append(agents, cli.AgentInfo{Name: name})
@@ -67,7 +67,7 @@ func (m *mockAgentPlatform) ListAgents() ([]cli.AgentInfo, error) {
 	return agents, nil
 }
 
-func (m *mockAgentPlatform) GetAgent(name string) (any, error) {
+func (m *removeMockPlatform) GetAgent(name string) (any, error) {
 	agent, ok := m.agents[name]
 	if !ok {
 		return nil, errors.New("agent not found")
@@ -76,7 +76,7 @@ func (m *mockAgentPlatform) GetAgent(name string) (any, error) {
 }
 
 // Backup methods for cli.Platform interface
-func (m *mockAgentPlatform) BackupPaths() []string { return []string{"/mock/backup"} }
+func (m *removeMockPlatform) BackupPaths() []string { return []string{"/mock/backup"} }
 
 func TestFindPlatformsWithAgent(t *testing.T) {
 	tests := []struct {
@@ -88,8 +88,8 @@ func TestFindPlatformsWithAgent(t *testing.T) {
 		{
 			name: "agent found on one platform",
 			platforms: []cli.Platform{
-				&mockAgentPlatform{name: "claude", agents: map[string]any{"my-agent": struct{}{}}},
-				&mockAgentPlatform{name: "opencode", agents: map[string]any{}},
+				&removeMockPlatform{name: "claude", agents: map[string]any{"my-agent": struct{}{}}},
+				&removeMockPlatform{name: "opencode", agents: map[string]any{}},
 			},
 			agentName: "my-agent",
 			wantCount: 1,
@@ -97,8 +97,8 @@ func TestFindPlatformsWithAgent(t *testing.T) {
 		{
 			name: "agent found on all platforms",
 			platforms: []cli.Platform{
-				&mockAgentPlatform{name: "claude", agents: map[string]any{"my-agent": struct{}{}}},
-				&mockAgentPlatform{name: "opencode", agents: map[string]any{"my-agent": struct{}{}}},
+				&removeMockPlatform{name: "claude", agents: map[string]any{"my-agent": struct{}{}}},
+				&removeMockPlatform{name: "opencode", agents: map[string]any{"my-agent": struct{}{}}},
 			},
 			agentName: "my-agent",
 			wantCount: 2,
@@ -106,8 +106,8 @@ func TestFindPlatformsWithAgent(t *testing.T) {
 		{
 			name: "agent not found on any platform",
 			platforms: []cli.Platform{
-				&mockAgentPlatform{name: "claude", agents: map[string]any{}},
-				&mockAgentPlatform{name: "opencode", agents: map[string]any{}},
+				&removeMockPlatform{name: "claude", agents: map[string]any{}},
+				&removeMockPlatform{name: "opencode", agents: map[string]any{}},
 			},
 			agentName: "my-agent",
 			wantCount: 0,
@@ -130,7 +130,7 @@ func TestFindPlatformsWithAgent(t *testing.T) {
 	}
 }
 
-func TestConfirmAgentRemoval(t *testing.T) {
+func TestConfirmRemoval(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     string
@@ -141,7 +141,7 @@ func TestConfirmAgentRemoval(t *testing.T) {
 			name:  "yes confirms",
 			input: "yes\n",
 			platforms: []cli.Platform{
-				&mockAgentPlatform{displayName: "Claude Code"},
+				&removeMockPlatform{displayName: "Claude Code"},
 			},
 			want: true,
 		},
@@ -149,7 +149,7 @@ func TestConfirmAgentRemoval(t *testing.T) {
 			name:  "y confirms",
 			input: "y\n",
 			platforms: []cli.Platform{
-				&mockAgentPlatform{displayName: "Claude Code"},
+				&removeMockPlatform{displayName: "Claude Code"},
 			},
 			want: true,
 		},
@@ -157,7 +157,7 @@ func TestConfirmAgentRemoval(t *testing.T) {
 			name:  "Y confirms (case insensitive)",
 			input: "Y\n",
 			platforms: []cli.Platform{
-				&mockAgentPlatform{displayName: "Claude Code"},
+				&removeMockPlatform{displayName: "Claude Code"},
 			},
 			want: true,
 		},
@@ -165,7 +165,7 @@ func TestConfirmAgentRemoval(t *testing.T) {
 			name:  "YES confirms (case insensitive)",
 			input: "YES\n",
 			platforms: []cli.Platform{
-				&mockAgentPlatform{displayName: "Claude Code"},
+				&removeMockPlatform{displayName: "Claude Code"},
 			},
 			want: true,
 		},
@@ -173,7 +173,7 @@ func TestConfirmAgentRemoval(t *testing.T) {
 			name:  "no rejects",
 			input: "no\n",
 			platforms: []cli.Platform{
-				&mockAgentPlatform{displayName: "Claude Code"},
+				&removeMockPlatform{displayName: "Claude Code"},
 			},
 			want: false,
 		},
@@ -181,7 +181,7 @@ func TestConfirmAgentRemoval(t *testing.T) {
 			name:  "n rejects",
 			input: "n\n",
 			platforms: []cli.Platform{
-				&mockAgentPlatform{displayName: "Claude Code"},
+				&removeMockPlatform{displayName: "Claude Code"},
 			},
 			want: false,
 		},
@@ -189,7 +189,7 @@ func TestConfirmAgentRemoval(t *testing.T) {
 			name:  "empty input rejects",
 			input: "\n",
 			platforms: []cli.Platform{
-				&mockAgentPlatform{displayName: "Claude Code"},
+				&removeMockPlatform{displayName: "Claude Code"},
 			},
 			want: false,
 		},
@@ -197,7 +197,7 @@ func TestConfirmAgentRemoval(t *testing.T) {
 			name:  "random input rejects",
 			input: "maybe\n",
 			platforms: []cli.Platform{
-				&mockAgentPlatform{displayName: "Claude Code"},
+				&removeMockPlatform{displayName: "Claude Code"},
 			},
 			want: false,
 		},
@@ -208,9 +208,9 @@ func TestConfirmAgentRemoval(t *testing.T) {
 			var out bytes.Buffer
 			in := strings.NewReader(tt.input)
 
-			got := confirmAgentRemoval(&out, in, "test-agent", tt.platforms)
+			got := confirmRemoval(&out, in, "test-agent", tt.platforms)
 			if got != tt.want {
-				t.Errorf("confirmAgentRemoval() = %v, want %v", got, tt.want)
+				t.Errorf("confirmRemoval() = %v, want %v", got, tt.want)
 			}
 
 			// Verify prompt was written
@@ -225,16 +225,16 @@ func TestConfirmAgentRemoval(t *testing.T) {
 	}
 }
 
-func TestConfirmAgentRemoval_ListsPlatforms(t *testing.T) {
+func TestConfirmRemoval_ListsPlatforms(t *testing.T) {
 	platforms := []cli.Platform{
-		&mockAgentPlatform{displayName: "Claude Code"},
-		&mockAgentPlatform{displayName: "OpenCode"},
+		&removeMockPlatform{displayName: "Claude Code"},
+		&removeMockPlatform{displayName: "OpenCode"},
 	}
 
 	var out bytes.Buffer
 	in := strings.NewReader("n\n")
 
-	confirmAgentRemoval(&out, in, "my-agent", platforms)
+	confirmRemoval(&out, in, "my-agent", platforms)
 
 	output := out.String()
 	if !strings.Contains(output, "Claude Code") {
@@ -245,21 +245,21 @@ func TestConfirmAgentRemoval_ListsPlatforms(t *testing.T) {
 	}
 }
 
-func TestAgentRemoveCommand_Metadata(t *testing.T) {
-	if agentRemoveCmd.Use != "remove <name>" {
-		t.Errorf("Use = %q, want %q", agentRemoveCmd.Use, "remove <name>")
+func TestRemoveCommand_Metadata(t *testing.T) {
+	if removeCmd.Use != "remove <name>" {
+		t.Errorf("Use = %q, want %q", removeCmd.Use, "remove <name>")
 	}
 
-	if agentRemoveCmd.Short == "" {
+	if removeCmd.Short == "" {
 		t.Error("Short description should not be empty")
 	}
 
-	if agentRemoveCmd.Args == nil {
+	if removeCmd.Args == nil {
 		t.Error("Args validator should be set")
 	}
 
 	// Verify aliases
-	aliases := agentRemoveCmd.Aliases
+	aliases := removeCmd.Aliases
 	hasRm := false
 	hasUninstall := false
 	for _, alias := range aliases {
@@ -278,8 +278,8 @@ func TestAgentRemoveCommand_Metadata(t *testing.T) {
 	}
 }
 
-func TestAgentRemoveCommand_ForceFlag(t *testing.T) {
-	flag := agentRemoveCmd.Flags().Lookup("force")
+func TestRemoveCommand_ForceFlag(t *testing.T) {
+	flag := removeCmd.Flags().Lookup("force")
 	if flag == nil {
 		t.Fatal("--force flag should be defined")
 	}

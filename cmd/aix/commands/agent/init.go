@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"bufio"
@@ -15,21 +15,21 @@ import (
 )
 
 var (
-	agentInitName        string
-	agentInitDescription string
-	agentInitModel       string
-	agentInitForce       bool
+	initName        string
+	initDescription string
+	initModel       string
+	initForce       bool
 )
 
 func init() {
-	agentInitCmd.Flags().StringVar(&agentInitName, "name", "", "agent name (required)")
-	agentInitCmd.Flags().StringVarP(&agentInitDescription, "description", "d", "", "short description")
-	agentInitCmd.Flags().StringVar(&agentInitModel, "model", "", "AI model to use")
-	agentInitCmd.Flags().BoolVarP(&agentInitForce, "force", "f", false, "overwrite existing file")
-	agentCmd.AddCommand(agentInitCmd)
+	initCmd.Flags().StringVar(&initName, "name", "", "agent name (required)")
+	initCmd.Flags().StringVarP(&initDescription, "description", "d", "", "short description")
+	initCmd.Flags().StringVar(&initModel, "model", "", "AI model to use")
+	initCmd.Flags().BoolVarP(&initForce, "force", "f", false, "overwrite existing file")
+	Cmd.AddCommand(initCmd)
 }
 
-var agentInitCmd = &cobra.Command{
+var initCmd = &cobra.Command{
 	Use:   "init [path]",
 	Short: "Create a new agent interactively",
 	Long: `Create a new agent directory with a scaffolded AGENT.md file.
@@ -53,37 +53,37 @@ Examples:
   # Specify model
   aix agent init review --name review --model claude-3-5-sonnet`,
 	Args: cobra.MaximumNArgs(1),
-	RunE: runAgentInit,
+	RunE: runInit,
 }
 
-// agentNameRegex validates agent names.
+// nameRegex validates agent names.
 // Must start with a lowercase letter, followed by lowercase alphanumeric characters,
 // optionally followed by hyphen-separated segments. No leading, trailing, or
 // consecutive hyphens are allowed.
-var agentNameRegex = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
+var nameRegex = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
 
-// agentNameSanitizer matches characters that are not allowed in an agent name.
-var agentNameSanitizer = regexp.MustCompile(`[^a-z0-9-]+`)
+// nameSanitizer matches characters that are not allowed in an agent name.
+var nameSanitizer = regexp.MustCompile(`[^a-z0-9-]+`)
 
-// errAgentInitFailed is a sentinel error that signals non-zero exit.
-var errAgentInitFailed = errors.New("agent initialization failed")
+// errInitFailed is a sentinel error that signals non-zero exit.
+var errInitFailed = errors.New("agent initialization failed")
 
-func sanitizeDefaultAgentName(name string) string {
+func sanitizeDefaultName(name string) string {
 	// Normalize to lowercase and replace invalid characters with hyphens.
 	sanitized := strings.ToLower(name)
-	sanitized = agentNameSanitizer.ReplaceAllString(sanitized, "-")
+	sanitized = nameSanitizer.ReplaceAllString(sanitized, "-")
 	sanitized = strings.Trim(sanitized, "-")
 
 	// Fallback to a safe default if the result is empty or still invalid.
-	if sanitized == "" || !agentNameRegex.MatchString(sanitized) {
+	if sanitized == "" || !nameRegex.MatchString(sanitized) {
 		return "new-agent"
 	}
 
 	return sanitized
 }
 
-// validateAgentName checks if an agent name conforms to the specification.
-func validateAgentName(name string) error {
+// validateName checks if an agent name conforms to the specification.
+func validateName(name string) error {
 	if name == "" {
 		return errors.New("agent name is required")
 	}
@@ -92,32 +92,32 @@ func validateAgentName(name string) error {
 		return fmt.Errorf("agent name must be at most 64 characters (got %d)", len(name))
 	}
 
-	if !agentNameRegex.MatchString(name) {
+	if !nameRegex.MatchString(name) {
 		return errors.New("agent name must be lowercase alphanumeric with hyphens, starting with a letter")
 	}
 
 	return nil
 }
 
-func runAgentInit(_ *cobra.Command, args []string) error {
+func runInit(_ *cobra.Command, args []string) error {
 	// Determine default name
 	defaultName := "my-agent"
 	if len(args) > 0 {
-		defaultName = sanitizeDefaultAgentName(filepath.Base(args[0]))
+		defaultName = sanitizeDefaultName(filepath.Base(args[0]))
 	}
 
 	// Interactive prompts
 	scanner := bufio.NewScanner(os.Stdin)
 
-	name := agentInitName
+	name := initName
 	if name == "" {
 		name = prompt(scanner, "Agent Name", defaultName)
 	}
 
 	// Validate name immediately
-	if err := validateAgentName(name); err != nil {
+	if err := validateName(name); err != nil {
 		fmt.Printf("Error: %s\n", err)
-		return errAgentInitFailed
+		return errInitFailed
 	}
 
 	// Determine final path
@@ -135,12 +135,12 @@ func runAgentInit(_ *cobra.Command, args []string) error {
 	}
 	targetDir := absPath // for display purposes
 
-	description := agentInitDescription
+	description := initDescription
 	if description == "" {
 		description = prompt(scanner, "Description", "A helpful AI agent")
 	}
 
-	model := agentInitModel
+	model := initModel
 	if model == "" {
 		model = prompt(scanner, "Model (optional)", "")
 	}
@@ -155,9 +155,9 @@ func runAgentInit(_ *cobra.Command, args []string) error {
 
 	agentFile := filepath.Join(absPath, "AGENT.md")
 	if _, err := os.Stat(agentFile); err == nil {
-		if !agentInitForce {
+		if !initForce {
 			fmt.Printf("Error: file already exists: %s. Use --force to overwrite.\n", agentFile)
-			return errAgentInitFailed
+			return errInitFailed
 		}
 	}
 
@@ -209,4 +209,34 @@ Your agent instructions go here.
 	fmt.Printf("  3. Run: aix agent install %s\n", targetDir)
 
 	return nil
+}
+
+// prompt reads user input with a default value.
+func prompt(scanner *bufio.Scanner, label, def string) string {
+	fmt.Printf("%s", label)
+	if def != "" {
+		fmt.Printf(" [%s]", def)
+	}
+	fmt.Print(": ")
+
+	if !scanner.Scan() {
+		return def
+	}
+	input := strings.TrimSpace(scanner.Text())
+	if input == "" {
+		return def
+	}
+	return input
+}
+
+// formatTitle converts a hyphenated name to a title case string.
+// e.g., "my-agent" -> "My Agent"
+func formatTitle(name string) string {
+	parts := strings.Split(name, "-")
+	for i, part := range parts {
+		if len(part) > 0 {
+			parts[i] = strings.ToUpper(part[:1]) + part[1:]
+		}
+	}
+	return strings.Join(parts, " ")
 }

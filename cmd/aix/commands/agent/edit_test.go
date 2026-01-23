@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"bytes"
@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-func TestAgentEditCmd_Registration(t *testing.T) {
+func TestEditCmd_Registration(t *testing.T) {
 	// Verify command is registered
-	cmd, _, err := agentCmd.Find([]string{"edit"})
+	cmd, _, err := Cmd.Find([]string{"edit"})
 	if err != nil {
 		t.Fatalf("agent edit command not registered: %v", err)
 	}
@@ -18,42 +18,42 @@ func TestAgentEditCmd_Registration(t *testing.T) {
 	}
 }
 
-func TestAgentEditCmd_RequiresArg(t *testing.T) {
+func TestEditCmd_RequiresArg(t *testing.T) {
 	// Verify command requires exactly one argument
-	if agentEditCmd.Args == nil {
+	if editCmd.Args == nil {
 		t.Fatal("Args validator not set")
 	}
 
 	// Test with no args - should error
-	err := agentEditCmd.Args(agentEditCmd, []string{})
+	err := editCmd.Args(editCmd, []string{})
 	if err == nil {
 		t.Error("expected error with no args, got nil")
 	}
 
 	// Test with one arg - should pass
-	err = agentEditCmd.Args(agentEditCmd, []string{"test-agent"})
+	err = editCmd.Args(editCmd, []string{"test-agent"})
 	if err != nil {
 		t.Errorf("expected no error with one arg, got: %v", err)
 	}
 
 	// Test with two args - should error
-	err = agentEditCmd.Args(agentEditCmd, []string{"arg1", "arg2"})
+	err = editCmd.Args(editCmd, []string{"arg1", "arg2"})
 	if err == nil {
 		t.Error("expected error with two args, got nil")
 	}
 }
 
-func TestAgentEditCmd_Metadata(t *testing.T) {
-	if agentEditCmd.Short == "" {
+func TestEditCmd_Metadata(t *testing.T) {
+	if editCmd.Short == "" {
 		t.Error("Short description should not be empty")
 	}
 
-	if agentEditCmd.Long == "" {
+	if editCmd.Long == "" {
 		t.Error("Long description should not be empty")
 	}
 }
 
-func TestAgentEdit_LocalPathResolution(t *testing.T) {
+func TestEdit_LocalPathResolution(t *testing.T) {
 	// Set EDITOR to a command that exits immediately without blocking
 	t.Setenv("EDITOR", "true")
 
@@ -66,15 +66,15 @@ func TestAgentEdit_LocalPathResolution(t *testing.T) {
 
 	// The command should resolve and "edit" the local path
 	// (with EDITOR=true, it just returns success immediately)
-	err = runAgentEdit(agentEditCmd, []string{tmpFile.Name()})
+	err = runEdit(editCmd, []string{tmpFile.Name()})
 	if err != nil {
 		t.Errorf("expected success with EDITOR=true, got: %v", err)
 	}
 }
 
-func TestAgentEdit_NotFound(t *testing.T) {
+func TestEdit_NotFound(t *testing.T) {
 	// Test with non-existent agent
-	err := runAgentEdit(agentEditCmd, []string{"nonexistent-agent-xyz"})
+	err := runEdit(editCmd, []string{"nonexistent-agent-xyz"})
 	if err == nil {
 		t.Error("expected error for non-existent agent")
 	}
@@ -86,7 +86,7 @@ func TestAgentEdit_NotFound(t *testing.T) {
 	}
 }
 
-func TestAgentEdit_PostEditValidationRuns(t *testing.T) {
+func TestEdit_PostEditValidationRuns(t *testing.T) {
 	// Set EDITOR to a command that exits immediately without blocking
 	t.Setenv("EDITOR", "true")
 
@@ -106,11 +106,11 @@ You are a helpful assistant.
 
 	// Capture output
 	var buf bytes.Buffer
-	cmd := *agentEditCmd
+	cmd := *editCmd
 	cmd.SetOut(&buf)
 
 	// Run the edit command
-	err := runAgentEdit(&cmd, []string{agentPath})
+	err := runEdit(&cmd, []string{agentPath})
 	if err != nil {
 		t.Errorf("expected success, got: %v", err)
 	}
@@ -125,7 +125,7 @@ You are a helpful assistant.
 	}
 }
 
-func TestAgentEdit_PostEditValidationShowsErrors(t *testing.T) {
+func TestEdit_PostEditValidationShowsErrors(t *testing.T) {
 	// Set EDITOR to a command that exits immediately without blocking
 	t.Setenv("EDITOR", "true")
 
@@ -143,11 +143,11 @@ Just some text without proper metadata.
 
 	// Capture output
 	var buf bytes.Buffer
-	cmd := *agentEditCmd
+	cmd := *editCmd
 	cmd.SetOut(&buf)
 
 	// Run the edit command - should succeed even with invalid agent
-	err := runAgentEdit(&cmd, []string{agentPath})
+	err := runEdit(&cmd, []string{agentPath})
 	if err != nil {
 		t.Errorf("expected success even with invalid agent, got: %v", err)
 	}
@@ -162,7 +162,7 @@ Just some text without proper metadata.
 	}
 }
 
-func TestAgentEdit_ValidationDoesNotRunWhenEditorFails(t *testing.T) {
+func TestEdit_ValidationDoesNotRunWhenEditorFails(t *testing.T) {
 	// Set EDITOR to a command that fails (returns non-zero exit code)
 	t.Setenv("EDITOR", "false")
 
@@ -182,11 +182,11 @@ You are a helpful assistant.
 
 	// Capture output
 	var buf bytes.Buffer
-	cmd := *agentEditCmd
+	cmd := *editCmd
 	cmd.SetOut(&buf)
 
 	// Run the edit command - should fail because editor fails
-	err := runAgentEdit(&cmd, []string{agentPath})
+	err := runEdit(&cmd, []string{agentPath})
 	if err == nil {
 		t.Error("expected error when editor fails, got nil")
 	}

@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"bytes"
@@ -10,38 +10,38 @@ import (
 	"github.com/thoreinstein/aix/internal/cli"
 )
 
-// agentListMockPlatform extends mockPlatform with agent list-specific behavior.
-type agentListMockPlatform struct {
+// listMockPlatform extends mockPlatform with agent list-specific behavior.
+type listMockPlatform struct {
 	mockPlatform
 	agents   []cli.AgentInfo
 	agentErr error
 }
 
-func (m *agentListMockPlatform) ListAgents() ([]cli.AgentInfo, error) {
+func (m *listMockPlatform) ListAgents() ([]cli.AgentInfo, error) {
 	if m.agentErr != nil {
 		return nil, m.agentErr
 	}
 	return m.agents, nil
 }
 
-func TestAgentListCommand_Metadata(t *testing.T) {
-	if agentListCmd.Use != "list" {
-		t.Errorf("Use = %q, want %q", agentListCmd.Use, "list")
+func TestListCommand_Metadata(t *testing.T) {
+	if listCmd.Use != "list" {
+		t.Errorf("Use = %q, want %q", listCmd.Use, "list")
 	}
 
-	if agentListCmd.Short == "" {
+	if listCmd.Short == "" {
 		t.Error("Short description should not be empty")
 	}
 
 	// Check flags exist
-	if agentListCmd.Flags().Lookup("json") == nil {
+	if listCmd.Flags().Lookup("json") == nil {
 		t.Error("--json flag should be defined")
 	}
 }
 
-func TestOutputAgentsTabular_EmptyState(t *testing.T) {
+func TestOutputListTabular_EmptyState(t *testing.T) {
 	platforms := []cli.Platform{
-		&agentListMockPlatform{
+		&listMockPlatform{
 			mockPlatform: mockPlatform{
 				name:        "claude",
 				displayName: "Claude Code",
@@ -51,9 +51,9 @@ func TestOutputAgentsTabular_EmptyState(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputAgentsTabular(&buf, platforms)
+	err := outputListTabular(&buf, platforms)
 	if err != nil {
-		t.Fatalf("outputAgentsTabular() error = %v", err)
+		t.Fatalf("outputListTabular() error = %v", err)
 	}
 
 	output := buf.String()
@@ -65,9 +65,9 @@ func TestOutputAgentsTabular_EmptyState(t *testing.T) {
 	}
 }
 
-func TestOutputAgentsTabular_WithAgents(t *testing.T) {
+func TestOutputListTabular_WithAgents(t *testing.T) {
 	platforms := []cli.Platform{
-		&agentListMockPlatform{
+		&listMockPlatform{
 			mockPlatform: mockPlatform{
 				name:        "claude",
 				displayName: "Claude Code",
@@ -86,9 +86,9 @@ func TestOutputAgentsTabular_WithAgents(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputAgentsTabular(&buf, platforms)
+	err := outputListTabular(&buf, platforms)
 	if err != nil {
-		t.Fatalf("outputAgentsTabular() error = %v", err)
+		t.Fatalf("outputListTabular() error = %v", err)
 	}
 
 	output := buf.String()
@@ -113,9 +113,9 @@ func TestOutputAgentsTabular_WithAgents(t *testing.T) {
 	}
 }
 
-func TestOutputAgentsTabular_MultiplePlatforms(t *testing.T) {
+func TestOutputListTabular_MultiplePlatforms(t *testing.T) {
 	platforms := []cli.Platform{
-		&agentListMockPlatform{
+		&listMockPlatform{
 			mockPlatform: mockPlatform{
 				name:        "claude",
 				displayName: "Claude Code",
@@ -124,7 +124,7 @@ func TestOutputAgentsTabular_MultiplePlatforms(t *testing.T) {
 				{Name: "code-reviewer", Description: "Reviews code"},
 			},
 		},
-		&agentListMockPlatform{
+		&listMockPlatform{
 			mockPlatform: mockPlatform{
 				name:        "opencode",
 				displayName: "OpenCode",
@@ -136,9 +136,9 @@ func TestOutputAgentsTabular_MultiplePlatforms(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputAgentsTabular(&buf, platforms)
+	err := outputListTabular(&buf, platforms)
 	if err != nil {
-		t.Fatalf("outputAgentsTabular() error = %v", err)
+		t.Fatalf("outputListTabular() error = %v", err)
 	}
 
 	output := buf.String()
@@ -150,16 +150,16 @@ func TestOutputAgentsTabular_MultiplePlatforms(t *testing.T) {
 	}
 }
 
-func TestOutputAgentsTabular_NoAgentsAcrossPlatforms(t *testing.T) {
+func TestOutputListTabular_NoAgentsAcrossPlatforms(t *testing.T) {
 	platforms := []cli.Platform{
-		&agentListMockPlatform{
+		&listMockPlatform{
 			mockPlatform: mockPlatform{
 				name:        "claude",
 				displayName: "Claude Code",
 			},
 			agents: []cli.AgentInfo{},
 		},
-		&agentListMockPlatform{
+		&listMockPlatform{
 			mockPlatform: mockPlatform{
 				name:        "opencode",
 				displayName: "OpenCode",
@@ -169,9 +169,9 @@ func TestOutputAgentsTabular_NoAgentsAcrossPlatforms(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputAgentsTabular(&buf, platforms)
+	err := outputListTabular(&buf, platforms)
 	if err != nil {
-		t.Fatalf("outputAgentsTabular() error = %v", err)
+		t.Fatalf("outputListTabular() error = %v", err)
 	}
 
 	output := buf.String()
@@ -180,10 +180,10 @@ func TestOutputAgentsTabular_NoAgentsAcrossPlatforms(t *testing.T) {
 	}
 }
 
-func TestOutputAgentsTabular_TruncatesLongDescriptions(t *testing.T) {
+func TestOutputListTabular_TruncatesLongDescriptions(t *testing.T) {
 	longDesc := strings.Repeat("a", 100)
 	platforms := []cli.Platform{
-		&agentListMockPlatform{
+		&listMockPlatform{
 			mockPlatform: mockPlatform{
 				name:        "claude",
 				displayName: "Claude Code",
@@ -195,9 +195,9 @@ func TestOutputAgentsTabular_TruncatesLongDescriptions(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputAgentsTabular(&buf, platforms)
+	err := outputListTabular(&buf, platforms)
 	if err != nil {
-		t.Fatalf("outputAgentsTabular() error = %v", err)
+		t.Fatalf("outputListTabular() error = %v", err)
 	}
 
 	output := buf.String()
@@ -211,9 +211,9 @@ func TestOutputAgentsTabular_TruncatesLongDescriptions(t *testing.T) {
 	}
 }
 
-func TestOutputAgentsJSON(t *testing.T) {
+func TestOutputListJSON(t *testing.T) {
 	platforms := []cli.Platform{
-		&agentListMockPlatform{
+		&listMockPlatform{
 			mockPlatform: mockPlatform{
 				name:        "claude",
 				displayName: "Claude Code",
@@ -228,12 +228,12 @@ func TestOutputAgentsJSON(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputAgentsJSON(&buf, platforms)
+	err := outputListJSON(&buf, platforms)
 	if err != nil {
-		t.Fatalf("outputAgentsJSON() error = %v", err)
+		t.Fatalf("outputListJSON() error = %v", err)
 	}
 
-	var result agentListOutput
+	var result listOutput
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("failed to unmarshal JSON: %v", err)
 	}
@@ -256,9 +256,9 @@ func TestOutputAgentsJSON(t *testing.T) {
 	}
 }
 
-func TestOutputAgentsJSON_MultiplePlatforms(t *testing.T) {
+func TestOutputListJSON_MultiplePlatforms(t *testing.T) {
 	platforms := []cli.Platform{
-		&agentListMockPlatform{
+		&listMockPlatform{
 			mockPlatform: mockPlatform{
 				name:        "claude",
 				displayName: "Claude Code",
@@ -267,7 +267,7 @@ func TestOutputAgentsJSON_MultiplePlatforms(t *testing.T) {
 				{Name: "agent1", Description: "Agent 1"},
 			},
 		},
-		&agentListMockPlatform{
+		&listMockPlatform{
 			mockPlatform: mockPlatform{
 				name:        "opencode",
 				displayName: "OpenCode",
@@ -279,12 +279,12 @@ func TestOutputAgentsJSON_MultiplePlatforms(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputAgentsJSON(&buf, platforms)
+	err := outputListJSON(&buf, platforms)
 	if err != nil {
-		t.Fatalf("outputAgentsJSON() error = %v", err)
+		t.Fatalf("outputListJSON() error = %v", err)
 	}
 
-	var result agentListOutput
+	var result listOutput
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("failed to unmarshal JSON: %v", err)
 	}
@@ -297,9 +297,9 @@ func TestOutputAgentsJSON_MultiplePlatforms(t *testing.T) {
 	}
 }
 
-func TestOutputAgentsJSON_EmptyAgents(t *testing.T) {
+func TestOutputListJSON_EmptyAgents(t *testing.T) {
 	platforms := []cli.Platform{
-		&agentListMockPlatform{
+		&listMockPlatform{
 			mockPlatform: mockPlatform{
 				name:        "claude",
 				displayName: "Claude Code",
@@ -309,12 +309,12 @@ func TestOutputAgentsJSON_EmptyAgents(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputAgentsJSON(&buf, platforms)
+	err := outputListJSON(&buf, platforms)
 	if err != nil {
-		t.Fatalf("outputAgentsJSON() error = %v", err)
+		t.Fatalf("outputListJSON() error = %v", err)
 	}
 
-	var result agentListOutput
+	var result listOutput
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("failed to unmarshal JSON: %v", err)
 	}
@@ -324,9 +324,9 @@ func TestOutputAgentsJSON_EmptyAgents(t *testing.T) {
 	}
 }
 
-func TestOutputAgentsJSON_FormattedOutput(t *testing.T) {
+func TestOutputListJSON_FormattedOutput(t *testing.T) {
 	platforms := []cli.Platform{
-		&agentListMockPlatform{
+		&listMockPlatform{
 			mockPlatform: mockPlatform{
 				name:        "claude",
 				displayName: "Claude Code",
@@ -338,9 +338,9 @@ func TestOutputAgentsJSON_FormattedOutput(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputAgentsJSON(&buf, platforms)
+	err := outputListJSON(&buf, platforms)
 	if err != nil {
-		t.Fatalf("outputAgentsJSON() error = %v", err)
+		t.Fatalf("outputListJSON() error = %v", err)
 	}
 
 	// Check that output is indented (contains newlines and spaces for formatting)
@@ -353,7 +353,7 @@ func TestOutputAgentsJSON_FormattedOutput(t *testing.T) {
 	}
 }
 
-func TestOutputAgentsTabular_Error(t *testing.T) {
+func TestOutputListTabular_Error(t *testing.T) {
 	tests := []struct {
 		name        string
 		platforms   []cli.Platform
@@ -363,7 +363,7 @@ func TestOutputAgentsTabular_Error(t *testing.T) {
 		{
 			name: "permission_error",
 			platforms: []cli.Platform{
-				&agentListMockPlatform{
+				&listMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "claude",
 						displayName: "Claude Code",
@@ -377,14 +377,14 @@ func TestOutputAgentsTabular_Error(t *testing.T) {
 		{
 			name: "first_platform_error",
 			platforms: []cli.Platform{
-				&agentListMockPlatform{
+				&listMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "claude",
 						displayName: "Claude Code",
 					},
 					agentErr: errors.New("directory not found"),
 				},
-				&agentListMockPlatform{
+				&listMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "opencode",
 						displayName: "OpenCode",
@@ -400,7 +400,7 @@ func TestOutputAgentsTabular_Error(t *testing.T) {
 		{
 			name: "second_platform_error",
 			platforms: []cli.Platform{
-				&agentListMockPlatform{
+				&listMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "claude",
 						displayName: "Claude Code",
@@ -409,7 +409,7 @@ func TestOutputAgentsTabular_Error(t *testing.T) {
 						{Name: "agent", Description: "Test"},
 					},
 				},
-				&agentListMockPlatform{
+				&listMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "opencode",
 						displayName: "OpenCode",
@@ -425,7 +425,7 @@ func TestOutputAgentsTabular_Error(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			err := outputAgentsTabular(&buf, tt.platforms)
+			err := outputListTabular(&buf, tt.platforms)
 
 			if err == nil {
 				t.Fatalf("expected error, got nil; %s", tt.description)
@@ -439,7 +439,7 @@ func TestOutputAgentsTabular_Error(t *testing.T) {
 	}
 }
 
-func TestOutputAgentsJSON_Error(t *testing.T) {
+func TestOutputListJSON_Error(t *testing.T) {
 	tests := []struct {
 		name        string
 		platforms   []cli.Platform
@@ -449,7 +449,7 @@ func TestOutputAgentsJSON_Error(t *testing.T) {
 		{
 			name: "permission_error",
 			platforms: []cli.Platform{
-				&agentListMockPlatform{
+				&listMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "claude",
 						displayName: "Claude Code",
@@ -463,14 +463,14 @@ func TestOutputAgentsJSON_Error(t *testing.T) {
 		{
 			name: "first_platform_error",
 			platforms: []cli.Platform{
-				&agentListMockPlatform{
+				&listMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "claude",
 						displayName: "Claude Code",
 					},
 					agentErr: errors.New("directory not found"),
 				},
-				&agentListMockPlatform{
+				&listMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "opencode",
 						displayName: "OpenCode",
@@ -486,7 +486,7 @@ func TestOutputAgentsJSON_Error(t *testing.T) {
 		{
 			name: "second_platform_error",
 			platforms: []cli.Platform{
-				&agentListMockPlatform{
+				&listMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "claude",
 						displayName: "Claude Code",
@@ -495,7 +495,7 @@ func TestOutputAgentsJSON_Error(t *testing.T) {
 						{Name: "agent", Description: "Test"},
 					},
 				},
-				&agentListMockPlatform{
+				&listMockPlatform{
 					mockPlatform: mockPlatform{
 						name:        "opencode",
 						displayName: "OpenCode",
@@ -511,7 +511,7 @@ func TestOutputAgentsJSON_Error(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			err := outputAgentsJSON(&buf, tt.platforms)
+			err := outputListJSON(&buf, tt.platforms)
 
 			if err == nil {
 				t.Fatalf("expected error, got nil; %s", tt.description)

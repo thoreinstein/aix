@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"fmt"
@@ -7,15 +7,16 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/editor"
 )
 
 func init() {
-	agentCmd.AddCommand(agentEditCmd)
+	Cmd.AddCommand(editCmd)
 }
 
-var agentEditCmd = &cobra.Command{
+var editCmd = &cobra.Command{
 	Use:   "edit <name>",
 	Short: "Open agent file in $EDITOR",
 	Long: `Open the agent file in your default editor.
@@ -31,10 +32,10 @@ Examples:
   # Open agent for specific platform
   aix agent edit code-reviewer --platform claude`,
 	Args: cobra.ExactArgs(1),
-	RunE: runAgentEdit,
+	RunE: runEdit,
 }
 
-func runAgentEdit(cmd *cobra.Command, args []string) error {
+func runEdit(cmd *cobra.Command, args []string) error {
 	target := args[0]
 
 	// 1. Check if target is a local file path
@@ -53,7 +54,7 @@ func runAgentEdit(cmd *cobra.Command, args []string) error {
 	}
 
 	// 2. Lookup as installed agent name
-	platforms, err := cli.ResolvePlatforms(GetPlatformFlag())
+	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
 		return err
 	}
@@ -95,6 +96,6 @@ func validateAfterEdit(path string, cmd *cobra.Command) error {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Validating agent...")
 	// Ignore validation errors - user already saved their file
-	_ = runAgentValidate(path, w)
+	_ = runValidate(path, w)
 	return nil
 }

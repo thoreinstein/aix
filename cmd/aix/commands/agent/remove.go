@@ -1,4 +1,4 @@
-package commands
+package agent
 
 import (
 	"bufio"
@@ -10,18 +10,19 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
 )
 
-var agentRemoveForce bool
+var removeForce bool
 
 func init() {
-	agentRemoveCmd.Flags().BoolVar(&agentRemoveForce, "force", false, "Skip confirmation prompt")
-	agentCmd.AddCommand(agentRemoveCmd)
+	removeCmd.Flags().BoolVar(&removeForce, "force", false, "Skip confirmation prompt")
+	Cmd.AddCommand(removeCmd)
 }
 
-var agentRemoveCmd = &cobra.Command{
+var removeCmd = &cobra.Command{
 	Use:     "remove <name>",
 	Aliases: []string{"rm", "uninstall"},
 	Short:   "Remove an installed agent",
@@ -42,18 +43,18 @@ Examples:
   # Remove agent from a specific platform only
   aix agent remove my-agent --platform claude`,
 	Args: cobra.ExactArgs(1),
-	RunE: runAgentRemove,
+	RunE: runRemove,
 }
 
-func runAgentRemove(_ *cobra.Command, args []string) error {
-	return runAgentRemoveWithIO(args, os.Stdout, os.Stdin)
+func runRemove(_ *cobra.Command, args []string) error {
+	return runRemoveWithIO(args, os.Stdout, os.Stdin)
 }
 
-// runAgentRemoveWithIO allows injecting writers for testing.
-func runAgentRemoveWithIO(args []string, w io.Writer, r io.Reader) error {
+// runRemoveWithIO allows injecting writers for testing.
+func runRemoveWithIO(args []string, w io.Writer, r io.Reader) error {
 	name := args[0]
 
-	platforms, err := cli.ResolvePlatforms(GetPlatformFlag())
+	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
 		return err
 	}
@@ -65,8 +66,8 @@ func runAgentRemoveWithIO(args []string, w io.Writer, r io.Reader) error {
 	}
 
 	// Confirm removal unless --force is specified
-	if !agentRemoveForce {
-		if !confirmAgentRemoval(w, r, name, installedOn) {
+	if !removeForce {
+		if !confirmRemoval(w, r, name, installedOn) {
 			fmt.Fprintln(w, "Removal cancelled")
 			return nil
 		}
@@ -110,9 +111,9 @@ func findPlatformsWithAgent(platforms []cli.Platform, name string) []cli.Platfor
 	return result
 }
 
-// confirmAgentRemoval prompts the user to confirm agent removal.
+// confirmRemoval prompts the user to confirm agent removal.
 // Returns true only if the user enters "y" or "yes" (case-insensitive).
-func confirmAgentRemoval(w io.Writer, r io.Reader, name string, platforms []cli.Platform) bool {
+func confirmRemoval(w io.Writer, r io.Reader, name string, platforms []cli.Platform) bool {
 	fmt.Fprintf(w, "Remove agent %q from:\n", name)
 	for _, p := range platforms {
 		fmt.Fprintf(w, "  - %s\n", p.DisplayName())
