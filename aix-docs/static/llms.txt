@@ -1,0 +1,23 @@
+# aix Documentation
+
+> Unified CLI for managing AI coding assistant configurations across platforms.
+
+aix provides a single tool to manage skills, MCP servers, and slash commands for Claude Code, OpenCode, Codex CLI, and Gemini CLI. It translates platform-agnostic configurations into native formats.
+
+## Core Documentation
+
+- [Getting Started](https://thoreinstein.github.io/aix/docs/getting-started/): Installation and quick start guide.
+- [MCP Servers Guide](https://thoreinstein.github.io/aix/docs/guides/mcp/): How to manage Model Context Protocol servers.
+- [Skills Guide](https://thoreinstein.github.io/aix/docs/guides/skills/): Creating and installing platform-agnostic skills.
+- [Commands Guide](https://thoreinstein.github.io/aix/docs/guides/commands/): Managing custom slash commands.
+
+## Reference
+
+- [API Reference](https://thoreinstein.github.io/aix/docs/reference/): Detailed command-line reference for all aix subcommands.
+- [Architecture (ADR-001)](https://github.com/thoreinstein/aix/blob/main/docs/adr/001-unified-agent-cli.md): Design philosophy and technical implementation details.
+
+## Metadata
+
+- **Language:** Go
+- **Spec Support:** Agent Skills Spec, MCP Spec
+- **Target Platforms:** Claude, OpenCode, Codex, Gemini

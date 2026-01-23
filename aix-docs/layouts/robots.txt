@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+Sitemap: {{ "sitemap.xml" | absURL }}
+# AI Agent Discovery
+Sitemap: {{ "llms.txt" | absURL }}
