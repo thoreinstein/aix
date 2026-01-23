@@ -9,6 +9,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 
+	"github.com/thoreinstein/aix/pkg/fileutil"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
 
@@ -145,7 +146,7 @@ func (m *SkillManager) Install(s *Skill) error {
 	}
 
 	// Write skill file
-	if err := os.WriteFile(skillPath, content, 0o644); err != nil {
+	if err := fileutil.AtomicWriteFile(skillPath, content, 0o644); err != nil {
 		return errors.Wrap(err, "writing skill file")
 	}
 

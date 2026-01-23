@@ -7,6 +7,8 @@ import (
 	"sort"
 
 	"github.com/cockroachdb/errors"
+
+	"github.com/thoreinstein/aix/pkg/fileutil"
 )
 
 // Sentinel errors for MCP operations.
@@ -168,52 +170,11 @@ func (m *MCPManager) saveConfig(config *MCPConfig) error {
 		return errors.New("MCP config path not configured")
 	}
 
-	return atomicWriteJSON(configPath, config)
-}
-
-// atomicWriteJSON writes JSON data to a file atomically using temp file + rename.
-func atomicWriteJSON(path string, v any) error {
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return errors.Wrap(err, "marshaling JSON")
-	}
-
-	// Add trailing newline for POSIX compliance
-	data = append(data, '\n')
-
 	// Create parent directory if needed
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	dir := filepath.Dir(configPath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return errors.Wrapf(err, "creating directory %s", dir)
 	}
 
-	// Create temp file in same directory for atomic rename
-	tmp, err := os.CreateTemp(dir, ".mcp-*.tmp")
-	if err != nil {
-		return errors.Wrap(err, "creating temp file")
-	}
-
-	// Clean up temp file on error
-	tmpName := tmp.Name()
-	defer func() {
-		// Only remove if rename failed (file still exists)
-		if _, statErr := os.Stat(tmpName); statErr == nil {
-			os.Remove(tmpName)
-		}
-	}()
-
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		return errors.Wrap(err, "writing temp file")
-	}
-
-	if err := tmp.Close(); err != nil {
-		return errors.Wrap(err, "closing temp file")
-	}
-
-	if err := os.Rename(tmpName, path); err != nil {
-		return errors.Wrap(err, "renaming temp file")
-	}
-
-	return nil
+	return fileutil.AtomicWriteJSON(configPath, config)
 }

@@ -1,7 +1,6 @@
 package opencode
 
 import (
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -334,63 +333,6 @@ func TestMCPManager_loadConfig(t *testing.T) {
 		err := mgr.Add(&MCPServer{Name: "test", Command: []string{"cmd"}})
 		if err != nil {
 			t.Errorf("Add() after null mcp error = %v", err)
-		}
-	})
-}
-
-func TestAtomicWriteJSON(t *testing.T) {
-	t.Run("creates file atomically", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		path := filepath.Join(tmpDir, "test.json")
-
-		data := map[string]string{"key": "value"}
-		if err := atomicWriteJSON(path, data); err != nil {
-			t.Fatalf("atomicWriteJSON() error = %v", err)
-		}
-
-		// Verify file exists and has correct content
-		content, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("failed to read file: %v", err)
-		}
-
-		var got map[string]string
-		if err := json.Unmarshal(content, &got); err != nil {
-			t.Fatalf("failed to unmarshal: %v", err)
-		}
-		if got["key"] != "value" {
-			t.Errorf("atomicWriteJSON() content[\"key\"] = %q, want %q", got["key"], "value")
-		}
-	})
-
-	t.Run("creates parent directory if needed", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		path := filepath.Join(tmpDir, "nested", "dir", "test.json")
-
-		data := map[string]string{"nested": "true"}
-		if err := atomicWriteJSON(path, data); err != nil {
-			t.Fatalf("atomicWriteJSON() error = %v", err)
-		}
-
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			t.Error("atomicWriteJSON() did not create file")
-		}
-	})
-
-	t.Run("adds trailing newline", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		path := filepath.Join(tmpDir, "newline.json")
-
-		if err := atomicWriteJSON(path, map[string]string{}); err != nil {
-			t.Fatalf("atomicWriteJSON() error = %v", err)
-		}
-
-		content, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("failed to read file: %v", err)
-		}
-		if len(content) == 0 || content[len(content)-1] != '\n' {
-			t.Error("atomicWriteJSON() did not add trailing newline")
 		}
 	})
 }

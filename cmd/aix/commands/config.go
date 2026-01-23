@@ -14,6 +14,7 @@ import (
 
 	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/paths"
+	"github.com/thoreinstein/aix/pkg/fileutil"
 )
 
 func init() {
@@ -251,18 +252,13 @@ func writeConfig() error {
 		"default_platforms": viper.GetStringSlice("default_platforms"),
 	}
 
-	data, err := yaml.Marshal(cfg)
-	if err != nil {
-		return errors.Wrap(err, "marshaling config")
-	}
-
 	// Ensure directory exists
 	configDir := filepath.Dir(configPath)
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		return errors.Wrap(err, "creating config directory")
 	}
 
-	if err := os.WriteFile(configPath, data, 0o644); err != nil {
+	if err := fileutil.AtomicWriteYAML(configPath, cfg); err != nil {
 		return errors.Wrap(err, "writing config file")
 	}
 

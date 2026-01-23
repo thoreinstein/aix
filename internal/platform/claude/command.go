@@ -8,6 +8,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 
+	"github.com/thoreinstein/aix/pkg/fileutil"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
 
@@ -140,7 +141,7 @@ func (m *CommandManager) Install(c *Command) error {
 	}
 
 	cmdPath := m.paths.CommandPath(c.Name)
-	if err := os.WriteFile(cmdPath, []byte(content), 0o644); err != nil {
+	if err := fileutil.AtomicWriteFile(cmdPath, []byte(content), 0o644); err != nil {
 		return errors.Wrap(err, "writing command file")
 	}
 
