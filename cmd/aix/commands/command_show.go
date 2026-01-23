@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
@@ -118,7 +119,7 @@ func runCommandShowWithWriter(name string, w io.Writer) error {
 	}
 
 	if detail == nil {
-		return fmt.Errorf("command %q not found on any platform", name)
+		return errors.Newf("command %q not found on any platform", name)
 	}
 
 	detail.Installations = installations
@@ -185,7 +186,7 @@ func extractOpenCodeCommand(c *opencode.Command) *showCommandDetail {
 func outputCommandShowJSON(w io.Writer, detail *showCommandDetail) error {
 	data, err := json.MarshalIndent(detail, "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshaling JSON: %w", err)
+		return errors.Wrap(err, "marshaling JSON")
 	}
 	fmt.Fprintln(w, string(data))
 	return nil

@@ -2,11 +2,12 @@ package commands
 
 import (
 	"bytes"
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/cockroachdb/errors"
 
 	"github.com/thoreinstein/aix/internal/command/parser"
 )

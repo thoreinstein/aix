@@ -2,11 +2,11 @@ package commands
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/platform/claude"
@@ -180,7 +180,7 @@ func outputValidateJSON(result validateResult) error {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(result); err != nil {
-		return fmt.Errorf("encoding JSON: %w", err)
+		return errors.Wrap(err, "encoding JSON")
 	}
 	if !result.Valid {
 		return errValidationFailed

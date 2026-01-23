@@ -2,8 +2,9 @@
 package parser
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/cockroachdb/errors"
 )
 
 // Sentinel errors for command parsing.

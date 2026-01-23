@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
@@ -88,12 +89,12 @@ func runSkillEdit(_ *cobra.Command, args []string) error {
 	}
 
 	if foundPlatform == nil {
-		return fmt.Errorf("skill %q not found (checked local path and installed platforms)", target)
+		return errors.Newf("skill %q not found (checked local path and installed platforms)", target)
 	}
 
 	// Check if directory exists (sanity check)
 	if _, err := os.Stat(skillPath); os.IsNotExist(err) {
-		return fmt.Errorf("skill directory not found at %s", skillPath)
+		return errors.Newf("skill directory not found at %s", skillPath)
 	}
 
 	fmt.Printf("Opening %s skill %q...\n", foundPlatform.DisplayName(), target)
@@ -116,7 +117,7 @@ func openInEditor(path string) error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("running editor: %w", err)
+		return errors.Wrap(err, "running editor")
 	}
 
 	return nil

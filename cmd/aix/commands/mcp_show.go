@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
@@ -106,7 +107,7 @@ func runMCPShow(_ *cobra.Command, args []string) error {
 	}
 
 	if len(details) == 0 {
-		return fmt.Errorf("MCP server %q not found on any platform", name)
+		return errors.Newf("MCP server %q not found on any platform", name)
 	}
 
 	// Find differences between platform configurations
@@ -290,7 +291,7 @@ func outputMCPShowJSON(name string, details map[string]*serverDetail, difference
 
 	data, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshaling JSON: %w", err)
+		return errors.Wrap(err, "marshaling JSON")
 	}
 	fmt.Println(string(data))
 	return nil

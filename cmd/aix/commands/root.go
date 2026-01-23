@@ -2,7 +2,6 @@
 package commands
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -103,7 +102,7 @@ func validatePlatformFlag(cmd *cobra.Command, _ []string) error {
 	}
 
 	if len(invalid) > 0 {
-		err := fmt.Errorf("invalid platform(s): %s (valid: %s)",
+		err := errors.Newf("invalid platform(s): %s (valid: %s)",
 			strings.Join(invalid, ", "),
 			strings.Join(paths.Platforms(), ", "))
 		return errors.NewUserError(err, "Run 'aix --help' to see valid platforms")

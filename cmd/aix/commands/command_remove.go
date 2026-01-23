@@ -2,12 +2,12 @@ package commands
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
@@ -61,7 +61,7 @@ func runCommandRemoveWithIO(args []string, w io.Writer, r io.Reader) error {
 	// Find platforms that have this command installed
 	installedOn := findPlatformsWithCommand(platforms, name)
 	if len(installedOn) == 0 {
-		return fmt.Errorf("command %q not found on any platform", name)
+		return errors.Newf("command %q not found on any platform", name)
 	}
 
 	// Confirm removal unless --force is specified

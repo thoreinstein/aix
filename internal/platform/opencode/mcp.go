@@ -2,11 +2,11 @@ package opencode
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
+
+	"github.com/cockroachdb/errors"
 )
 
 // Sentinel errors for MCP operations.
@@ -140,12 +140,12 @@ func (m *MCPManager) loadConfig() (*MCPConfig, error) {
 				MCP: make(map[string]*MCPServer),
 			}, nil
 		}
-		return nil, fmt.Errorf("reading MCP config: %w", err)
+		return nil, errors.Wrap(err, "reading MCP config")
 	}
 
 	var config MCPConfig
 	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("parsing MCP config: %w", err)
+		return nil, errors.Wrap(err, "parsing MCP config")
 	}
 
 	// Ensure the map is initialized
@@ -175,7 +175,7 @@ func (m *MCPManager) saveConfig(config *MCPConfig) error {
 func atomicWriteJSON(path string, v any) error {
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshaling JSON: %w", err)
+		return errors.Wrap(err, "marshaling JSON")
 	}
 
 	// Add trailing newline for POSIX compliance
@@ -184,13 +184,13 @@ func atomicWriteJSON(path string, v any) error {
 	// Create parent directory if needed
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("creating directory %s: %w", dir, err)
+		return errors.Wrapf(err, "creating directory %s", dir)
 	}
 
 	// Create temp file in same directory for atomic rename
 	tmp, err := os.CreateTemp(dir, ".mcp-*.tmp")
 	if err != nil {
-		return fmt.Errorf("creating temp file: %w", err)
+		return errors.Wrap(err, "creating temp file")
 	}
 
 	// Clean up temp file on error
@@ -204,15 +204,15 @@ func atomicWriteJSON(path string, v any) error {
 
 	if _, err := tmp.Write(data); err != nil {
 		tmp.Close()
-		return fmt.Errorf("writing temp file: %w", err)
+		return errors.Wrap(err, "writing temp file")
 	}
 
 	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("closing temp file: %w", err)
+		return errors.Wrap(err, "closing temp file")
 	}
 
 	if err := os.Rename(tmpName, path); err != nil {
-		return fmt.Errorf("renaming temp file: %w", err)
+		return errors.Wrap(err, "renaming temp file")
 	}
 
 	return nil

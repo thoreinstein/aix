@@ -2,13 +2,13 @@ package doctor
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	toml "github.com/pelletier/go-toml/v2"
 
 	"github.com/thoreinstein/aix/internal/paths"

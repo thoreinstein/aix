@@ -1,13 +1,13 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
@@ -96,7 +96,7 @@ func installCommandFromGit(url string) error {
 	// Create temp directory for clone
 	tempDir, err := os.MkdirTemp("", "aix-command-*")
 	if err != nil {
-		return fmt.Errorf("creating temp directory: %w", err)
+		return errors.Wrap(err, "creating temp directory")
 	}
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
@@ -110,7 +110,7 @@ func installCommandFromGit(url string) error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("cloning repository: %w", err)
+		return errors.Wrap(err, "cloning repository")
 	}
 
 	return installCommandFromLocal(tempDir)
@@ -121,14 +121,14 @@ func installCommandFromLocal(source string) error {
 	// Resolve to absolute path for consistent error messages
 	absPath, err := filepath.Abs(source)
 	if err != nil {
-		return fmt.Errorf("resolving path: %w", err)
+		return errors.Wrap(err, "resolving path")
 	}
 
 	// Determine command file path
 	commandPath := absPath
 	info, err := os.Stat(absPath)
 	if err != nil {
-		return fmt.Errorf("accessing source: %w", err)
+		return errors.Wrap(err, "accessing source")
 	}
 
 	if info.IsDir() {
@@ -141,7 +141,7 @@ func installCommandFromLocal(source string) error {
 			commandPath = ""
 			entries, readErr := os.ReadDir(absPath)
 			if readErr != nil {
-				return fmt.Errorf("reading directory: %w", readErr)
+				return errors.Wrap(readErr, "reading directory")
 			}
 			for _, e := range entries {
 				if e.IsDir() {
@@ -154,14 +154,14 @@ func installCommandFromLocal(source string) error {
 				}
 			}
 			if commandPath == "" {
-				return fmt.Errorf("no command file found in %s (expected command.md or any .md file)", absPath)
+				return errors.Newf("no command file found in %s (expected command.md or any .md file)", absPath)
 			}
 		}
 	}
 
 	// Verify file exists
 	if _, err := os.Stat(commandPath); err != nil {
-		return fmt.Errorf("command file not found: %s", commandPath)
+		return errors.Newf("command file not found: %s", commandPath)
 	}
 
 	fmt.Println("Validating command...")
@@ -170,7 +170,7 @@ func installCommandFromLocal(source string) error {
 	p := parser.New[*claude.Command]()
 	cmd, err := p.ParseFile(commandPath)
 	if err != nil {
-		return fmt.Errorf("parsing command: %w", err)
+		return errors.Wrap(err, "parsing command")
 	}
 
 	// Validate command
@@ -199,7 +199,7 @@ func installCommandFromLocal(source string) error {
 	if !commandInstallForce {
 		for _, plat := range platforms {
 			if _, err := plat.GetCommand((*cmd).Name); err == nil {
-				return fmt.Errorf("command %q already exists on %s (use --force to overwrite)",
+				return errors.Newf("command %q already exists on %s (use --force to overwrite)",
 					(*cmd).Name, plat.DisplayName())
 			}
 		}
@@ -215,7 +215,7 @@ func installCommandFromLocal(source string) error {
 
 		if err := plat.InstallCommand(platformCmd); err != nil {
 			fmt.Println("failed")
-			return fmt.Errorf("failed to install to %s: %w", plat.DisplayName(), err)
+			return errors.Wrapf(err, "failed to install to %s", plat.DisplayName())
 		}
 
 		fmt.Println("done")
