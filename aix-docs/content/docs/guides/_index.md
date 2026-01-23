@@ -23,5 +23,5 @@ Welcome to the `aix` guides. Here you'll find detailed instructions on how to co
 
 ## Advanced Topics
 
-*   **Platform Configuration**: Deep dive into how `aix` translates configs for Claude, OpenCode, and Gemini. (Coming Soon)
+*   **[Platform Configuration](platforms/)**: Deep dive into how `aix` translates configs for Claude, OpenCode, and Gemini.
 *   **Skill Templates**: Creating templates for your team. (Coming Soon)
