@@ -13,8 +13,10 @@ import (
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
+	cliprompt "github.com/thoreinstein/aix/internal/cli/prompt"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
+	"github.com/thoreinstein/aix/internal/resource"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
 
@@ -29,20 +31,30 @@ var (
 // installForce enables overwriting existing agents without confirmation.
 var installForce bool
 
+// installFile forces treating the argument as a file path instead of searching repos.
+var installFile bool
+
 func init() {
-	installCmd.Flags().BoolVarP(&installForce, "force", "f", false,
+	installCmd.Flags().BoolVar(&installForce, "force", false,
 		"overwrite existing agent without confirmation")
+	installCmd.Flags().BoolVarP(&installFile, "file", "f", false,
+		"treat argument as a file path instead of searching repos")
 	Cmd.AddCommand(installCmd)
 }
 
 var installCmd = &cobra.Command{
 	Use:   "install <source>",
-	Short: "Install an agent from a local path",
-	Long: `Install an AI coding agent from a local AGENT.md file.
+	Short: "Install an agent from a repository or local path",
+	Long: `Install an AI coding agent from a configured repository or local AGENT.md file.
 
 The source can be:
+  - An agent name to search in configured repositories
   - A path to an AGENT.md file
   - A directory containing an AGENT.md file
+
+When given a name (not a path), aix searches configured repositories first.
+If the agent exists in multiple repositories, you will be prompted to select one.
+Use --file to skip repo search and treat the argument as a file path.
 
 The AGENT.md file should contain YAML frontmatter with at least a 'name' field,
 followed by the agent's instructions in markdown format.
@@ -53,27 +65,106 @@ Example AGENT.md:
   description: Reviews code for quality and best practices
   ---
 
-  You are a code review expert. When reviewing code...
+  You are a code review expert. When reviewing code...`,
+	Example: `  # Install by name from configured repos
+  aix agent install code-reviewer
 
-Flags:
-  --force, -f     Overwrite existing agent without confirmation`,
-	Example: `  # Install from a file
+  # Install from a file
   aix agent install ./my-agent/AGENT.md
+  aix agent install --file my-agent  # Force file path interpretation
 
   # Install from a directory
   aix agent install ./my-agent/
 
   # Install to specific platform
-  aix agent install ./my-agent/ --platform claude
+  aix agent install code-reviewer --platform claude
 
   # Force overwrite existing agent
-  aix agent install ./my-agent/ --force`,
+  aix agent install code-reviewer --force`,
 	Args: cobra.ExactArgs(1),
 	RunE: runInstall,
 }
 
 func runInstall(_ *cobra.Command, args []string) error {
 	source := args[0]
+
+	// If --file flag is set, treat argument as file path (old behavior)
+	if installFile {
+		return installFromLocal(source)
+	}
+
+	// If source is clearly a path, use direct install
+	if looksLikePath(source) {
+		return installFromLocal(source)
+	}
+
+	// Try repo lookup first
+	matches, err := resource.FindByName(source, resource.TypeAgent)
+	if err != nil {
+		return fmt.Errorf("searching repositories: %w", err)
+	}
+
+	if len(matches) > 0 {
+		return installFromRepo(source, matches)
+	}
+
+	// No matches in repos - check if it's a local path that exists
+	if _, err := os.Stat(source); err == nil {
+		return installFromLocal(source)
+	}
+
+	return fmt.Errorf("agent %q not found in any configured repository", source)
+}
+
+// looksLikePath returns true if the source appears to be a file path.
+func looksLikePath(source string) bool {
+	// Starts with ./ or ../ or /
+	if strings.HasPrefix(source, "./") || strings.HasPrefix(source, "../") || strings.HasPrefix(source, "/") {
+		return true
+	}
+	// Contains path separator
+	if strings.Contains(source, string(filepath.Separator)) {
+		return true
+	}
+	// On Windows, also check for backslash
+	if filepath.Separator != '/' && strings.Contains(source, "/") {
+		return true
+	}
+	return false
+}
+
+// installFromRepo installs an agent from a configured repository.
+func installFromRepo(name string, matches []resource.Resource) error {
+	var selected *resource.Resource
+
+	if len(matches) == 1 {
+		selected = &matches[0]
+	} else {
+		// Multiple matches - prompt user to select
+		choice, err := cliprompt.SelectResourceDefault(name, matches)
+		if err != nil {
+			return fmt.Errorf("selecting resource: %w", err)
+		}
+		selected = choice
+	}
+
+	// Copy from cache to temp directory
+	tempDir, err := resource.CopyToTemp(selected)
+	if err != nil {
+		return fmt.Errorf("copying from repository cache: %w", err)
+	}
+	defer func() {
+		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to clean up temp dir: %v\n", removeErr)
+		}
+	}()
+
+	fmt.Printf("Installing from repository: %s\n", selected.RepoName)
+	return installFromLocal(tempDir)
+}
+
+// installFromLocal installs an agent from a local file or directory.
+func installFromLocal(source string) error {
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
 		return fmt.Errorf("resolving platforms: %w", err)

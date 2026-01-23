@@ -13,38 +13,54 @@ import (
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
+	cliprompt "github.com/thoreinstein/aix/internal/cli/prompt"
 	"github.com/thoreinstein/aix/internal/command/parser"
 	"github.com/thoreinstein/aix/internal/command/validator"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
+	"github.com/thoreinstein/aix/internal/resource"
 )
 
 // installForce enables overwriting existing commands without confirmation.
 var installForce bool
 
+// installFile forces treating the argument as a file path instead of searching repos.
+var installFile bool
+
 // Sentinel errors for command install operations.
 var errInstallFailed = errors.New("command installation failed")
 
 func init() {
-	installCmd.Flags().BoolVarP(&installForce, "force", "f", false,
+	installCmd.Flags().BoolVar(&installForce, "force", false,
 		"overwrite existing command without confirmation")
+	installCmd.Flags().BoolVarP(&installFile, "file", "f", false,
+		"treat argument as a file path instead of searching repos")
 	Cmd.AddCommand(installCmd)
 }
 
 var installCmd = &cobra.Command{
 	Use:   "install <source>",
-	Short: "Install a slash command from a local path or git URL",
-	Long: `Install a slash command from a local file, directory, or git repository.
+	Short: "Install a slash command from a repository, local path, or git URL",
+	Long: `Install a slash command from a configured repository, local file/directory, or git URL.
 
 The source can be:
+  - A command name to search in configured repositories
   - A local .md file containing the command definition
   - A directory containing a command.md file or any .md file
   - A git URL (https://, git@, or .git suffix)
 
+When given a name (not a path), aix searches configured repositories first.
+If the command exists in multiple repositories, you will be prompted to select one.
+Use --file to skip repo search and treat the argument as a file path.
+
 For git URLs, the repository is cloned to a temporary directory, the command
 is installed, and the temporary directory is cleaned up.`,
-	Example: `  # Install from a local file
+	Example: `  # Install by name from configured repos
+  aix command install review
+
+  # Install from a local file
   aix command install ./review.md
+  aix command install --file review.md  # Force file path interpretation
 
   # Install from a directory
   aix command install ./my-command/
@@ -54,14 +70,10 @@ is installed, and the temporary directory is cleaned up.`,
   aix command install git@github.com:user/my-command.git
 
   # Force overwrite existing command
-  aix command install ./review.md --force
+  aix command install review --force
 
   # Install to a specific platform
-  aix command install ./review.md --platform claude
-
-  See Also:
-    aix command remove   - Remove an installed command
-    aix command init     - Create a new command`,
+  aix command install review --platform claude`,
 	Args: cobra.ExactArgs(1),
 	RunE: runInstall,
 }
@@ -69,12 +81,85 @@ is installed, and the temporary directory is cleaned up.`,
 func runInstall(_ *cobra.Command, args []string) error {
 	source := args[0]
 
-	// Determine if source is a git URL or local path
-	if isGitURL(source) {
-		return installFromGit(source)
+	// If --file flag is set, treat argument as file path or URL (old behavior)
+	if installFile {
+		if isGitURL(source) {
+			return installFromGit(source)
+		}
+		return installFromLocal(source)
 	}
 
-	return installFromLocal(source)
+	// If source is clearly a path or URL, use direct install
+	if isGitURL(source) || looksLikePath(source) {
+		if isGitURL(source) {
+			return installFromGit(source)
+		}
+		return installFromLocal(source)
+	}
+
+	// Try repo lookup first
+	matches, err := resource.FindByName(source, resource.TypeCommand)
+	if err != nil {
+		return errors.Wrap(err, "searching repositories")
+	}
+
+	if len(matches) > 0 {
+		return installFromRepo(source, matches)
+	}
+
+	// No matches in repos - check if it's a local path that exists
+	if _, err := os.Stat(source); err == nil {
+		return installFromLocal(source)
+	}
+
+	return errors.Newf("command %q not found in any configured repository", source)
+}
+
+// looksLikePath returns true if the source appears to be a file path.
+func looksLikePath(source string) bool {
+	// Starts with ./ or ../ or /
+	if strings.HasPrefix(source, "./") || strings.HasPrefix(source, "../") || strings.HasPrefix(source, "/") {
+		return true
+	}
+	// Contains path separator
+	if strings.Contains(source, string(filepath.Separator)) {
+		return true
+	}
+	// On Windows, also check for backslash
+	if filepath.Separator != '/' && strings.Contains(source, "/") {
+		return true
+	}
+	return false
+}
+
+// installFromRepo installs a command from a configured repository.
+func installFromRepo(name string, matches []resource.Resource) error {
+	var selected *resource.Resource
+
+	if len(matches) == 1 {
+		selected = &matches[0]
+	} else {
+		// Multiple matches - prompt user to select
+		choice, err := cliprompt.SelectResourceDefault(name, matches)
+		if err != nil {
+			return errors.Wrap(err, "selecting resource")
+		}
+		selected = choice
+	}
+
+	// Copy from cache to temp directory
+	tempDir, err := resource.CopyToTemp(selected)
+	if err != nil {
+		return errors.Wrap(err, "copying from repository cache")
+	}
+	defer func() {
+		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to clean up temp dir: %v\n", removeErr)
+		}
+	}()
+
+	fmt.Printf("Installing from repository: %s\n", selected.RepoName)
+	return installFromLocal(tempDir)
 }
 
 // isGitURL returns true if the source looks like a git repository URL.

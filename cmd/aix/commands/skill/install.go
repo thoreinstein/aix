@@ -13,37 +13,49 @@ import (
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
+	cliprompt "github.com/thoreinstein/aix/internal/cli/prompt"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
+	"github.com/thoreinstein/aix/internal/resource"
 	"github.com/thoreinstein/aix/internal/skill/parser"
 	"github.com/thoreinstein/aix/internal/skill/validator"
 )
 
-var installForce bool
+var (
+	installForce bool
+	installFile  bool
+)
 
 func init() {
-	installCmd.Flags().BoolVarP(&installForce, "force", "f", false,
+	installCmd.Flags().BoolVar(&installForce, "force", false,
 		"overwrite existing skill without confirmation")
+	installCmd.Flags().BoolVarP(&installFile, "file", "f", false,
+		"treat argument as a file path instead of searching repos")
 	Cmd.AddCommand(installCmd)
 }
 
 var installCmd = &cobra.Command{
 	Use:   "install <source>",
-	Short: "Install a skill from a local path or git URL",
-	Long: `Install a skill from a local directory or git repository.
+	Short: "Install a skill from a repository, local path, or git URL",
+	Long: `Install a skill from a configured repository, local directory, or git URL.
 
 The source can be:
+  - A skill name to search in configured repositories
   - A local path to a directory containing SKILL.md
   - A git URL (https://, git@, or .git suffix)
 
-For git URLs, the repository is cloned to a temporary directory, the skill
-is installed, and the temporary directory is cleaned up.
+When given a name (not a path), aix searches configured repositories first.
+If the skill exists in multiple repositories, you will be prompted to select one.
+Use --file to skip repo search and treat the argument as a file path.
 
-Flags:
-  --force, -f     Overwrite existing skill without confirmation
-  --platform, -p  Install to specific platform(s) only`,
-	Example: `  # Install from local directory
+For git URLs, the repository is cloned to a temporary directory, the skill
+is installed, and the temporary directory is cleaned up.`,
+	Example: `  # Install by name from configured repos
+  aix skill install code-review
+
+  # Install from local directory
   aix skill install ./my-skill
+  aix skill install --file my-skill  # Force file path interpretation
 
   # Install from absolute path
   aix skill install /path/to/skill-dir
@@ -55,12 +67,7 @@ Flags:
   aix skill install git@github.com:user/skill-repo.git
 
   # Force overwrite existing skill
-  aix skill install ./my-skill --force
-
-  See Also:
-    aix skill remove   - Remove an installed skill
-    aix skill list     - List installed skills
-    aix skill validate - Validate a skill before installing`,
+  aix skill install code-review --force`,
 	Args: cobra.ExactArgs(1),
 	RunE: runInstall,
 }
@@ -73,12 +80,85 @@ var (
 func runInstall(_ *cobra.Command, args []string) error {
 	source := args[0]
 
-	// Determine if source is a git URL or local path
-	if isGitURL(source) {
-		return installFromGit(source)
+	// If --file flag is set, treat argument as file path or URL (old behavior)
+	if installFile {
+		if isGitURL(source) {
+			return installFromGit(source)
+		}
+		return installFromLocal(source)
 	}
 
-	return installFromLocal(source)
+	// If source is clearly a path or URL, use direct install
+	if isGitURL(source) || looksLikePath(source) {
+		if isGitURL(source) {
+			return installFromGit(source)
+		}
+		return installFromLocal(source)
+	}
+
+	// Try repo lookup first
+	matches, err := resource.FindByName(source, resource.TypeSkill)
+	if err != nil {
+		return errors.Wrap(err, "searching repositories")
+	}
+
+	if len(matches) > 0 {
+		return installFromRepo(source, matches)
+	}
+
+	// No matches in repos - check if it's a local path that exists
+	if _, err := os.Stat(source); err == nil {
+		return installFromLocal(source)
+	}
+
+	return errors.Newf("skill %q not found in any configured repository", source)
+}
+
+// looksLikePath returns true if the source appears to be a file path.
+func looksLikePath(source string) bool {
+	// Starts with ./ or ../ or /
+	if strings.HasPrefix(source, "./") || strings.HasPrefix(source, "../") || strings.HasPrefix(source, "/") {
+		return true
+	}
+	// Contains path separator
+	if strings.Contains(source, string(filepath.Separator)) {
+		return true
+	}
+	// On Windows, also check for backslash
+	if filepath.Separator != '/' && strings.Contains(source, "/") {
+		return true
+	}
+	return false
+}
+
+// installFromRepo installs a skill from a configured repository.
+func installFromRepo(name string, matches []resource.Resource) error {
+	var selected *resource.Resource
+
+	if len(matches) == 1 {
+		selected = &matches[0]
+	} else {
+		// Multiple matches - prompt user to select
+		choice, err := cliprompt.SelectResourceDefault(name, matches)
+		if err != nil {
+			return errors.Wrap(err, "selecting resource")
+		}
+		selected = choice
+	}
+
+	// Copy from cache to temp directory
+	tempDir, err := resource.CopyToTemp(selected)
+	if err != nil {
+		return errors.Wrap(err, "copying from repository cache")
+	}
+	defer func() {
+		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to clean up temp dir: %v\n", removeErr)
+		}
+	}()
+
+	fmt.Printf("Installing from repository: %s\n", selected.RepoName)
+	return installFromLocal(tempDir)
 }
 
 // isGitURL returns true if the source looks like a git repository URL.
