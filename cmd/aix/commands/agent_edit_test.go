@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -47,5 +49,36 @@ func TestAgentEditCmd_Metadata(t *testing.T) {
 
 	if agentEditCmd.Long == "" {
 		t.Error("Long description should not be empty")
+	}
+}
+
+func TestAgentEdit_LocalPathResolution(t *testing.T) {
+	// Create a temp file to test local path resolution
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-agent-*.md")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	tmpFile.Close()
+
+	// The command should resolve the local path but fail on editor launch
+	// (editor launch is out of scope for aix-m92)
+	err = runAgentEdit(agentEditCmd, []string{tmpFile.Name()})
+	if err == nil {
+		t.Error("expected error (editor not implemented), got nil")
+	}
+	// Should fail with "editor launch not yet implemented", not "not found"
+	if err != nil && !strings.Contains(err.Error(), "editor launch") {
+		t.Errorf("expected editor launch error, got: %v", err)
+	}
+}
+
+func TestAgentEdit_NotFound(t *testing.T) {
+	// Test with non-existent agent
+	err := runAgentEdit(agentEditCmd, []string{"nonexistent-agent-xyz"})
+	if err == nil {
+		t.Error("expected error for non-existent agent")
+	}
+	if err != nil && !strings.Contains(err.Error(), "not found") {
+		t.Errorf("expected 'not found' error, got: %v", err)
 	}
 }
