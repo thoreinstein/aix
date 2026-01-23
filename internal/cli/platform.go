@@ -287,7 +287,7 @@ func (a *claudeAdapter) AgentDir() string {
 func (a *claudeAdapter) InstallAgent(agent any) error {
 	ag, ok := agent.(*claude.Agent)
 	if !ok {
-		return fmt.Errorf("expected *claude.Agent, got %T", agent)
+		return errors.Newf("expected *claude.Agent, got %T", agent)
 	}
 	return a.p.InstallAgent(ag)
 }
@@ -475,7 +475,7 @@ func (a *opencodeAdapter) AgentDir() string {
 func (a *opencodeAdapter) InstallAgent(agent any) error {
 	ag, ok := agent.(*opencode.Agent)
 	if !ok {
-		return fmt.Errorf("expected *opencode.Agent, got %T", agent)
+		return errors.Newf("expected *opencode.Agent, got %T", agent)
 	}
 	return a.p.InstallAgent(ag)
 }
