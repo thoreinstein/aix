@@ -75,6 +75,9 @@ func (m *mockAgentPlatform) GetAgent(name string) (any, error) {
 	return agent, nil
 }
 
+// Backup methods for cli.Platform interface
+func (m *mockAgentPlatform) BackupPaths() []string { return []string{"/mock/backup"} }
+
 func TestFindPlatformsWithAgent(t *testing.T) {
 	tests := []struct {
 		name      string

@@ -91,6 +91,9 @@ func (m *mockPlatform) UninstallAgent(_ string) error        { return nil }
 func (m *mockPlatform) ListAgents() ([]cli.AgentInfo, error) { return nil, nil }
 func (m *mockPlatform) GetAgent(_ string) (any, error)       { return nil, errors.New("not found") }
 
+// Backup methods for cli.Platform interface
+func (m *mockPlatform) BackupPaths() []string { return []string{"/mock/backup"} }
+
 func TestFindPlatformsWithSkill(t *testing.T) {
 	tests := []struct {
 		name      string
