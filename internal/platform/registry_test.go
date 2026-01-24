@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"errors"
 	"sync"
 	"testing"
 
@@ -14,8 +15,8 @@ func TestNewRegistry(t *testing.T) {
 	}
 
 	// Should be empty
-	if got := r.All(); got != nil {
-		t.Errorf("NewRegistry().All() = %v, want nil", got)
+	if got := r.All(); len(got) != 0 {
+		t.Errorf("NewRegistry().All() = %v, want empty slice", got)
 	}
 }
 
@@ -64,7 +65,7 @@ func TestRegistry_Register_InvalidName(t *testing.T) {
 			r := NewRegistry()
 
 			err := r.Register(tt.platform)
-			if err != ErrInvalidPlatformName {
+			if !errors.Is(err, ErrInvalidPlatformName) {
 				t.Errorf("Register(%q) error = %v, want %v", tt.platform, err, ErrInvalidPlatformName)
 			}
 		})
@@ -81,7 +82,7 @@ func TestRegistry_Register_AlreadyRegistered(t *testing.T) {
 
 	// Second registration should fail
 	err := r.Register(paths.PlatformClaude)
-	if err != ErrPlatformAlreadyRegistered {
+	if !errors.Is(err, ErrPlatformAlreadyRegistered) {
 		t.Errorf("Second Register() error = %v, want %v", err, ErrPlatformAlreadyRegistered)
 	}
 
@@ -144,13 +145,8 @@ func TestRegistry_All_DeterministicOrder(t *testing.T) {
 			t.Fatalf("All() returned %d platforms, want 4", len(all))
 		}
 
-		// Should be alphabetically sorted
-		expected := []string{
-			paths.PlatformClaude,
-			paths.PlatformCodex,
-			paths.PlatformGemini,
-			paths.PlatformOpenCode,
-		}
+		// Should be in deterministic order (per paths.Platforms())
+		expected := paths.Platforms()
 
 		for j, name := range all {
 			if name != expected[j] {
@@ -164,8 +160,8 @@ func TestRegistry_All_Empty(t *testing.T) {
 	r := NewRegistry()
 
 	got := r.All()
-	if got != nil {
-		t.Errorf("All() on empty registry = %v, want nil", got)
+	if got == nil || len(got) != 0 {
+		t.Errorf("All() on empty registry = %v, want empty slice", got)
 	}
 }
 
@@ -195,8 +191,8 @@ func TestRegistry_Available_Empty(t *testing.T) {
 	r := NewRegistry()
 
 	got := r.Available()
-	if got != nil {
-		t.Errorf("Available() on empty registry = %v, want nil", got)
+	if got == nil || len(got) != 0 {
+		t.Errorf("Available() on empty registry = %v, want empty slice", got)
 	}
 }
 
@@ -302,7 +298,7 @@ func TestRegistry_ConcurrentRegisterAndGet(t *testing.T) {
 	for err := range registerErrors {
 		if err == nil {
 			successCount++
-		} else if err != ErrPlatformAlreadyRegistered {
+		} else if !errors.Is(err, ErrPlatformAlreadyRegistered) {
 			t.Errorf("Unexpected error: %v", err)
 		}
 	}
