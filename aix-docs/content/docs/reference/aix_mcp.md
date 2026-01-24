@@ -62,6 +62,7 @@ aix mcp [flags]
 * [aix mcp add](/docs/reference/aix_mcp_add/)	 - Add an MCP server configuration
 * [aix mcp disable](/docs/reference/aix_mcp_disable/)	 - Disable an MCP server without removing it
 * [aix mcp enable](/docs/reference/aix_mcp_enable/)	 - Enable a disabled MCP server
+* [aix mcp install](/docs/reference/aix_mcp_install/)	 - Install an MCP server from a repository, local file, or git URL
 * [aix mcp list](/docs/reference/aix_mcp_list/)	 - List configured MCP servers
 * [aix mcp remove](/docs/reference/aix_mcp_remove/)	 - Remove an MCP server configuration
 * [aix mcp show](/docs/reference/aix_mcp_show/)	 - Display MCP server details

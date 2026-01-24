@@ -1,0 +1,62 @@
+# Lychee Link Checker Configuration
+
+# Format output
+format = "detailed"
+
+# Concurrency
+max_concurrency = 8
+
+# Retry
+max_retries = 2
+retry_wait_time = 2
+
+# Exclude URLs
+exclude = [
+    # Local development
+    '^http://localhost',
+    '^http://127\.0\.0\.1',
+    '^file://',
+
+    # Example domains
+    '^https://example\.com',
+    '^https://www\.example\.com',
+    '^http://example\.com',
+
+    # GitHub templates/placeholders
+    'your-username',
+    'your-repo',
+
+    # AIX placeholders
+    '<project-root>',
+    'https://github.com/google/gemini-cli',
+    # Exists locally, not yet on main
+    'https://github.com/thoreinstein/aix/blob/main/CONTRIBUTING.md',
+
+    # Internal root-relative paths (handled by Hugo)
+    '^/.*',
+]
+
+# Exclude paths
+exclude_path = [
+    "node_modules",
+    "public",
+    "dist",
+    ".git",
+    ".beads",
+    "aix-docs/public",
+    "aix-docs/resources",
+    "vendor",
+    "bin",
+    "coverage.out"
+]
+
+# Acceptance codes (429 = Too Many Requests)
+accept = [200, 429]
+
+# Base URL for relative links
+base_url = "http://localhost:1313"
+
+# Check markdown and html
+# (Extensions are handled by pre-commit file filtering,
+# but this is for manual runs)
+include = []

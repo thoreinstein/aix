@@ -6,22 +6,23 @@ toc: true
 ---
 ## aix skill install
 
-Install a skill from a local path or git URL
+Install a skill from a repository, local path, or git URL
 
 ### Synopsis
 
-Install a skill from a local directory or git repository.
+Install a skill from a configured repository, local directory, or git URL.
 
 The source can be:
+  - A skill name to search in configured repositories
   - A local path to a directory containing SKILL.md
   - A git URL (https://, git@, or .git suffix)
 
+When given a name (not a path), aix searches configured repositories first.
+If the skill exists in multiple repositories, you will be prompted to select one.
+Use --file to skip repo search and treat the argument as a file path.
+
 For git URLs, the repository is cloned to a temporary directory, the skill
 is installed, and the temporary directory is cleaned up.
-
-Flags:
-  --force, -f     Overwrite existing skill without confirmation
-  --platform, -p  Install to specific platform(s) only
 
 ```
 aix skill install <source> [flags]
@@ -30,8 +31,12 @@ aix skill install <source> [flags]
 ### Examples
 
 ```
+  # Install by name from configured repos
+  aix skill install code-review
+
   # Install from local directory
   aix skill install ./my-skill
+  aix skill install --file my-skill  # Force file path interpretation
 
   # Install from absolute path
   aix skill install /path/to/skill-dir
@@ -43,18 +48,14 @@ aix skill install <source> [flags]
   aix skill install git@github.com:user/skill-repo.git
 
   # Force overwrite existing skill
-  aix skill install ./my-skill --force
-
-  See Also:
-    aix skill remove   - Remove an installed skill
-    aix skill list     - List installed skills
-    aix skill validate - Validate a skill before installing
+  aix skill install code-review --force
 ```
 
 ### Options
 
 ```
-  -f, --force   overwrite existing skill without confirmation
+  -f, --file    treat argument as a file path instead of searching repos
+      --force   overwrite existing skill without confirmation
   -h, --help    help for install
 ```
 

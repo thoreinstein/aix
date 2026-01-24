@@ -51,7 +51,7 @@ aix skill [flags]
 * [aix](/docs/reference/aix/)	 - Unified CLI for AI coding assistant configurations
 * [aix skill edit](/docs/reference/aix_skill_edit/)	 - Open skill directory in $EDITOR
 * [aix skill init](/docs/reference/aix_skill_init/)	 - Create a new skill interactively
-* [aix skill install](/docs/reference/aix_skill_install/)	 - Install a skill from a local path or git URL
+* [aix skill install](/docs/reference/aix_skill_install/)	 - Install a skill from a repository, local path, or git URL
 * [aix skill list](/docs/reference/aix_skill_list/)	 - List installed skills
 * [aix skill remove](/docs/reference/aix_skill_remove/)	 - Remove an installed skill
 * [aix skill show](/docs/reference/aix_skill_show/)	 - Display detailed skill information

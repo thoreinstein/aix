@@ -61,6 +61,8 @@ aix [flags]
 * [aix doctor](/docs/reference/aix_doctor/)	 - Diagnose configuration issues
 * [aix init](/docs/reference/aix_init/)	 - Initialize aix configuration
 * [aix mcp](/docs/reference/aix_mcp/)	 - Manage MCP server configurations
+* [aix repo](/docs/reference/aix_repo/)	 - Manage skill repositories
+* [aix search](/docs/reference/aix_search/)	 - Search for resources across cached repositories
 * [aix skill](/docs/reference/aix_skill/)	 - Manage skills across platforms
 * [aix status](/docs/reference/aix_status/)	 - Show configuration overview
 * [aix version](/docs/reference/aix_version/)	 - Print the version information
