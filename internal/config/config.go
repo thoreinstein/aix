@@ -112,7 +112,8 @@ func Load(path string) (*Config, error) {
 
 	if err := viper.ReadInConfig(); err != nil {
 		// If config file not found...
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		var configNotFoundErr viper.ConfigFileNotFoundError
+		if errors.As(err, &configNotFoundErr) {
 			// If user specified a path, this is an error
 			if path != "" {
 				return nil, errors.Wrapf(err, "config file not found at %s", path)

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cockroachdb/errors"
+
 	"github.com/thoreinstein/aix/internal/mcp"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
@@ -263,10 +265,10 @@ func validateMCP(repoPath string) []ValidationWarning {
 func validateFrontmatter(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "opening file %s", path)
 	}
 	defer file.Close()
 
 	var meta resourceMeta
-	return frontmatter.ParseHeader(file, &meta)
+	return errors.Wrap(frontmatter.ParseHeader(file, &meta), "parsing frontmatter")
 }

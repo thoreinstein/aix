@@ -115,7 +115,7 @@ Review the code.
 	var out bytes.Buffer
 	err := runValidate(cmdPath, &out)
 
-	if err != errValidationFailed {
+	if !errors.Is(err, errValidationFailed) {
 		t.Errorf("runValidate() error = %v, want errValidationFailed", err)
 	}
 
@@ -129,7 +129,7 @@ func TestRunValidate_MissingFile(t *testing.T) {
 	var out bytes.Buffer
 	err := runValidate("/nonexistent/path/command.md", &out)
 
-	if err != errValidationFailed {
+	if !errors.Is(err, errValidationFailed) {
 		t.Errorf("runValidate() error = %v, want errValidationFailed", err)
 	}
 

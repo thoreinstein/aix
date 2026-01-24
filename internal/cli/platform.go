@@ -154,17 +154,17 @@ func (a *claudeAdapter) InstallSkill(skill any) error {
 	if !ok {
 		return errors.Newf("expected *claude.Skill, got %T", skill)
 	}
-	return a.p.InstallSkill(s)
+	return errors.Wrap(a.p.InstallSkill(s), "installing skill to Claude")
 }
 
 func (a *claudeAdapter) UninstallSkill(name string) error {
-	return a.p.UninstallSkill(name)
+	return errors.Wrap(a.p.UninstallSkill(name), "uninstalling skill from Claude")
 }
 
 func (a *claudeAdapter) ListSkills() ([]SkillInfo, error) {
 	skills, err := a.p.ListSkills()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "listing Claude skills")
 	}
 
 	infos := make([]SkillInfo, len(skills))
@@ -179,7 +179,11 @@ func (a *claudeAdapter) ListSkills() ([]SkillInfo, error) {
 }
 
 func (a *claudeAdapter) GetSkill(name string) (any, error) {
-	return a.p.GetSkill(name)
+	s, err := a.p.GetSkill(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting Claude skill")
+	}
+	return s, nil
 }
 
 func (a *claudeAdapter) SkillDir() string {
@@ -195,17 +199,17 @@ func (a *claudeAdapter) InstallCommand(cmd any) error {
 	if !ok {
 		return errors.Newf("expected *claude.Command, got %T", cmd)
 	}
-	return a.p.InstallCommand(c)
+	return errors.Wrap(a.p.InstallCommand(c), "installing command to Claude")
 }
 
 func (a *claudeAdapter) UninstallCommand(name string) error {
-	return a.p.UninstallCommand(name)
+	return errors.Wrap(a.p.UninstallCommand(name), "uninstalling command from Claude")
 }
 
 func (a *claudeAdapter) ListCommands() ([]CommandInfo, error) {
 	commands, err := a.p.ListCommands()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "listing Claude commands")
 	}
 
 	infos := make([]CommandInfo, len(commands))
@@ -220,7 +224,11 @@ func (a *claudeAdapter) ListCommands() ([]CommandInfo, error) {
 }
 
 func (a *claudeAdapter) GetCommand(name string) (any, error) {
-	return a.p.GetCommand(name)
+	c, err := a.p.GetCommand(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting Claude command")
+	}
+	return c, nil
 }
 
 func (a *claudeAdapter) MCPConfigPath() string {
@@ -232,17 +240,17 @@ func (a *claudeAdapter) AddMCP(server any) error {
 	if !ok {
 		return errors.Newf("expected *claude.MCPServer, got %T", server)
 	}
-	return a.p.AddMCP(s)
+	return errors.Wrap(a.p.AddMCP(s), "adding MCP server to Claude")
 }
 
 func (a *claudeAdapter) RemoveMCP(name string) error {
-	return a.p.RemoveMCP(name)
+	return errors.Wrap(a.p.RemoveMCP(name), "removing MCP server from Claude")
 }
 
 func (a *claudeAdapter) ListMCP() ([]MCPInfo, error) {
 	servers, err := a.p.ListMCP()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "listing Claude MCP servers")
 	}
 	infos := make([]MCPInfo, len(servers))
 	for i, s := range servers {
@@ -274,15 +282,19 @@ func (a *claudeAdapter) ListMCP() ([]MCPInfo, error) {
 }
 
 func (a *claudeAdapter) GetMCP(name string) (any, error) {
-	return a.p.GetMCP(name)
+	s, err := a.p.GetMCP(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting Claude MCP server")
+	}
+	return s, nil
 }
 
 func (a *claudeAdapter) EnableMCP(name string) error {
-	return a.p.EnableMCP(name)
+	return errors.Wrap(a.p.EnableMCP(name), "enabling Claude MCP server")
 }
 
 func (a *claudeAdapter) DisableMCP(name string) error {
-	return a.p.DisableMCP(name)
+	return errors.Wrap(a.p.DisableMCP(name), "disabling Claude MCP server")
 }
 
 func (a *claudeAdapter) AgentDir() string {
@@ -294,17 +306,17 @@ func (a *claudeAdapter) InstallAgent(agent any) error {
 	if !ok {
 		return errors.Newf("expected *claude.Agent, got %T", agent)
 	}
-	return a.p.InstallAgent(ag)
+	return errors.Wrap(a.p.InstallAgent(ag), "installing agent to Claude")
 }
 
 func (a *claudeAdapter) UninstallAgent(name string) error {
-	return a.p.UninstallAgent(name)
+	return errors.Wrap(a.p.UninstallAgent(name), "uninstalling agent from Claude")
 }
 
 func (a *claudeAdapter) ListAgents() ([]AgentInfo, error) {
 	agents, err := a.p.ListAgents()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "listing Claude agents")
 	}
 
 	infos := make([]AgentInfo, len(agents))
@@ -319,7 +331,11 @@ func (a *claudeAdapter) ListAgents() ([]AgentInfo, error) {
 }
 
 func (a *claudeAdapter) GetAgent(name string) (any, error) {
-	return a.p.GetAgent(name)
+	ag, err := a.p.GetAgent(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting Claude agent")
+	}
+	return ag, nil
 }
 
 func (a *claudeAdapter) BackupPaths() []string {
@@ -348,17 +364,17 @@ func (a *opencodeAdapter) InstallSkill(skill any) error {
 	if !ok {
 		return errors.Newf("expected *opencode.Skill, got %T", skill)
 	}
-	return a.p.InstallSkill(s)
+	return errors.Wrap(a.p.InstallSkill(s), "installing skill to OpenCode")
 }
 
 func (a *opencodeAdapter) UninstallSkill(name string) error {
-	return a.p.UninstallSkill(name)
+	return errors.Wrap(a.p.UninstallSkill(name), "uninstalling skill from OpenCode")
 }
 
 func (a *opencodeAdapter) ListSkills() ([]SkillInfo, error) {
 	skills, err := a.p.ListSkills()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "listing OpenCode skills")
 	}
 
 	infos := make([]SkillInfo, len(skills))
@@ -373,7 +389,11 @@ func (a *opencodeAdapter) ListSkills() ([]SkillInfo, error) {
 }
 
 func (a *opencodeAdapter) GetSkill(name string) (any, error) {
-	return a.p.GetSkill(name)
+	s, err := a.p.GetSkill(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting OpenCode skill")
+	}
+	return s, nil
 }
 
 func (a *opencodeAdapter) SkillDir() string {
@@ -389,17 +409,17 @@ func (a *opencodeAdapter) InstallCommand(cmd any) error {
 	if !ok {
 		return errors.Newf("expected *opencode.Command, got %T", cmd)
 	}
-	return a.p.InstallCommand(c)
+	return errors.Wrap(a.p.InstallCommand(c), "installing command to OpenCode")
 }
 
 func (a *opencodeAdapter) UninstallCommand(name string) error {
-	return a.p.UninstallCommand(name)
+	return errors.Wrap(a.p.UninstallCommand(name), "uninstalling command from OpenCode")
 }
 
 func (a *opencodeAdapter) ListCommands() ([]CommandInfo, error) {
 	commands, err := a.p.ListCommands()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "listing OpenCode commands")
 	}
 
 	infos := make([]CommandInfo, len(commands))
@@ -414,7 +434,11 @@ func (a *opencodeAdapter) ListCommands() ([]CommandInfo, error) {
 }
 
 func (a *opencodeAdapter) GetCommand(name string) (any, error) {
-	return a.p.GetCommand(name)
+	c, err := a.p.GetCommand(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting OpenCode command")
+	}
+	return c, nil
 }
 
 func (a *opencodeAdapter) MCPConfigPath() string {
@@ -426,17 +450,17 @@ func (a *opencodeAdapter) AddMCP(server any) error {
 	if !ok {
 		return errors.Newf("expected *opencode.MCPServer, got %T", server)
 	}
-	return a.p.AddMCP(s)
+	return errors.Wrap(a.p.AddMCP(s), "adding MCP server to OpenCode")
 }
 
 func (a *opencodeAdapter) RemoveMCP(name string) error {
-	return a.p.RemoveMCP(name)
+	return errors.Wrap(a.p.RemoveMCP(name), "removing MCP server from OpenCode")
 }
 
 func (a *opencodeAdapter) ListMCP() ([]MCPInfo, error) {
 	servers, err := a.p.ListMCP()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "listing OpenCode MCP servers")
 	}
 	infos := make([]MCPInfo, len(servers))
 	for i, s := range servers {
@@ -466,15 +490,19 @@ func (a *opencodeAdapter) ListMCP() ([]MCPInfo, error) {
 }
 
 func (a *opencodeAdapter) GetMCP(name string) (any, error) {
-	return a.p.GetMCP(name)
+	s, err := a.p.GetMCP(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting OpenCode MCP server")
+	}
+	return s, nil
 }
 
 func (a *opencodeAdapter) EnableMCP(name string) error {
-	return a.p.EnableMCP(name)
+	return errors.Wrap(a.p.EnableMCP(name), "enabling OpenCode MCP server")
 }
 
 func (a *opencodeAdapter) DisableMCP(name string) error {
-	return a.p.DisableMCP(name)
+	return errors.Wrap(a.p.DisableMCP(name), "disabling OpenCode MCP server")
 }
 
 func (a *opencodeAdapter) AgentDir() string {
@@ -486,17 +514,17 @@ func (a *opencodeAdapter) InstallAgent(agent any) error {
 	if !ok {
 		return errors.Newf("expected *opencode.Agent, got %T", agent)
 	}
-	return a.p.InstallAgent(ag)
+	return errors.Wrap(a.p.InstallAgent(ag), "installing agent to OpenCode")
 }
 
 func (a *opencodeAdapter) UninstallAgent(name string) error {
-	return a.p.UninstallAgent(name)
+	return errors.Wrap(a.p.UninstallAgent(name), "uninstalling agent from OpenCode")
 }
 
 func (a *opencodeAdapter) ListAgents() ([]AgentInfo, error) {
 	agents, err := a.p.ListAgents()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "listing OpenCode agents")
 	}
 
 	infos := make([]AgentInfo, len(agents))
@@ -511,15 +539,17 @@ func (a *opencodeAdapter) ListAgents() ([]AgentInfo, error) {
 }
 
 func (a *opencodeAdapter) GetAgent(name string) (any, error) {
-	return a.p.GetAgent(name)
+	ag, err := a.p.GetAgent(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting OpenCode agent")
+	}
+	return ag, nil
 }
 
 func (a *opencodeAdapter) BackupPaths() []string {
 	return a.p.BackupPaths()
 }
 
-// NewPlatform creates a Platform adapter for the given platform name.
-// Returns ErrUnknownPlatform if the platform name is not recognized.
 func NewPlatform(name string) (Platform, error) {
 	switch name {
 	case paths.PlatformClaude:
@@ -527,7 +557,7 @@ func NewPlatform(name string) (Platform, error) {
 	case paths.PlatformOpenCode:
 		return &opencodeAdapter{p: opencode.NewOpenCodePlatform()}, nil
 	default:
-		return nil, errors.Wrapf(ErrUnknownPlatform, "%s", name)
+		return nil, errors.Wrapf(ErrUnknownPlatform, "platform %q not recognized", name)
 	}
 }
 
@@ -539,7 +569,7 @@ func ResolvePlatforms(names []string) ([]Platform, error) {
 	if len(names) == 0 {
 		detected := platform.DetectInstalled()
 		if len(detected) == 0 {
-			return nil, ErrNoPlatformsAvailable
+			return nil, errors.Wrap(ErrNoPlatformsAvailable, "no AI assistants detected on this system")
 		}
 
 		platforms := make([]Platform, 0, len(detected))
@@ -553,7 +583,7 @@ func ResolvePlatforms(names []string) ([]Platform, error) {
 		}
 
 		if len(platforms) == 0 {
-			return nil, ErrNoPlatformsAvailable
+			return nil, errors.Wrap(ErrNoPlatformsAvailable, "no supported AI assistants found")
 		}
 		return platforms, nil
 	}

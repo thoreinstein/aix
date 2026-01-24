@@ -1,8 +1,9 @@
 package resource
 
 import (
-	"errors"
 	"path/filepath"
+
+	"github.com/cockroachdb/errors"
 
 	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/paths"
@@ -20,7 +21,7 @@ func FindByName(name string, resourceType ResourceType) ([]Resource, error) {
 
 	repos, err := mgr.List()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "listing repositories")
 	}
 
 	if len(repos) == 0 {
@@ -30,7 +31,7 @@ func FindByName(name string, resourceType ResourceType) ([]Resource, error) {
 	scanner := NewScanner()
 	resources, err := scanner.ScanAll(repos)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "scanning repositories")
 	}
 
 	return filterByNameAndType(resources, name, resourceType), nil
@@ -44,13 +45,13 @@ func FindByNameInRepo(name string, resourceType ResourceType, repoName string) (
 
 	repoConfig, err := mgr.Get(repoName)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "getting repository %s", repoName)
 	}
 
 	scanner := NewScanner()
 	resources, err := scanner.ScanRepo(repoConfig.Path, repoConfig.Name, repoConfig.URL)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "scanning repository %s", repoName)
 	}
 
 	matches := filterByNameAndType(resources, name, resourceType)

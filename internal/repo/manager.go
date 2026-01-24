@@ -217,7 +217,7 @@ func (m *Manager) Update(name string) error {
 		if !exists {
 			return errors.WithDetailf(ErrNotFound, "repository %q not found", name)
 		}
-		return git.Pull(repo.Path)
+		return errors.Wrapf(git.Pull(repo.Path), "pulling changes for %s", name)
 	}
 
 	// Update all repos - return first error encountered
@@ -234,7 +234,7 @@ func (m *Manager) Update(name string) error {
 // This is more efficient when you already have the repo config and don't need
 // to reload configuration.
 func (m *Manager) UpdateByPath(path string) error {
-	return git.Pull(path)
+	return errors.Wrapf(git.Pull(path), "pulling changes at %s", path)
 }
 
 // Get retrieves a repository by name.
@@ -295,7 +295,11 @@ func (m *Manager) loadConfig() (*config.Config, error) {
 	config.Init()
 
 	// Load from the specified path
-	return config.Load(m.configPath)
+	cfg, err := config.Load(m.configPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "loading repo configuration")
+	}
+	return cfg, nil
 }
 
 // saveConfig saves the configuration to the manager's config path.
@@ -306,5 +310,5 @@ func (m *Manager) saveConfig(cfg *config.Config) error {
 		return errors.Wrap(err, "creating config directory")
 	}
 
-	return fileutil.AtomicWriteYAML(m.configPath, cfg)
+	return errors.Wrap(fileutil.AtomicWriteYAML(m.configPath, cfg), "writing repo configuration")
 }

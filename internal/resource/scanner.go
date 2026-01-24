@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/cockroachdb/errors"
+
 	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/mcp"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
@@ -167,7 +169,7 @@ func (s *Scanner) scanSkills(repoPath, repoName, repoURL string) ([]Resource, er
 				"error", err)
 			return nil, nil
 		}
-		return nil, err
+		return nil, errors.Wrapf(err, "reading skills directory %s", skillsDir)
 	}
 
 	resources := make([]Resource, 0, len(entries))
@@ -245,7 +247,7 @@ func (s *Scanner) scanCommands(repoPath, repoName, repoURL string) ([]Resource, 
 				"error", err)
 			return nil, nil
 		}
-		return nil, err
+		return nil, errors.Wrapf(err, "reading commands directory %s", commandsDir)
 	}
 
 	var resources []Resource
@@ -289,13 +291,13 @@ func (s *Scanner) scanCommandDir(commandsDir, dirName, repoName, repoURL string)
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, errors.Wrapf(err, "opening command file %s", cmdPath)
 	}
 	defer file.Close()
 
 	var meta commandMeta
 	if err := frontmatter.ParseHeader(file, &meta); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parsing command frontmatter")
 	}
 
 	name := meta.Name
@@ -318,13 +320,13 @@ func (s *Scanner) scanCommandFile(commandsDir, fileName, repoName, repoURL strin
 	cmdPath := filepath.Join(commandsDir, fileName)
 	file, err := os.Open(cmdPath)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "opening command file %s", cmdPath)
 	}
 	defer file.Close()
 
 	var meta commandMeta
 	if err := frontmatter.ParseHeader(file, &meta); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parsing command frontmatter")
 	}
 
 	// Derive name from filename (strip .md extension)
@@ -365,7 +367,7 @@ func (s *Scanner) scanAgents(repoPath, repoName, repoURL string) ([]Resource, er
 				"error", err)
 			return nil, nil
 		}
-		return nil, err
+		return nil, errors.Wrapf(err, "reading agents directory %s", agentsDir)
 	}
 
 	var resources []Resource
@@ -409,13 +411,13 @@ func (s *Scanner) scanAgentDir(agentsDir, dirName, repoName, repoURL string) (*R
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, errors.Wrapf(err, "opening agent file %s", agentPath)
 	}
 	defer file.Close()
 
 	var meta agentMeta
 	if err := frontmatter.ParseHeader(file, &meta); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parsing agent frontmatter")
 	}
 
 	name := meta.Name
@@ -438,13 +440,13 @@ func (s *Scanner) scanAgentFile(agentsDir, fileName, repoName, repoURL string) (
 	agentPath := filepath.Join(agentsDir, fileName)
 	file, err := os.Open(agentPath)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "opening agent file %s", agentPath)
 	}
 	defer file.Close()
 
 	var meta agentMeta
 	if err := frontmatter.ParseHeader(file, &meta); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parsing agent frontmatter")
 	}
 
 	// Derive name from filename (strip .md extension)
@@ -478,7 +480,7 @@ func (s *Scanner) scanMCP(repoPath, repoName, repoURL string) ([]Resource, error
 				"error", err)
 			return nil, nil
 		}
-		return nil, err
+		return nil, errors.Wrapf(err, "reading mcp directory %s", mcpDir)
 	}
 
 	resources := make([]Resource, 0, len(entries))

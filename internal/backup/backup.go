@@ -185,7 +185,7 @@ func (m *Manager) backupDirectory(srcDir, backupPath string) ([]BackupFile, erro
 		return nil
 	})
 
-	return files, err
+	return files, errors.Wrap(err, "walking directory")
 }
 
 // Restore restores files from a backup to their original locations.
