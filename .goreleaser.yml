@@ -17,9 +17,9 @@ builds:
       - -trimpath
     ldflags:
       - -s -w
-      - -X github.com/thoreinstein/aix/cmd.Version={{.Version}}
-      - -X github.com/thoreinstein/aix/cmd.Commit={{.Commit}}
-      - -X github.com/thoreinstein/aix/cmd.Date={{.Date}}
+      - -X github.com/thoreinstein/aix/cmd/aix/commands.Version={{.Version}}
+      - -X github.com/thoreinstein/aix/cmd/aix/commands.Commit={{.Commit}}
+      - -X github.com/thoreinstein/aix/cmd/aix/commands.Date={{.Date}}
     goos:
       - linux
       - darwin
@@ -53,6 +53,21 @@ archives:
 checksum:
   name_template: checksums.txt
   algorithm: sha256
+
+notarize:
+  macos:
+    - enabled: '{{ isEnvSet "MACOS_SIGN_P12" }}'
+      ids:
+        - aix
+      sign:
+        certificate: "{{.Env.MACOS_SIGN_P12}}"
+        password: "{{.Env.MACOS_SIGN_PASSWORD}}"
+      notarize:
+        issuer_id: "{{.Env.MACOS_NOTARY_ISSUER_ID}}"
+        key_id: "{{.Env.MACOS_NOTARY_KEY_ID}}"
+        key: "{{.Env.MACOS_NOTARY_KEY}}"
+        wait: true
+        timeout: 20m
 
 # Keyless signing with Sigstore (no secrets required)
 signs:
@@ -96,33 +111,19 @@ changelog:
     - title: Other
       order: 999
 
-homebrew_casks:
+brews:
   - name: aix
     repository:
       owner: thoreinstein
       name: homebrew-tap
       branch: main
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    directory: Casks
+    directory: Formula
     homepage: https://github.com/thoreinstein/aix
     description: "A tool for managing, creating and sharing agent skills, commands and hooks"
     license: "MIT"
-
-    # CLI binaries (replaces install: block)
-    binaries:
-      - aix
-
-    # Auto-remove macOS quarantine on install
-    hooks:
-      post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/aix"]
-          end
-
-    # URL verification for brew audit
-    url:
-      verified: "github.com/thoreinstein/aix/"
+    install: |
+      bin.install "aix"
 
 release:
   github:
@@ -138,6 +139,11 @@ release:
     ```bash
     brew install thoreinstein/tap/aix
     aix version  # Should output: aix version {{ .Version }}
+    ```
+
+    **Standalone Script:**
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/thoreinstein/aix/main/install.sh | sh
     ```
 
     **Manual Download:**

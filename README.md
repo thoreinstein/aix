@@ -24,6 +24,12 @@ Write once, deploy everywhere. Define your configurations in a platform-agnostic
 brew install thoreinstein/tap/aix
 ```
 
+### Standalone Script (macOS/Linux)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/thoreinstein/aix/main/install.sh | sh
+```
+
 ### From Source
 
 ```bash
