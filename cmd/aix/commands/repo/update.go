@@ -58,6 +58,13 @@ func runUpdateWithIO(args []string, w io.Writer) error {
 			return handleUpdateError(name, err)
 		}
 		fmt.Fprintln(w, "\u2713 done")
+
+		// Validate repository content and show warnings
+		repoConfig, err := manager.Get(name)
+		if err == nil {
+			warnings := repo.ValidateRepoContent(repoConfig.Path)
+			printValidationWarnings(w, warnings)
+		}
 		return nil
 	}
 
@@ -73,6 +80,7 @@ func runUpdateWithIO(args []string, w io.Writer) error {
 	}
 
 	var failed []string
+	var allWarnings []repo.ValidationWarning
 	for _, r := range repos {
 		fmt.Fprintf(w, "Updating %s... ", r.Name)
 		if err := manager.Update(r.Name); err != nil {
@@ -81,7 +89,14 @@ func runUpdateWithIO(args []string, w io.Writer) error {
 			continue
 		}
 		fmt.Fprintln(w, "\u2713 done")
+
+		// Collect validation warnings
+		warnings := repo.ValidateRepoContent(r.Path)
+		allWarnings = append(allWarnings, warnings...)
 	}
+
+	// Print all validation warnings at the end
+	printValidationWarnings(w, allWarnings)
 
 	if len(failed) > 0 {
 		return fmt.Errorf("some repositories failed to update:\n  %s", joinErrors(failed))
