@@ -97,10 +97,14 @@ func ResolveHome() (string, error) {
 }
 
 // ConfigHome returns the XDG config home directory.
+// It respects the AIX_CONFIG_DIR environment variable if set.
 // On Linux: ~/.config
 // On macOS: ~/Library/Application Support
 // On Windows: %LOCALAPPDATA%
 func ConfigHome() string {
+	if envDir := os.Getenv("AIX_CONFIG_DIR"); envDir != "" {
+		return envDir
+	}
 	return xdg.ConfigHome
 }
 
