@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/viper"
 
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/paths"
 )
 

@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 )
@@ -93,7 +93,7 @@ func runShow(_ *cobra.Command, args []string) error {
 func runShowWithWriter(name string, w io.Writer) error {
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolving platforms")
 	}
 
 	// Collect command info from all platforms where it exists

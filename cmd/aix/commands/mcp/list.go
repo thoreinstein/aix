@@ -7,12 +7,12 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/doctor"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // ANSI color codes for terminal output.
@@ -87,7 +87,7 @@ func runList(_ *cobra.Command, _ []string) error {
 func runListWithWriter(w io.Writer) error {
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolving platforms")
 	}
 
 	if listJSON {
@@ -125,7 +125,7 @@ func outputJSON(w io.Writer, platforms []cli.Platform) error {
 
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	return enc.Encode(output)
+	return errors.Wrap(enc.Encode(output), "encoding output")
 }
 
 // outputTabular outputs MCP servers in tabular format grouped by platform.

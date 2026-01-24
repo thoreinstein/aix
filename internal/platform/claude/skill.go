@@ -7,8 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cockroachdb/errors"
-
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/pkg/fileutil"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
@@ -218,5 +217,9 @@ func formatSkillFile(s *Skill) ([]byte, error) {
 		AllowedTools:  s.AllowedTools.String(),
 	}
 
-	return frontmatter.Format(meta, s.Instructions)
+	data, err := frontmatter.Format(meta, s.Instructions)
+	if err != nil {
+		return nil, errors.Wrap(err, "formatting skill content")
+	}
+	return data, nil
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 var listJSON bool
@@ -57,7 +58,7 @@ func runList(_ *cobra.Command, _ []string) error {
 func runListWithWriter(w io.Writer) error {
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolving platforms")
 	}
 
 	if listJSON {
@@ -88,7 +89,7 @@ func outputListJSON(w io.Writer, platforms []cli.Platform) error {
 
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	return enc.Encode(output)
+	return errors.Wrap(enc.Encode(output), "encoding output")
 }
 
 // ANSI color codes.

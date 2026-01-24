@@ -7,10 +7,10 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/config"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/repo"
 	"github.com/thoreinstein/aix/internal/resource"
 )
@@ -88,7 +88,7 @@ func runSearchWithWriter(w io.Writer, args []string) error {
 			}
 		}
 		if !found {
-			return errors.Errorf("repository %q not found; run 'aix repo list' to see available repositories", searchRepo)
+			return errors.Newf("repository %q not found; run 'aix repo list' to see available repositories", searchRepo)
 		}
 	}
 
@@ -136,7 +136,7 @@ func outputSearchJSON(w io.Writer, results []resource.Resource) error {
 
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	return enc.Encode(jsonResults)
+	return errors.Wrap(enc.Encode(jsonResults), "encoding JSON")
 }
 
 // outputSearchTable writes search results as a formatted table.
@@ -152,5 +152,5 @@ func outputSearchTable(w io.Writer, results []resource.Resource) error {
 			r.RepoName)
 	}
 
-	return tw.Flush()
+	return errors.Wrap(tw.Flush(), "flushing tabwriter")
 }

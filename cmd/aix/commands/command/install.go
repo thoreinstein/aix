@@ -1,14 +1,12 @@
 package command
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	cerrors "github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
@@ -17,6 +15,7 @@ import (
 	cliprompt "github.com/thoreinstein/aix/internal/cli/prompt"
 	"github.com/thoreinstein/aix/internal/command/parser"
 	"github.com/thoreinstein/aix/internal/command/validator"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 	"github.com/thoreinstein/aix/internal/resource"
@@ -109,9 +108,8 @@ func runInstall(_ *cobra.Command, args []string) error {
 		if errors.Is(err, resource.ErrNoReposConfigured) {
 			return errors.New("no repositories configured. Run 'aix repo add <url>' to add one")
 		}
-		return cerrors.Wrap(err, "searching repositories")
+		return errors.Wrap(err, "searching repositories")
 	}
-
 	if len(matches) > 0 {
 		return installFromRepo(source, matches)
 	}
@@ -119,7 +117,7 @@ func runInstall(_ *cobra.Command, args []string) error {
 	// No matches in repos - check if input might be a forgotten path
 	if mightBePath(source) {
 		if _, statErr := os.Stat(source); statErr == nil {
-			return cerrors.Newf("command %q not found in repositories, but a local file exists at that path.\nDid you mean: aix command install --file %s", source, source)
+			return errors.Newf("command %q not found in repositories, but a local file exists at that path.\nDid you mean: aix command install --file %s", source, source)
 		}
 	}
 
@@ -128,7 +126,7 @@ func runInstall(_ *cobra.Command, args []string) error {
 		return installFromLocal(source)
 	}
 
-	return cerrors.Newf("command %q not found in any configured repository", source)
+	return errors.Newf("command %q not found in any configured repository", source)
 }
 
 // looksLikePath returns true if the source appears to be a file path.
@@ -173,7 +171,7 @@ func installFromRepo(name string, matches []resource.Resource) error {
 		// Multiple matches - prompt user to select
 		choice, err := cliprompt.SelectResourceDefault(name, matches)
 		if err != nil {
-			return cerrors.Wrap(err, "selecting resource")
+			return errors.Wrap(err, "selecting resource")
 		}
 		selected = choice
 	}
@@ -181,7 +179,7 @@ func installFromRepo(name string, matches []resource.Resource) error {
 	// Copy from cache to temp directory
 	tempDir, err := resource.CopyToTemp(selected)
 	if err != nil {
-		return cerrors.Wrap(err, "copying from repository cache")
+		return errors.Wrap(err, "copying from repository cache")
 	}
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
@@ -214,7 +212,7 @@ func installFromGit(url string) error {
 	// Create temp directory for clone
 	tempDir, err := os.MkdirTemp("", "aix-command-*")
 	if err != nil {
-		return cerrors.Wrap(err, "creating temp directory")
+		return errors.Wrap(err, "creating temp directory")
 	}
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
@@ -228,7 +226,7 @@ func installFromGit(url string) error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return cerrors.Wrap(err, "cloning repository")
+		return errors.Wrap(err, "cloning repository")
 	}
 
 	return installFromLocal(tempDir)
@@ -239,14 +237,14 @@ func installFromLocal(source string) error {
 	// Resolve to absolute path for consistent error messages
 	absPath, err := filepath.Abs(source)
 	if err != nil {
-		return cerrors.Wrap(err, "resolving path")
+		return errors.Wrap(err, "resolving path")
 	}
 
 	// Determine command file path
 	commandPath := absPath
 	info, err := os.Stat(absPath)
 	if err != nil {
-		return cerrors.Wrap(err, "accessing source")
+		return errors.Wrap(err, "accessing source")
 	}
 
 	if info.IsDir() {
@@ -259,7 +257,7 @@ func installFromLocal(source string) error {
 			commandPath = ""
 			entries, readErr := os.ReadDir(absPath)
 			if readErr != nil {
-				return cerrors.Wrap(readErr, "reading directory")
+				return errors.Wrap(readErr, "reading directory")
 			}
 			for _, e := range entries {
 				if e.IsDir() {
@@ -272,14 +270,14 @@ func installFromLocal(source string) error {
 				}
 			}
 			if commandPath == "" {
-				return cerrors.Newf("no command file found in %s (expected command.md or any .md file)", absPath)
+				return errors.Newf("no command file found in %s (expected command.md or any .md file)", absPath)
 			}
 		}
 	}
 
 	// Verify file exists
 	if _, err := os.Stat(commandPath); err != nil {
-		return cerrors.Newf("command file not found: %s", commandPath)
+		return errors.Newf("command file not found: %s", commandPath)
 	}
 
 	fmt.Println("Validating command...")
@@ -288,7 +286,7 @@ func installFromLocal(source string) error {
 	p := parser.New[*claude.Command]()
 	cmd, err := p.ParseFile(commandPath)
 	if err != nil {
-		return cerrors.Wrap(err, "parsing command")
+		return errors.Wrap(err, "parsing command")
 	}
 
 	// Validate command
@@ -310,14 +308,14 @@ func installFromLocal(source string) error {
 	// Get target platforms
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolving platforms")
 	}
 
 	// Check for existing commands (unless --force)
 	if !installForce {
 		for _, plat := range platforms {
 			if _, err := plat.GetCommand((*cmd).Name); err == nil {
-				return cerrors.Newf("command %q already exists on %s (use --force to overwrite)",
+				return errors.Newf("command %q already exists on %s (use --force to overwrite)",
 					(*cmd).Name, plat.DisplayName())
 			}
 		}
@@ -328,7 +326,7 @@ func installFromLocal(source string) error {
 	for _, plat := range platforms {
 		// Ensure backup exists before modifying
 		if err := backup.EnsureBackedUp(plat.Name(), plat.BackupPaths()); err != nil {
-			return cerrors.Wrapf(err, "backing up %s before install", plat.DisplayName())
+			return errors.Wrapf(err, "backing up %s before install", plat.DisplayName())
 		}
 
 		fmt.Printf("Installing '%s' to %s... ", (*cmd).Name, plat.DisplayName())
@@ -338,7 +336,7 @@ func installFromLocal(source string) error {
 
 		if err := plat.InstallCommand(platformCmd); err != nil {
 			fmt.Println("failed")
-			return cerrors.Wrapf(err, "failed to install to %s", plat.DisplayName())
+			return errors.Wrapf(err, "failed to install to %s", plat.DisplayName())
 		}
 
 		fmt.Println("done")

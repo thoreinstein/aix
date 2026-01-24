@@ -6,8 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/cockroachdb/errors"
-
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/pkg/fileutil"
 )
 
@@ -176,5 +175,5 @@ func (m *MCPManager) saveConfig(config *MCPConfig) error {
 		return errors.Wrapf(err, "creating directory %s", dir)
 	}
 
-	return fileutil.AtomicWriteJSON(configPath, config)
+	return errors.Wrap(fileutil.AtomicWriteJSON(configPath, config), "writing MCP config")
 }

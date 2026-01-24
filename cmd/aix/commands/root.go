@@ -225,5 +225,5 @@ func SetPlatformFlag(platforms []string) {
 
 // Execute runs the root command.
 func Execute() error {
-	return rootCmd.Execute()
+	return errors.Wrap(rootCmd.Execute(), "executing root command")
 }

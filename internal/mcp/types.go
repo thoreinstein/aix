@@ -3,7 +3,7 @@ package mcp
 import (
 	"encoding/json"
 
-	"github.com/cockroachdb/errors"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // Transport type constants for MCP server communication.
@@ -126,7 +126,11 @@ func (s *Server) MarshalJSON() ([]byte, error) {
 		result["disabled"] = s.Disabled
 	}
 
-	return json.Marshal(result)
+	data, err := json.Marshal(result)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshaling server")
+	}
+	return data, nil
 }
 
 // UnmarshalJSON implements json.Unmarshaler to capture unknown fields.
@@ -236,7 +240,11 @@ func (c *Config) MarshalJSON() ([]byte, error) {
 	// Add the known field
 	result["servers"] = c.Servers
 
-	return json.Marshal(result)
+	data, err := json.Marshal(result)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshaling config")
+	}
+	return data, nil
 }
 
 // UnmarshalJSON implements json.Unmarshaler to capture unknown fields.

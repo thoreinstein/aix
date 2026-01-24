@@ -6,12 +6,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 )
@@ -160,7 +160,7 @@ func runMCPAddCore(args []string) error {
 	// Get target platforms
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolving platforms")
 	}
 
 	// Check for existing servers (unless --force)
@@ -359,7 +359,7 @@ func addMCPToPlatform(
 			Headers:   headers,
 			Platforms: mcpAddPlatforms,
 		}
-		return plat.AddMCP(server)
+		return errors.Wrap(plat.AddMCP(server), "adding MCP server to Claude")
 
 	case "opencode":
 		// Show warning if platforms restriction is specified
@@ -388,7 +388,7 @@ func addMCPToPlatform(
 			Environment: env,
 			Headers:     headers,
 		}
-		return plat.AddMCP(server)
+		return errors.Wrap(plat.AddMCP(server), "adding MCP server to OpenCode")
 
 	default:
 		return errors.Newf("unsupported platform: %s", plat.Name())
