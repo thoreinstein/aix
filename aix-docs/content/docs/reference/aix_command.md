@@ -58,6 +58,7 @@ aix command [flags]
 * [aix command install](/docs/reference/aix_command_install/)	 - Install a slash command from a repository, local path, or git URL
 * [aix command list](/docs/reference/aix_command_list/)	 - List installed slash commands
 * [aix command remove](/docs/reference/aix_command_remove/)	 - Remove an installed slash command
+* [aix command search](/docs/reference/aix_command_search/)	 - Search for commands in repositories
 * [aix command show](/docs/reference/aix_command_show/)	 - Display detailed command information
 * [aix command validate](/docs/reference/aix_command_validate/)	 - Validate a slash command file
 
