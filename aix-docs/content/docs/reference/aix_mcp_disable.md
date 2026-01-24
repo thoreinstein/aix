@@ -42,6 +42,7 @@ aix mcp disable <name> [flags]
 ### Options inherited from parent commands
 
 ```
+      --log-file string    write logs to file in JSON format
   -p, --platform strings   target platform(s): claude, opencode (default: all detected)
   -q, --quiet              suppress non-error output
   -v, --verbose count      increase verbosity level (e.g., -v, -vv)
