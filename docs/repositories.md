@@ -21,9 +21,9 @@ A valid aix repository contains one or more resource directories:
 my-aix-repo/
 ├── skills/           # Skill definitions
 │   ├── code-review/
-│   │   └── skill.md
+│   │   └── SKILL.md
 │   └── security-audit/
-│       └── skill.md
+│       └── SKILL.md
 ├── commands/         # Slash command definitions
 │   ├── deploy/
 │   │   └── command.md
@@ -41,7 +41,7 @@ my-aix-repo/
 
 | Directory | Contents | File Format |
 |-----------|----------|-------------|
-| `skills/` | Skill definitions with prompts and tool configurations | `skill.md` in named subdirectory |
+| `skills/` | Skill definitions with prompts and tool configurations | `SKILL.md` in named subdirectory |
 | `commands/` | Slash command definitions | `command.md` in named subdirectory |
 | `agents/` | Agent definitions with instructions | `{name}.md` files |
 | `mcp/` | MCP server configurations | JSON files |
@@ -303,7 +303,7 @@ When adding or updating a repository, aix validates the repository content and d
 
 | Directory | Validation | Warning Message |
 |-----------|------------|-----------------|
-| `skills/` | Each subdirectory must contain `skill.md` | "skill directory missing skill.md" |
+| `skills/` | Each subdirectory must contain `SKILL.md` | "skill directory missing SKILL.md" |
 | `skills/` | Valid YAML frontmatter required | "invalid frontmatter: ..." |
 | `commands/` | Subdirectories must contain `command.md` | "command directory missing command.md" |
 | `commands/` | Valid YAML frontmatter in `.md` files | "invalid frontmatter: ..." |
@@ -319,7 +319,7 @@ $ aix repo add https://github.com/example/skills.git
   Cached at: ~/.aix/repos/skills
 
 ⚠ Validation warnings:
-  skills/broken/skill.md: invalid frontmatter: yaml: line 3: did not find expected '-' indicator
+  skills/broken/SKILL.md: invalid frontmatter: yaml: line 3: did not find expected '-' indicator
   mcp/server.json: invalid JSON: unexpected end of JSON input
 ```
 

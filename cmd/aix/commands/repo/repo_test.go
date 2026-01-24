@@ -31,11 +31,11 @@ func TestPrintValidationWarnings(t *testing.T) {
 		{
 			name: "actionable warning is shown",
 			warnings: []repo.ValidationWarning{
-				{Path: "skills/test/skill.md", Message: "invalid frontmatter: unexpected EOF"},
+				{Path: "skills/test/SKILL.md", Message: "invalid frontmatter: unexpected EOF"},
 			},
 			wantContains: []string{
 				"Validation warnings:",
-				"skills/test/skill.md",
+				"skills/test/SKILL.md",
 				"invalid frontmatter",
 			},
 		},
@@ -55,13 +55,13 @@ func TestPrintValidationWarnings(t *testing.T) {
 		{
 			name: "multiple actionable warnings",
 			warnings: []repo.ValidationWarning{
-				{Path: "skills/broken", Message: "skill directory missing skill.md"},
+				{Path: "skills/broken", Message: "skill directory missing SKILL.md"},
 				{Path: "agents/test/AGENT.md", Message: "invalid frontmatter: yaml error"},
 			},
 			wantContains: []string{
 				"Validation warnings:",
 				"skills/broken",
-				"skill directory missing skill.md",
+				"skill directory missing SKILL.md",
 				"agents/test/AGENT.md",
 				"invalid frontmatter",
 			},

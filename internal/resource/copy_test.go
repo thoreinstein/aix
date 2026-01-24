@@ -101,11 +101,16 @@ func TestCopyToTempFromCache_SkillDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CopyToTempFromCache() error = %v", err)
 	}
-	defer os.RemoveAll(tempPath)
+	defer os.RemoveAll(filepath.Dir(tempPath)) // Clean up parent temp dir
 
-	// Verify the temp path was created with expected prefix
+	// Verify the temp path was created with expected prefix and preserves resource name
 	if !strings.Contains(tempPath, "aix-install-") {
 		t.Errorf("expected temp path to contain 'aix-install-', got %s", tempPath)
+	}
+
+	// For directory resources, the path should end with the resource name
+	if filepath.Base(tempPath) != "test-skill" {
+		t.Errorf("expected temp path to end with resource name 'test-skill', got %s", filepath.Base(tempPath))
 	}
 
 	// Verify all files were copied
@@ -139,7 +144,12 @@ func TestCopyToTempFromCache_CommandDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CopyToTempFromCache() error = %v", err)
 	}
-	defer os.RemoveAll(tempPath)
+	defer os.RemoveAll(filepath.Dir(tempPath)) // Clean up parent temp dir
+
+	// For directory resources, the path should end with the resource name
+	if filepath.Base(tempPath) != "deploy" {
+		t.Errorf("expected temp path to end with resource name 'deploy', got %s", filepath.Base(tempPath))
+	}
 
 	// Verify command.md was copied
 	cmdContent, err := os.ReadFile(filepath.Join(tempPath, "command.md"))
@@ -197,7 +207,12 @@ func TestCopyToTempFromCache_AgentDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CopyToTempFromCache() error = %v", err)
 	}
-	defer os.RemoveAll(tempPath)
+	defer os.RemoveAll(filepath.Dir(tempPath)) // Clean up parent temp dir
+
+	// For directory resources, the path should end with the resource name
+	if filepath.Base(tempPath) != "reviewer" {
+		t.Errorf("expected temp path to end with resource name 'reviewer', got %s", filepath.Base(tempPath))
+	}
 
 	// Verify AGENT.md was copied
 	agentContent, err := os.ReadFile(filepath.Join(tempPath, "AGENT.md"))
@@ -299,7 +314,7 @@ func TestCopyToTempFromCache_PreservesFilePermissions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CopyToTempFromCache() error = %v", err)
 	}
-	defer os.RemoveAll(tempPath)
+	defer os.RemoveAll(filepath.Dir(tempPath)) // Clean up parent temp dir
 
 	// Verify script permissions were preserved
 	copiedScript := filepath.Join(tempPath, "script.sh")
@@ -332,7 +347,7 @@ func TestCopyToTempFromCache_TempDirectoryCreation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CopyToTempFromCache() error = %v", err)
 	}
-	defer os.RemoveAll(tempPath)
+	defer os.RemoveAll(filepath.Dir(tempPath)) // Clean up parent temp dir
 
 	// Verify temp path exists and is a directory
 	info, err := os.Stat(tempPath)
@@ -343,10 +358,15 @@ func TestCopyToTempFromCache_TempDirectoryCreation(t *testing.T) {
 		t.Error("temp path is not a directory")
 	}
 
-	// Verify it has the expected prefix
-	baseName := filepath.Base(tempPath)
-	if !strings.HasPrefix(baseName, "aix-install-") {
-		t.Errorf("expected temp dir to have 'aix-install-' prefix, got: %s", baseName)
+	// For directory resources, the returned path ends with the resource name
+	if filepath.Base(tempPath) != "temp-test" {
+		t.Errorf("expected temp path to end with resource name 'temp-test', got: %s", filepath.Base(tempPath))
+	}
+
+	// The parent directory should have the expected prefix
+	parentDir := filepath.Base(filepath.Dir(tempPath))
+	if !strings.HasPrefix(parentDir, "aix-install-") {
+		t.Errorf("expected parent temp dir to have 'aix-install-' prefix, got: %s", parentDir)
 	}
 }
 

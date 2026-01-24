@@ -24,7 +24,7 @@ func createValidatorTestRepo(t *testing.T, opts validatorTestOptions) string {
 				t.Fatal(err)
 			}
 			if content != "" {
-				if err := os.WriteFile(filepath.Join(skillDir, "skill.md"), []byte(content), 0o644); err != nil {
+				if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -90,13 +90,13 @@ type validatorTestOptions struct {
 	createCommandsDir bool
 	createAgentsDir   bool
 	createMCPDir      bool
-	skills            map[string]string // name -> skill.md content (empty string = no skill.md)
+	skills            map[string]string // name -> SKILL.md content (empty string = no SKILL.md)
 	commands          map[string]string // name -> command.md content
 	agents            map[string]string // name -> AGENT.md content
 	mcpServers        map[string]string // name -> JSON content
 }
 
-// validSkillContent returns valid skill.md content.
+// validSkillContent returns valid SKILL.md content.
 func validSkillContent(name, description string) string {
 	return "---\nname: " + name + "\ndescription: " + description + "\n---\n\nSkill content here."
 }
@@ -286,7 +286,7 @@ func TestValidateRepoContent_InvalidResources(t *testing.T) {
 				},
 			},
 			expectedWarnings: 1,
-			wantPathContains: "skills/broken/skill.md",
+			wantPathContains: "skills/broken/SKILL.md",
 			wantMsgContains:  "invalid frontmatter",
 		},
 		{
@@ -372,18 +372,18 @@ func TestValidateRepoContent_MissingResourceFiles(t *testing.T) {
 		wantMsgContains  string
 	}{
 		{
-			name: "skill directory without skill.md",
+			name: "skill directory without SKILL.md",
 			opts: validatorTestOptions{
 				createSkillsDir:   true,
 				createCommandsDir: true,
 				createAgentsDir:   true,
 				createMCPDir:      true,
 				skills: map[string]string{
-					"empty-skill": "", // Empty string means create dir but no skill.md
+					"empty-skill": "", // Empty string means create dir but no SKILL.md
 				},
 			},
 			expectedWarnings: 1,
-			wantMsgContains:  "missing skill.md",
+			wantMsgContains:  "missing SKILL.md",
 		},
 		{
 			name: "command directory without command.md",

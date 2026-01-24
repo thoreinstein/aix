@@ -50,7 +50,7 @@ func createLocalGitRepo(t *testing.T, skills, commands, agents, mcpServers map[s
 		if err := os.MkdirAll(skillDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(skillDir, "skill.md"), []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -111,7 +111,7 @@ func runGit(dir string, args ...string) error {
 	return cmd.Run()
 }
 
-// validSkillFrontmatter returns valid skill.md content.
+// validSkillFrontmatter returns valid SKILL.md content.
 func validSkillFrontmatter(name, description string) string {
 	return "---\nname: " + name + "\ndescription: " + description + "\n---\n\nSkill content here."
 }
@@ -291,7 +291,7 @@ func TestIntegration_ValidationWarnings(t *testing.T) {
 			wantContains: "invalid JSON",
 		},
 		{
-			name:   "skill directory missing skill.md",
+			name:   "skill directory missing SKILL.md",
 			skills: map[string]string{
 				// This creates a valid skill, but we'll add an empty dir
 			},
@@ -682,7 +682,7 @@ func TestIntegration_RepoUpdate(t *testing.T) {
 	if err := os.MkdirAll(skillDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(skillDir, "skill.md"),
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"),
 		[]byte(validSkillFrontmatter("initial-skill", "Initial skill")), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -719,7 +719,7 @@ func TestIntegration_RepoUpdate(t *testing.T) {
 	if err := os.MkdirAll(newSkillDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(newSkillDir, "skill.md"),
+	if err := os.WriteFile(filepath.Join(newSkillDir, "SKILL.md"),
 		[]byte(validSkillFrontmatter("new-skill", "New skill")), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -750,7 +750,7 @@ func TestIntegration_RepoUpdate(t *testing.T) {
 // are properly formatted in CLI output.
 func TestIntegration_ValidationWarningOutput(t *testing.T) {
 	warnings := []repo.ValidationWarning{
-		{Path: "skills/broken/skill.md", Message: "invalid frontmatter: unexpected EOF"},
+		{Path: "skills/broken/SKILL.md", Message: "invalid frontmatter: unexpected EOF"},
 		{Path: "mcp/bad.json", Message: "invalid JSON: syntax error"},
 	}
 
@@ -761,7 +761,7 @@ func TestIntegration_ValidationWarningOutput(t *testing.T) {
 	if !strings.Contains(output, "Validation warnings:") {
 		t.Error("expected 'Validation warnings:' header")
 	}
-	if !strings.Contains(output, "skills/broken/skill.md") {
+	if !strings.Contains(output, "skills/broken/SKILL.md") {
 		t.Error("expected skill path in output")
 	}
 	if !strings.Contains(output, "mcp/bad.json") {
@@ -899,7 +899,7 @@ func TestIntegration_RepoAddWithValidationWarnings(t *testing.T) {
 	if err := os.MkdirAll(skillDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(skillDir, "skill.md"),
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"),
 		[]byte("---\nname: [invalid yaml\n---\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}

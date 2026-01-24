@@ -151,7 +151,7 @@ type skillMeta struct {
 	Description string `yaml:"description"`
 }
 
-// scanSkills scans the skills/ directory for skill.md files.
+// scanSkills scans the skills/ directory for SKILL.md files.
 // Skills use required frontmatter.
 func (s *Scanner) scanSkills(repoPath, repoName, repoURL string) ([]Resource, error) {
 	skillsDir := filepath.Join(repoPath, "skills")
@@ -177,7 +177,7 @@ func (s *Scanner) scanSkills(repoPath, repoName, repoURL string) ([]Resource, er
 			continue
 		}
 
-		skillPath := filepath.Join(skillsDir, entry.Name(), "skill.md")
+		skillPath := filepath.Join(skillsDir, entry.Name(), "SKILL.md")
 		file, err := os.Open(skillPath)
 		if err != nil {
 			if os.IsNotExist(err) {

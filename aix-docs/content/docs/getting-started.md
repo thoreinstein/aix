@@ -59,7 +59,7 @@ Create your first skill definition:
 aix skill init my-skill
 ```
 
-This creates a skill directory with a `skill.md` file containing the skill definition.
+This creates a skill directory with a `SKILL.md` file containing the skill definition.
 
 ### 2. Install the skill
 

@@ -173,13 +173,25 @@ func installFromRepo(name string, matches []resource.Resource) error {
 	}
 
 	// Copy from cache to temp directory
+	// For directory resources, tempDir is the resource subdirectory (e.g., /tmp/aix-install-xyz/implement/)
+	// We need to clean up the parent temp directory
 	tempDir, err := resource.CopyToTemp(selected)
 	if err != nil {
 		return cerrors.Wrap(err, "copying from repository cache")
 	}
 	defer func() {
-		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to clean up temp dir: %v\n", removeErr)
+		// For directory resources, tempDir is a subdirectory; clean up the parent
+		// For flat files, tempDir is the temp directory itself
+		parentDir := filepath.Dir(tempDir)
+		if strings.Contains(filepath.Base(parentDir), "aix-install-") {
+			if removeErr := os.RemoveAll(parentDir); removeErr != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to clean up temp dir: %v\n", removeErr)
+			}
+		} else {
+			// Flat file case: tempDir is the temp directory
+			if removeErr := os.RemoveAll(tempDir); removeErr != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to clean up temp dir: %v\n", removeErr)
+			}
 		}
 	}()
 

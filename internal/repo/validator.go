@@ -87,7 +87,7 @@ type resourceMeta struct {
 	Description string `yaml:"description"`
 }
 
-// validateSkills checks all skill directories for valid skill.md files.
+// validateSkills checks all skill directories for valid SKILL.md files.
 func validateSkills(repoPath string) []ValidationWarning {
 	var warnings []ValidationWarning
 	skillsDir := filepath.Join(repoPath, "skills")
@@ -103,13 +103,13 @@ func validateSkills(repoPath string) []ValidationWarning {
 			continue
 		}
 
-		skillPath := filepath.Join(skillsDir, entry.Name(), "skill.md")
-		relPath := filepath.Join("skills", entry.Name(), "skill.md")
+		skillPath := filepath.Join(skillsDir, entry.Name(), "SKILL.md")
+		relPath := filepath.Join("skills", entry.Name(), "SKILL.md")
 
 		if _, err := os.Stat(skillPath); os.IsNotExist(err) {
 			warnings = append(warnings, ValidationWarning{
 				Path:    filepath.Join("skills", entry.Name()),
-				Message: "skill directory missing skill.md",
+				Message: "skill directory missing SKILL.md",
 			})
 			continue
 		}
