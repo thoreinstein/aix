@@ -128,6 +128,12 @@ func (e *ExitError) Unwrap() error {
 	return e.Err
 }
 
+// New creates a new error with the given message.
+// This is a passthrough to cockroachdb/errors.New.
+func New(msg string) error {
+	return pkgerrors.New(msg)
+}
+
 // Newf creates a new error with a formatted message.
 // This is a passthrough to cockroachdb/errors.Newf.
 func Newf(format string, args ...interface{}) error {
@@ -169,4 +175,16 @@ func As(err error, target interface{}) bool {
 // This is a passthrough to standard library errors.Join.
 func Join(errs ...error) error {
 	return errors.Join(errs...)
+}
+
+// WithDetail decorates an error with an arbitrary string detail.
+// This is a passthrough to cockroachdb/errors.WithDetail.
+func WithDetail(err error, msg string) error {
+	return pkgerrors.WithDetail(err, msg)
+}
+
+// WithDetailf decorates an error with a formatted string detail.
+// This is a passthrough to cockroachdb/errors.WithDetailf.
+func WithDetailf(err error, format string, args ...interface{}) error {
+	return pkgerrors.WithDetailf(err, format, args...)
 }
