@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cockroachdb/errors"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // IsURL returns true if s looks like a git repository URL.

@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/cockroachdb/errors"
 	"gopkg.in/yaml.v3"
+
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // MCPServer represents an MCP (Model Context Protocol) server configuration
@@ -60,7 +61,7 @@ func (c *MCPConfig) MarshalJSON() ([]byte, error) {
 	for k, v := range c.unknownFields {
 		var val any
 		if err := json.Unmarshal(v, &val); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "unmarshaling unknown field")
 		}
 		result[k] = val
 	}
@@ -68,7 +69,11 @@ func (c *MCPConfig) MarshalJSON() ([]byte, error) {
 	// Add the known field
 	result["mcp"] = c.MCP
 
-	return json.Marshal(result)
+	data, err := json.Marshal(result)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshaling result")
+	}
+	return data, nil
 }
 
 // UnmarshalJSON implements json.Unmarshaler to capture unknown fields.
@@ -76,13 +81,13 @@ func (c *MCPConfig) UnmarshalJSON(data []byte) error {
 	// First, unmarshal into a generic map to capture all fields
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
+		return errors.Wrap(err, "unmarshaling raw config")
 	}
 
 	// Extract the known field
 	if mcpData, ok := raw["mcp"]; ok {
 		if err := json.Unmarshal(mcpData, &c.MCP); err != nil {
-			return err
+			return errors.Wrap(err, "unmarshaling mcp data")
 		}
 		delete(raw, "mcp")
 

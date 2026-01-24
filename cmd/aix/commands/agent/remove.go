@@ -2,7 +2,6 @@ package agent
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +12,7 @@ import (
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 var removeForce bool
@@ -56,7 +56,7 @@ func runRemoveWithIO(args []string, w io.Writer, r io.Reader) error {
 
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolving platforms")
 	}
 
 	// Find platforms that have this agent installed

@@ -4,8 +4,7 @@ package cli
 import (
 	"strings"
 
-	"github.com/cockroachdb/errors"
-
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/platform"
 	"github.com/thoreinstein/aix/internal/platform/claude"

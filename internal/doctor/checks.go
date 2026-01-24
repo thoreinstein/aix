@@ -8,9 +8,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/cockroachdb/errors"
 	toml "github.com/pelletier/go-toml/v2"
 
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/platform"
 )
@@ -257,7 +257,7 @@ func (c *PathPermissionCheck) checkDirectoryPermissions(path, platformName strin
 func (c *PathPermissionCheck) isDirectoryWritable(path string) (bool, error) {
 	tmpFile, err := os.CreateTemp(path, ".aix-doctor-test-*")
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "creating temp file")
 	}
 
 	// Clean up the test file
@@ -795,7 +795,7 @@ func (c *ConfigSemanticCheck) parseClaudeServers(data []byte) (map[string]*mcpSe
 	}
 
 	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parsing Claude config")
 	}
 
 	servers := make(map[string]*mcpServerInfo)
@@ -823,7 +823,7 @@ func (c *ConfigSemanticCheck) parseOpenCodeServers(data []byte) (map[string]*mcp
 	}
 
 	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parsing OpenCode config")
 	}
 
 	servers := make(map[string]*mcpServerInfo)
@@ -856,7 +856,7 @@ func (c *ConfigSemanticCheck) parseCodexServers(data []byte) (map[string]*mcpSer
 	}
 
 	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parsing Codex config")
 	}
 
 	servers := make(map[string]*mcpServerInfo)

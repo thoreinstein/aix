@@ -7,11 +7,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/doctor"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/paths"
 )
 
@@ -280,7 +280,7 @@ func outputStatusJSON(w io.Writer, platforms []cli.Platform) error {
 
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	return enc.Encode(output)
+	return errors.Wrap(enc.Encode(output), "encoding output")
 }
 
 func outputStatusQuiet(w io.Writer, platforms []cli.Platform) error {

@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
 

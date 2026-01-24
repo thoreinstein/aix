@@ -2,20 +2,19 @@ package mcp
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	cerrors "github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
 	cliprompt "github.com/thoreinstein/aix/internal/cli/prompt"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/mcp"
 	mcpvalidator "github.com/thoreinstein/aix/internal/mcp/validator"
 	"github.com/thoreinstein/aix/internal/resource"
@@ -98,7 +97,7 @@ func runInstall(_ *cobra.Command, args []string) error {
 		if errors.Is(err, resource.ErrNoReposConfigured) {
 			return errors.New("no repositories configured. Run 'aix repo add <url>' to add one")
 		}
-		return cerrors.Wrap(err, "searching repositories")
+		return errors.Wrap(err, "searching repositories")
 	}
 
 	if len(matches) > 0 {
@@ -108,7 +107,7 @@ func runInstall(_ *cobra.Command, args []string) error {
 	// No matches in repos - check if input might be a forgotten path
 	if mightBePath(source) {
 		if _, statErr := os.Stat(source); statErr == nil {
-			return cerrors.Newf("MCP server %q not found in repositories, but a local file exists at that path.\nDid you mean: aix mcp install --file %s", source, source)
+			return errors.Newf("MCP server %q not found in repositories, but a local file exists at that path.\nDid you mean: aix mcp install --file %s", source, source)
 		}
 	}
 
@@ -117,7 +116,7 @@ func runInstall(_ *cobra.Command, args []string) error {
 		return installFromLocal(source)
 	}
 
-	return cerrors.Newf("MCP server %q not found in any configured repository", source)
+	return errors.Newf("MCP server %q not found in any configured repository", source)
 }
 
 // looksLikePath returns true if the source appears to be a file path.
@@ -160,7 +159,7 @@ func installFromRepo(name string, matches []resource.Resource) error {
 		// Multiple matches - prompt user to select
 		choice, err := cliprompt.SelectResourceDefault(name, matches)
 		if err != nil {
-			return cerrors.Wrap(err, "selecting resource")
+			return errors.Wrap(err, "selecting resource")
 		}
 		selected = choice
 	}
@@ -168,7 +167,7 @@ func installFromRepo(name string, matches []resource.Resource) error {
 	// Copy from cache to temp directory
 	tempDir, err := resource.CopyToTemp(selected)
 	if err != nil {
-		return cerrors.Wrap(err, "copying from repository cache")
+		return errors.Wrap(err, "copying from repository cache")
 	}
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
@@ -206,7 +205,7 @@ func installFromGit(url string) error {
 	// Create temp directory for clone
 	tempDir, err := os.MkdirTemp("", "aix-mcp-*")
 	if err != nil {
-		return cerrors.Wrap(err, "creating temp directory")
+		return errors.Wrap(err, "creating temp directory")
 	}
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
@@ -220,7 +219,7 @@ func installFromGit(url string) error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return cerrors.Wrap(err, "cloning repository")
+		return errors.Wrap(err, "cloning repository")
 	}
 
 	// Look for mcp/*.json files
@@ -228,9 +227,9 @@ func installFromGit(url string) error {
 	entries, err := os.ReadDir(mcpDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return cerrors.New("no mcp/ directory found in repository")
+			return errors.New("no mcp/ directory found in repository")
 		}
-		return cerrors.Wrap(err, "reading mcp directory")
+		return errors.Wrap(err, "reading mcp directory")
 	}
 
 	var jsonFiles []string
@@ -241,7 +240,7 @@ func installFromGit(url string) error {
 	}
 
 	if len(jsonFiles) == 0 {
-		return cerrors.New("no MCP server configurations (*.json) found in mcp/ directory")
+		return errors.New("no MCP server configurations (*.json) found in mcp/ directory")
 	}
 
 	// If single file, install it directly
@@ -258,7 +257,7 @@ func installFromGit(url string) error {
 
 	var choice int
 	if _, err := fmt.Scanf("%d", &choice); err != nil || choice < 1 || choice > len(jsonFiles) {
-		return cerrors.New("invalid selection")
+		return errors.New("invalid selection")
 	}
 
 	return installFromLocal(jsonFiles[choice-1])
@@ -274,12 +273,12 @@ func installFromLocal(serverPath string) error {
 
 	// Check if file exists
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
-		return cerrors.Newf("MCP server file not found: %s", absPath)
+		return errors.Newf("MCP server file not found: %s", absPath)
 	}
 
 	// Check if it's a JSON file
 	if !strings.HasSuffix(strings.ToLower(absPath), ".json") {
-		return cerrors.Newf("expected .json file, got: %s", absPath)
+		return errors.Newf("expected .json file, got: %s", absPath)
 	}
 
 	fmt.Println("Validating MCP server configuration...")
@@ -287,12 +286,12 @@ func installFromLocal(serverPath string) error {
 	// Read and parse the JSON file
 	data, err := os.ReadFile(absPath)
 	if err != nil {
-		return cerrors.Wrap(err, "reading server file")
+		return errors.Wrap(err, "reading server file")
 	}
 
 	var server mcp.Server
 	if err := json.Unmarshal(data, &server); err != nil {
-		return cerrors.Wrap(err, "parsing server JSON")
+		return errors.Wrap(err, "parsing server JSON")
 	}
 
 	// Derive name from filename if not set in JSON
@@ -326,14 +325,14 @@ func installFromLocal(serverPath string) error {
 	// Get target platforms
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolving platforms")
 	}
 
 	// Check for existing servers (unless --force)
 	if !installForce {
 		for _, plat := range platforms {
 			if _, err := plat.GetMCP(server.Name); err == nil {
-				return cerrors.Newf("MCP server %q already exists on %s (use --force to overwrite)",
+				return errors.Newf("MCP server %q already exists on %s (use --force to overwrite)",
 					server.Name, plat.DisplayName())
 			}
 		}
@@ -354,7 +353,7 @@ func installFromLocal(serverPath string) error {
 	for _, plat := range platforms {
 		// Ensure backup exists before modifying
 		if err := backup.EnsureBackedUp(plat.Name(), plat.BackupPaths()); err != nil {
-			return cerrors.Wrapf(err, "backing up %s before install", plat.DisplayName())
+			return errors.Wrapf(err, "backing up %s before install", plat.DisplayName())
 		}
 
 		fmt.Printf("Installing '%s' to %s... ", server.Name, plat.DisplayName())
@@ -366,7 +365,7 @@ func installFromLocal(serverPath string) error {
 		// Use the existing addMCPToPlatform function
 		if err := addMCPToPlatform(plat, server.Name, server.Command, server.Args, transport, server.Env, server.Headers); err != nil {
 			fmt.Println("failed")
-			return cerrors.Wrapf(err, "failed to install to %s", plat.DisplayName())
+			return errors.Wrapf(err, "failed to install to %s", plat.DisplayName())
 		}
 
 		fmt.Println("done")

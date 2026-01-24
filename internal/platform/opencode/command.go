@@ -6,8 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cockroachdb/errors"
-
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/pkg/fileutil"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
@@ -206,7 +205,7 @@ func formatCommandFile(c *Command) (string, error) {
 
 	data, err := frontmatter.Format(meta, c.Instructions)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "formatting command content")
 	}
 
 	return string(data), nil

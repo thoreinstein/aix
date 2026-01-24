@@ -6,12 +6,12 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/editor"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 func init() {
@@ -63,16 +63,16 @@ func runEdit(_ *cobra.Command, args []string) error {
 
 		absPath, err := filepath.Abs(path)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "getting absolute path")
 		}
 
 		fmt.Printf("Opening local skill at %s...\n", absPath)
-		return editor.Open(absPath)
+		return errors.Wrap(editor.Open(absPath), "opening editor")
 	}
 	// 2. Lookup as installed skill name
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolving platforms")
 	}
 
 	// Find the skill on available platforms

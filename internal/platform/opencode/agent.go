@@ -6,8 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cockroachdb/errors"
-
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/pkg/fileutil"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
@@ -277,7 +276,7 @@ func formatAgentContent(a *Agent) (string, error) {
 
 	data, err := frontmatter.Format(meta, a.Instructions)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "formatting agent content")
 	}
 
 	return string(data), nil

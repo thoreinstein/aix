@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/thoreinstein/aix/internal/config"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/repo"
 	"github.com/thoreinstein/aix/internal/resource"
@@ -108,7 +109,7 @@ func runGit(dir string, args ...string) error {
 	cmd.Dir = dir
 	cmd.Stdout = nil // Suppress output
 	cmd.Stderr = nil
-	return cmd.Run()
+	return errors.Wrap(cmd.Run(), "running git command")
 }
 
 // validSkillFrontmatter returns valid SKILL.md content.

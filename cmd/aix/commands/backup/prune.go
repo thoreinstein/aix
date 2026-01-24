@@ -5,12 +5,12 @@ import (
 	"io"
 	"os"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 var pruneKeep int
@@ -60,7 +60,7 @@ func runPruneWithWriter(w io.Writer) error {
 
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolving platforms")
 	}
 
 	mgr := backup.NewManager()

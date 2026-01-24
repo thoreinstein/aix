@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
+
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 var genDocCmd = &cobra.Command{
@@ -22,14 +23,14 @@ var genDocCmd = &cobra.Command{
 		}
 
 		if err := os.MkdirAll(outputDir, 0755); err != nil {
-			return err
+			return errors.Wrap(err, "creating output directory")
 		}
 
 		// Generate standard markdown docs
 		// We use a custom file prepender to add Doks-compatible frontmatter
 		err := doc.GenMarkdownTreeCustom(rootCmd, outputDir, filePrepender, linkHandler)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "generating markdown")
 		}
 
 		fmt.Printf("Documentation generated in %s\n", outputDir)

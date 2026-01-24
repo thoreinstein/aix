@@ -5,12 +5,12 @@ import (
 	"io"
 	"os"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 func init() {
@@ -56,7 +56,7 @@ func runRestoreWithWriter(_ *cobra.Command, args []string, w io.Writer) error {
 
 	platforms, err := cli.ResolvePlatforms(platformFlag)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolving platforms")
 	}
 	if len(platforms) != 1 {
 		return errors.New("restore requires exactly one platform")
@@ -74,7 +74,7 @@ func runRestoreWithWriter(_ *cobra.Command, args []string, w io.Writer) error {
 		manifests, err := mgr.List(platform.Name())
 		if err != nil {
 			if errors.Is(err, backup.ErrNoBackupsFound) {
-				return errors.Errorf("no backups found for %s", platform.DisplayName())
+				return errors.Newf("no backups found for %s", platform.DisplayName())
 			}
 			return errors.Wrap(err, "listing backups")
 		}

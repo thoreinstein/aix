@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/config"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/repo"
 	"github.com/thoreinstein/aix/internal/resource"
@@ -123,7 +123,7 @@ func runSearchWithWriter(w io.Writer, args []string) error {
 func outputJSON(w io.Writer, resources []resource.Resource) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	return enc.Encode(resources)
+	return errors.Wrap(enc.Encode(resources), "encoding output")
 }
 
 // outputTabular outputs resources in a human-readable table format.
@@ -148,7 +148,7 @@ func outputTabular(w io.Writer, resources []resource.Resource) error {
 			colorGray, truncate(r.Description, 50), colorReset)
 	}
 
-	return tw.Flush()
+	return errors.Wrap(tw.Flush(), "flushing tabwriter")
 }
 
 // truncate shortens a string to maxLen characters, adding "..." if truncated.
