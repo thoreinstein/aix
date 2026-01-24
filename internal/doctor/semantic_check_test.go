@@ -475,7 +475,7 @@ func TestConfigSemanticCheck_validateMCPConfig(t *testing.T) {
 
 	t.Run("empty file", func(t *testing.T) {
 		emptyFile := filepath.Join(tempDir, "empty.json")
-		if err := os.WriteFile(emptyFile, []byte(""), 0644); err != nil {
+		if err := os.WriteFile(emptyFile, []byte(""), 0600); err != nil {
 			t.Fatal(err)
 		}
 		issues, count := c.validateMCPConfig(emptyFile, "test")
@@ -490,7 +490,7 @@ func TestConfigSemanticCheck_validateMCPConfig(t *testing.T) {
 	t.Run("valid claude config", func(t *testing.T) {
 		configFile := filepath.Join(tempDir, "claude.json")
 		content := `{"mcpServers": {"test": {"command": "ls"}}}`
-		if err := os.WriteFile(configFile, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(configFile, []byte(content), 0600); err != nil {
 			t.Fatal(err)
 		}
 		issues, count := c.validateMCPConfig(configFile, "claude")
@@ -508,7 +508,7 @@ func TestConfigSemanticCheck_validateMCPConfig(t *testing.T) {
 	t.Run("invalid server config", func(t *testing.T) {
 		configFile := filepath.Join(tempDir, "invalid.json")
 		content := `{"mcpServers": {"broken": {}}}`
-		if err := os.WriteFile(configFile, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(configFile, []byte(content), 0600); err != nil {
 			t.Fatal(err)
 		}
 		issues, _ := c.validateMCPConfig(configFile, "claude")

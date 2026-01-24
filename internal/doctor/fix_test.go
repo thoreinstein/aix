@@ -42,7 +42,7 @@ func TestPermissionFixer_CanFix(t *testing.T) {
 					Problem:  "world-writable",
 					Severity: SeverityWarning,
 					Fixable:  true,
-					FixHint:  "chmod 644",
+					FixHint:  "chmod 600",
 				},
 			},
 			want: true,
@@ -161,7 +161,7 @@ func TestPermissionFixer_Fix_File(t *testing.T) {
 			Problem:  "file is world-writable",
 			Severity: SeverityWarning,
 			Fixable:  true,
-			FixHint:  "chmod 644 " + testFile,
+			FixHint:  "chmod 600 " + testFile,
 		},
 	})
 
@@ -189,8 +189,8 @@ func TestPermissionFixer_Fix_File(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.Mode().Perm() != 0644 {
-		t.Errorf("File permissions after fix = %04o, want 0644", info.Mode().Perm())
+	if info.Mode().Perm() != 0600 {
+		t.Errorf("File permissions after fix = %04o, want 0600", info.Mode().Perm())
 	}
 }
 
@@ -229,7 +229,7 @@ func TestPermissionFixer_Fix_Directory(t *testing.T) {
 			Problem:  "directory is world-writable",
 			Severity: SeverityWarning,
 			Fixable:  true,
-			FixHint:  "chmod 755 " + testDir,
+			FixHint:  "chmod 700 " + testDir,
 		},
 	})
 
@@ -254,8 +254,8 @@ func TestPermissionFixer_Fix_Directory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.Mode().Perm() != 0755 {
-		t.Errorf("Directory permissions after fix = %04o, want 0755", info.Mode().Perm())
+	if info.Mode().Perm() != 0700 {
+		t.Errorf("Directory permissions after fix = %04o, want 0700", info.Mode().Perm())
 	}
 }
 
@@ -274,7 +274,7 @@ func TestPermissionFixer_Fix_NonExistentFile(t *testing.T) {
 			Problem:  "file is world-writable",
 			Severity: SeverityWarning,
 			Fixable:  true,
-			FixHint:  "chmod 644",
+			FixHint:  "chmod 600",
 		},
 	})
 
@@ -415,8 +415,8 @@ func TestPermissionFixer_Fix_MultipleIssues(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if info.Mode().Perm() != 0644 {
-			t.Errorf("File %s permissions = %04o, want 0644", f, info.Mode().Perm())
+		if info.Mode().Perm() != 0600 {
+			t.Errorf("File %s permissions = %04o, want 0600", f, info.Mode().Perm())
 		}
 	}
 }
@@ -454,7 +454,7 @@ func TestFixResult_Fields(t *testing.T) {
 	r := FixResult{
 		Path:        "/path/to/file",
 		Fixed:       true,
-		Description: "chmod 0644",
+		Description: "chmod 0600",
 		Error:       nil,
 	}
 
@@ -464,8 +464,8 @@ func TestFixResult_Fields(t *testing.T) {
 	if !r.Fixed {
 		t.Error("Fixed = false, want true")
 	}
-	if r.Description != "chmod 0644" {
-		t.Errorf("Description = %q, want %q", r.Description, "chmod 0644")
+	if r.Description != "chmod 0600" {
+		t.Errorf("Description = %q, want %q", r.Description, "chmod 0600")
 	}
 	if r.Error != nil {
 		t.Errorf("Error = %v, want nil", r.Error)

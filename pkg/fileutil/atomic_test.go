@@ -79,7 +79,7 @@ func TestAtomicWriteFile_DirectoryNotExists(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "nonexistent", "subdir", "file.txt")
 
-	err := AtomicWriteFile(path, []byte("data"), 0644)
+	err := AtomicWriteFile(path, []byte("data"), 0600)
 	if err == nil {
 		t.Error("AtomicWriteFile() expected error for nonexistent directory")
 	}
@@ -91,13 +91,13 @@ func TestAtomicWriteFile_OverwriteExisting(t *testing.T) {
 
 	// Create original file
 	original := []byte("original content\n")
-	if err := os.WriteFile(path, original, 0644); err != nil {
+	if err := os.WriteFile(path, original, 0600); err != nil {
 		t.Fatalf("creating original file: %v", err)
 	}
 
 	// Overwrite with new content
 	newContent := []byte("new content\n")
-	if err := AtomicWriteFile(path, newContent, 0644); err != nil {
+	if err := AtomicWriteFile(path, newContent, 0600); err != nil {
 		t.Fatalf("AtomicWriteFile() error = %v", err)
 	}
 
@@ -116,7 +116,7 @@ func TestAtomicWriteFile_NoTempFileLeftOnError(t *testing.T) {
 	path := filepath.Join(dir, "nonexistent-dir", "file.txt")
 
 	// This should fail because parent directory doesn't exist
-	_ = AtomicWriteFile(path, []byte("data"), 0644)
+	_ = AtomicWriteFile(path, []byte("data"), 0600)
 
 	// Check that no temp files are left in the temp dir
 	entries, err := os.ReadDir(dir)
@@ -205,8 +205,8 @@ func TestAtomicWriteJSON(t *testing.T) {
 			if err != nil {
 				t.Fatalf("stating file: %v", err)
 			}
-			if gotPerm := info.Mode().Perm(); gotPerm != 0644 {
-				t.Errorf("permissions = %o, want 0644", gotPerm)
+			if gotPerm := info.Mode().Perm(); gotPerm != 0600 {
+				t.Errorf("permissions = %o, want 0600", gotPerm)
 			}
 		})
 	}
@@ -290,8 +290,8 @@ func TestAtomicWriteYAML(t *testing.T) {
 			if err != nil {
 				t.Fatalf("stating file: %v", err)
 			}
-			if gotPerm := info.Mode().Perm(); gotPerm != 0644 {
-				t.Errorf("permissions = %o, want 0644", gotPerm)
+			if gotPerm := info.Mode().Perm(); gotPerm != 0600 {
+				t.Errorf("permissions = %o, want 0600", gotPerm)
 			}
 		})
 	}

@@ -173,7 +173,7 @@ func TestInitCommand_CreatesConfigFile(t *testing.T) {
 
 	// Test the config directory creation
 	configDirPath := filepath.Dir(configPath)
-	if err := os.MkdirAll(configDirPath, 0o755); err != nil {
+	if err := os.MkdirAll(configDirPath, 0o700); err != nil {
 		t.Fatalf("creating config directory: %v", err)
 	}
 
@@ -189,7 +189,7 @@ func TestInitCommand_CreatesConfigFile(t *testing.T) {
 		t.Fatalf("marshaling config: %v", err)
 	}
 
-	if err := os.WriteFile(configPath, data, 0o644); err != nil {
+	if err := os.WriteFile(configPath, data, 0o600); err != nil {
 		t.Fatalf("writing config file: %v", err)
 	}
 
@@ -241,7 +241,7 @@ func TestInitCommand_ForceOverwritesConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshaling existing config: %v", err)
 	}
-	if err := os.WriteFile(configPath, existingData, 0o644); err != nil {
+	if err := os.WriteFile(configPath, existingData, 0o600); err != nil {
 		t.Fatalf("writing existing config: %v", err)
 	}
 
@@ -262,7 +262,7 @@ func TestInitCommand_ForceOverwritesConfig(t *testing.T) {
 		t.Fatalf("marshaling new config: %v", err)
 	}
 
-	if err := os.WriteFile(configPath, newData, 0o644); err != nil {
+	if err := os.WriteFile(configPath, newData, 0o600); err != nil {
 		t.Fatalf("writing new config: %v", err)
 	}
 
@@ -306,7 +306,7 @@ func TestInitCommand_WithoutForceExistingConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshaling existing config: %v", err)
 	}
-	if err := os.WriteFile(configPath, existingData, 0o644); err != nil {
+	if err := os.WriteFile(configPath, existingData, 0o600); err != nil {
 		t.Fatalf("writing existing config: %v", err)
 	}
 
@@ -400,7 +400,7 @@ func TestInitCommand_ConfigFileFormat(t *testing.T) {
 		t.Fatalf("marshaling config: %v", err)
 	}
 
-	if err := os.WriteFile(configPath, data, 0o644); err != nil {
+	if err := os.WriteFile(configPath, data, 0o600); err != nil {
 		t.Fatalf("writing config file: %v", err)
 	}
 
@@ -518,7 +518,7 @@ func TestInitCommand_ConfigDirectoryCreation(t *testing.T) {
 	}
 
 	// Create directory (mimicking runInit behavior)
-	if err := os.MkdirAll(nestedDir, 0o755); err != nil {
+	if err := os.MkdirAll(nestedDir, 0o700); err != nil {
 		t.Fatalf("creating nested directory: %v", err)
 	}
 
@@ -549,8 +549,8 @@ func TestInitCommand_ConfigFilePermissions(t *testing.T) {
 		t.Fatalf("marshaling config: %v", err)
 	}
 
-	// Write with specific permissions (0644)
-	if err := os.WriteFile(configPath, data, 0o644); err != nil {
+	// Write with specific permissions (0600)
+	if err := os.WriteFile(configPath, data, 0o600); err != nil {
 		t.Fatalf("writing config file: %v", err)
 	}
 
@@ -561,8 +561,8 @@ func TestInitCommand_ConfigFilePermissions(t *testing.T) {
 
 	// Check file permissions (on Unix-like systems)
 	mode := info.Mode().Perm()
-	// 0644 = owner rw, group r, others r
-	expectedMode := os.FileMode(0o644)
+	// 0600 = owner rw
+	expectedMode := os.FileMode(0o600)
 	if mode != expectedMode {
 		t.Errorf("file permissions = %o, want %o", mode, expectedMode)
 	}

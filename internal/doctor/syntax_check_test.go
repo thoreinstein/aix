@@ -114,7 +114,7 @@ func TestConfigSyntaxCheck_validateFile(t *testing.T) {
 			tmpDir := t.TempDir()
 			path := filepath.Join(tmpDir, tt.filename)
 
-			if err := os.WriteFile(path, []byte(tt.content), 0644); err != nil {
+			if err := os.WriteFile(path, []byte(tt.content), 0600); err != nil {
 				t.Fatalf("failed to write test file: %v", err)
 			}
 

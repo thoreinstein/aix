@@ -15,8 +15,8 @@ import (
 	"github.com/thoreinstein/aix/internal/platform"
 )
 
-// maxSecureFilePerm is the maximum secure permission for config files (-rw-r--r--).
-const maxSecureFilePerm os.FileMode = 0644
+// maxSecureFilePerm is the maximum secure permission for config files (-rw-------).
+const maxSecureFilePerm os.FileMode = 0600
 
 // PathPermissionCheck validates file paths and permissions for platform configurations.
 // It implements both the Check and Fixer interfaces.
@@ -125,7 +125,7 @@ func (c *PathPermissionCheck) checkFile(path, platformName string) []pathIssue {
 			Problem:     "file is not readable",
 			Severity:    SeverityError,
 			Permissions: formatPermissions(info.Mode()),
-			FixHint:     "chmod 644 " + path,
+			FixHint:     "chmod 600 " + path,
 		})
 		return issues
 	}
@@ -209,12 +209,12 @@ func (c *PathPermissionCheck) checkFilePermissions(path, platformName string, mo
 			Severity:    SeverityWarning,
 			Permissions: formatPermissions(mode),
 			Fixable:     true,
-			FixHint:     "chmod 644 " + path,
+			FixHint:     "chmod 600 " + path,
 		})
 	}
 
 	// Config files that may contain secrets should not be world-readable
-	// Check if permissions are more permissive than 0644
+	// Check if permissions are more permissive than 0600
 	if perm > maxSecureFilePerm && c.mayContainSecrets(path) {
 		issues = append(issues, pathIssue{
 			Path:        path,
@@ -224,7 +224,7 @@ func (c *PathPermissionCheck) checkFilePermissions(path, platformName string, mo
 			Severity:    SeverityWarning,
 			Permissions: formatPermissions(mode),
 			Fixable:     true,
-			FixHint:     "chmod 644 " + path,
+			FixHint:     "chmod 600 " + path,
 		})
 	}
 
@@ -246,7 +246,7 @@ func (c *PathPermissionCheck) checkDirectoryPermissions(path, platformName strin
 			Severity:    SeverityWarning,
 			Permissions: formatPermissions(mode),
 			Fixable:     true,
-			FixHint:     "chmod 755 " + path,
+			FixHint:     "chmod 700 " + path,
 		})
 	}
 
@@ -377,7 +377,7 @@ func (c *PathPermissionCheck) buildResult(issues []pathIssue, checked int) *Chec
 	return result
 }
 
-// formatPermissions returns a human-readable permission string (e.g., "0644").
+// formatPermissions returns a human-readable permission string (e.g., "0600").
 func formatPermissions(mode os.FileMode) string {
 	return fmt.Sprintf("%04o", mode.Perm())
 }

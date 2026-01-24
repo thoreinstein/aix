@@ -17,7 +17,7 @@ func TestBackupList_WithBackups_JSON(t *testing.T) {
 
 	// Create test file
 	testFile := filepath.Join(tmpDir, "test.json")
-	if err := os.WriteFile(testFile, []byte(`{"test": true}`), 0o644); err != nil {
+	if err := os.WriteFile(testFile, []byte(`{"test": true}`), 0o600); err != nil {
 		t.Fatalf("creating test file: %v", err)
 	}
 
@@ -56,7 +56,7 @@ func TestBackupPrune_KeepsCorrectCount(t *testing.T) {
 
 	// Create test file
 	testFile := filepath.Join(tmpDir, "test.json")
-	if err := os.WriteFile(testFile, []byte(`{}`), 0o644); err != nil {
+	if err := os.WriteFile(testFile, []byte(`{}`), 0o600); err != nil {
 		t.Fatalf("creating test file: %v", err)
 	}
 
@@ -100,7 +100,7 @@ func TestBackupRestore_Success(t *testing.T) {
 	// Create a test file to backup
 	testFile := filepath.Join(tmpDir, "config.json")
 	originalContent := []byte(`{"original": true}`)
-	if err := os.WriteFile(testFile, originalContent, 0o644); err != nil {
+	if err := os.WriteFile(testFile, originalContent, 0o600); err != nil {
 		t.Fatalf("creating test file: %v", err)
 	}
 
@@ -112,7 +112,7 @@ func TestBackupRestore_Success(t *testing.T) {
 	}
 
 	// Modify the original file
-	if err := os.WriteFile(testFile, []byte(`{"modified": true}`), 0o644); err != nil {
+	if err := os.WriteFile(testFile, []byte(`{"modified": true}`), 0o600); err != nil {
 		t.Fatalf("modifying test file: %v", err)
 	}
 
@@ -151,7 +151,7 @@ func TestBackup_Permissions(t *testing.T) {
 
 	// Create a test file with standard permissions
 	testFile := filepath.Join(tmpDir, "config.json")
-	if err := os.WriteFile(testFile, []byte(`{}`), 0o644); err != nil {
+	if err := os.WriteFile(testFile, []byte(`{}`), 0o600); err != nil {
 		t.Fatalf("creating test file: %v", err)
 	}
 
@@ -183,10 +183,10 @@ func TestBackup_Permissions(t *testing.T) {
 		t.Errorf("expected manifest file perm 0600, got %o", info.Mode().Perm())
 	}
 
-	// Verify backed up file permissions (original 0644 was used, but it should be stored as 0600 if src was 0600,
+	// Verify backed up file permissions (original 0600 was used, but it should be stored as 0600 if src was 0600,
 	// or we can decide to ALWAYS use 0600 in backup storage for extra safety)
 	// In our current implementation, we use 0o600 initially in copyFile then chmod to match source.
-	// So if source was 0644, backup will be 0644.
+	// So if source was 0600, backup will be 0600.
 	// BUT the parent directory is 0700, so it's still protected.
 }
 

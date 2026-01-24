@@ -370,7 +370,7 @@ func hashFile(path string) (string, error) {
 }
 
 // copyFile copies a file from src to dst, returning the SHA256 hash and mode.
-// The destination file is created with 0644 permissions initially,
+// The destination file is created with 0600 permissions initially,
 // then updated to match the source file's permissions.
 func copyFile(src, dst string) (hash string, mode fs.FileMode, err error) {
 	srcFile, err := os.Open(src)

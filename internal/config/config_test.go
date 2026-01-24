@@ -51,7 +51,7 @@ func TestLoad_WithConfigFile(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "config.yaml")
 	content := []byte("default_platforms:\n  - claude\n  - opencode\n")
-	if err := os.WriteFile(configPath, content, 0644); err != nil {
+	if err := os.WriteFile(configPath, content, 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -108,7 +108,7 @@ func TestLoad_InvalidConfig(t *testing.T) {
 
 			dir := t.TempDir()
 			configPath := filepath.Join(dir, "config.yaml")
-			if err := os.WriteFile(configPath, []byte(tt.content), 0644); err != nil {
+			if err := os.WriteFile(configPath, []byte(tt.content), 0600); err != nil {
 				t.Fatal(err)
 			}
 
