@@ -125,12 +125,22 @@ aix command remove /deploy
 
 ### Repository Management
 
-Discover and share AI resources from remote Git repositories.
+Manage remote repositories containing shareable skills, commands, agents, and MCP configurations. See [Repository Documentation](docs/repositories.md) for complete details.
 
 ```bash
-# Add a repository source
-aix repo add https://github.com/thoreinstein/agents.git
+# Add a community repository
+aix repo add https://github.com/example/aix-skills
 
+# Search for resources across all repos
+aix search "code review"
+
+# Install a skill from a repo
+aix skill install community-repo/code-reviewer
+```
+
+Additional repository commands:
+
+```bash
 # List configured repositories
 aix repo list
 
