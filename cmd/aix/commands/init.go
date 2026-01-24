@@ -58,7 +58,7 @@ type aixConfig struct {
 }
 
 func runInit(_ *cobra.Command, _ []string) error {
-	configPath := filepath.Join(paths.ConfigHome(), config.AppName, "config.yaml")
+	configPath := config.DefaultConfigPath()
 
 	// Check if config already exists
 	if _, err := os.Stat(configPath); err == nil && !initForce {
