@@ -33,7 +33,7 @@ aix agent [flags]
 * [aix](/docs/reference/aix/)	 - Unified CLI for AI coding assistant configurations
 * [aix agent edit](/docs/reference/aix_agent_edit/)	 - Open agent file in $EDITOR
 * [aix agent init](/docs/reference/aix_agent_init/)	 - Create a new agent interactively
-* [aix agent install](/docs/reference/aix_agent_install/)	 - Install an agent from a local path
+* [aix agent install](/docs/reference/aix_agent_install/)	 - Install an agent from a repository or local path
 * [aix agent list](/docs/reference/aix_agent_list/)	 - List installed agents
 * [aix agent remove](/docs/reference/aix_agent_remove/)	 - Remove an installed agent
 * [aix agent show](/docs/reference/aix_agent_show/)	 - Display detailed agent information

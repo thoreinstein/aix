@@ -55,7 +55,7 @@ aix command [flags]
 
 * [aix](/docs/reference/aix/)	 - Unified CLI for AI coding assistant configurations
 * [aix command init](/docs/reference/aix_command_init/)	 - Create a new slash command interactively
-* [aix command install](/docs/reference/aix_command_install/)	 - Install a slash command from a local path or git URL
+* [aix command install](/docs/reference/aix_command_install/)	 - Install a slash command from a repository, local path, or git URL
 * [aix command list](/docs/reference/aix_command_list/)	 - List installed slash commands
 * [aix command remove](/docs/reference/aix_command_remove/)	 - Remove an installed slash command
 * [aix command show](/docs/reference/aix_command_show/)	 - Display detailed command information

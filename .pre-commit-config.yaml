@@ -54,6 +54,15 @@ repos:
         language: system
         pass_filenames: false
         files: ^aix-docs/
+<<<<<<< HEAD
+=======
+      - id: lychee
+        name: lychee (link checker)
+        entry: lychee --config lychee.toml
+        language: system
+        pass_filenames: true
+        types: [markdown]
+>>>>>>> 76e3e0e (ci: add lychee link checker and repo integration tests)
 
   # General file hygiene
   - repo: https://github.com/pre-commit/pre-commit-hooks
