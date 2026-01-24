@@ -24,6 +24,9 @@ var platformFlag []string
 // verbosity holds the count of -v flags.
 var verbosity int
 
+// quiet holds the value of the -q/--quiet flag.
+var quiet bool
+
 // configLoadErr holds any error that occurred during config loading.
 var configLoadErr error
 
@@ -35,6 +38,8 @@ func init() {
 		`target platform(s): claude, opencode (default: all detected)`)
 	rootCmd.PersistentFlags().CountVarP(&verbosity, "verbose", "v",
 		"increase verbosity level (e.g., -v, -vv)")
+	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false,
+		"suppress non-error output")
 
 	// Add version flag
 	rootCmd.Version = version
@@ -80,7 +85,9 @@ target all detected/installed platforms.`,
   See Also: aix init, aix doctor, aix config`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Initialize logging first
-		setupLogging(cmd)
+		if err := setupLogging(cmd); err != nil {
+			return err
+		}
 		return validatePlatformFlag(cmd, args)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
@@ -89,28 +96,39 @@ target all detected/installed platforms.`,
 }
 
 // setupLogging configures the default logger based on verbosity flags.
-func setupLogging(cmd *cobra.Command) {
-	v := verbosity
-
-	// CLI flags take precedence, but if not set, check env var
-	if v == 0 {
-		if val, ok := os.LookupEnv("AIX_DEBUG"); ok {
-			switch val {
-			case "1", "true":
-				v = 2 // Debug
-			case "2":
-				v = 3 // Trace
-			}
-		}
+func setupLogging(cmd *cobra.Command) error {
+	if quiet && verbosity > 0 {
+		return errors.NewUserError(nil, "cannot use --quiet and --verbose together")
 	}
 
-	level := logging.LevelFromVerbosity(v)
+	var level slog.Level
+	if quiet {
+		level = slog.LevelError
+	} else {
+		v := verbosity
+
+		// CLI flags take precedence, but if not set, check env var
+		if v == 0 {
+			if val, ok := os.LookupEnv("AIX_DEBUG"); ok {
+				switch val {
+				case "1", "true":
+					v = 2 // Debug
+				case "2":
+					v = 3 // Trace
+				}
+			}
+		}
+		level = logging.LevelFromVerbosity(v)
+	}
+
 	logger := logging.New(logging.Config{
 		Level:  level,
 		Format: logging.FormatText, // Default to text
 		Output: cmd.ErrOrStderr(),
 	})
 	slog.SetDefault(logger)
+
+	return nil
 }
 
 // validatePlatformFlag checks that all specified platforms are valid.
