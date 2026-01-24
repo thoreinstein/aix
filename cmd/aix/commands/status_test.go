@@ -6,9 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cockroachdb/errors"
-
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // statusMockPlatform implements cli.Platform for status command testing.

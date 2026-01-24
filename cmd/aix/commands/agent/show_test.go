@@ -6,9 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cockroachdb/errors"
-
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 )

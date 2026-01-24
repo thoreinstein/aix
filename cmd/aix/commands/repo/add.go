@@ -5,11 +5,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/config"
-	aixerrors "github.com/thoreinstein/aix/internal/errors"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/repo"
 )
 
@@ -84,22 +83,22 @@ func runAddWithIO(args []string, w io.Writer) error {
 func handleAddError(err error) error {
 	switch {
 	case errors.Is(err, repo.ErrInvalidURL):
-		return aixerrors.NewUserError(
+		return errors.NewUserError(
 			errors.New("invalid Git URL"),
 			"Use HTTPS, SSH, or git:// protocol (e.g., https://github.com/org/repo.git)",
 		)
 	case errors.Is(err, repo.ErrNameCollision):
-		return aixerrors.NewUserError(
+		return errors.NewUserError(
 			err,
 			"Run: aix repo list to see existing repositories\n       Use: --name <alternate-name> to specify a different name",
 		)
 	case errors.Is(err, repo.ErrInvalidName):
-		return aixerrors.NewUserError(
+		return errors.NewUserError(
 			errors.New("invalid repository name"),
 			"Names must be lowercase alphanumeric with hyphens, starting with a letter (e.g., 'my-skills')",
 		)
 	default:
-		return aixerrors.NewSystemError(
+		return errors.NewSystemError(
 			errors.Wrap(err, "failed to add repository"),
 			"Check your network connection and Git credentials",
 		)

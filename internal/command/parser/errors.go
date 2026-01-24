@@ -4,7 +4,7 @@ package parser
 import (
 	"fmt"
 
-	"github.com/cockroachdb/errors"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // Sentinel errors for command parsing.

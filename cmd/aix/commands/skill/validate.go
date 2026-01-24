@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/skill/parser"
 	skillvalidator "github.com/thoreinstein/aix/internal/skill/validator"

@@ -8,8 +8,9 @@ import (
 	"io"
 	"strings"
 
-	"github.com/cockroachdb/errors"
 	"gopkg.in/yaml.v3"
+
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // ErrMissingFrontmatter is returned by MustParse when no frontmatter is found.

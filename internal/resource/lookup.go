@@ -3,9 +3,8 @@ package resource
 import (
 	"path/filepath"
 
-	"github.com/cockroachdb/errors"
-
 	"github.com/thoreinstein/aix/internal/config"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/repo"
 )

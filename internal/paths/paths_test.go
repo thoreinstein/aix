@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cockroachdb/errors"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 func TestHome(t *testing.T) {

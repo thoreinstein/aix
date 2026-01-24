@@ -12,8 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cockroachdb/errors"
-
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/pkg/fileutil"
 )
 

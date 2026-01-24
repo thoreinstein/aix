@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/doctor"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 var (

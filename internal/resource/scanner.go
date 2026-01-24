@@ -11,9 +11,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/cockroachdb/errors"
-
 	"github.com/thoreinstein/aix/internal/config"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/mcp"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
