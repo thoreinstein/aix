@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/thoreinstein/aix/internal/cli"
 	cliprompt "github.com/thoreinstein/aix/internal/cli/prompt"
 	"github.com/thoreinstein/aix/internal/errors"
+	"github.com/thoreinstein/aix/internal/git"
 	"github.com/thoreinstein/aix/internal/mcp"
 	mcpvalidator "github.com/thoreinstein/aix/internal/mcp/validator"
 	"github.com/thoreinstein/aix/internal/resource"
@@ -77,15 +77,15 @@ func runInstall(_ *cobra.Command, args []string) error {
 
 	// If --file flag is set, treat argument as file path or URL (old behavior)
 	if installFile {
-		if isGitURL(source) {
+		if git.IsURL(source) {
 			return installFromGit(source)
 		}
 		return installFromLocal(source)
 	}
 
 	// If source is clearly a path or URL, use direct install
-	if isGitURL(source) || looksLikePath(source) {
-		if isGitURL(source) {
+	if git.IsURL(source) || looksLikePath(source) {
+		if git.IsURL(source) {
 			return installFromGit(source)
 		}
 		return installFromLocal(source)
@@ -183,21 +183,6 @@ func installFromRepo(name string, matches []resource.Resource) error {
 	return installFromLocal(tempFile)
 }
 
-// isGitURL returns true if the source looks like a git repository URL.
-func isGitURL(source string) bool {
-	// Check for common git URL patterns
-	if strings.Contains(source, "://") {
-		return true
-	}
-	if strings.HasSuffix(source, ".git") {
-		return true
-	}
-	if strings.HasPrefix(source, "git@") {
-		return true
-	}
-	return false
-}
-
 // installFromGit clones a git repository and installs MCP servers from it.
 func installFromGit(url string) error {
 	fmt.Println("Cloning repository...")
@@ -214,11 +199,7 @@ func installFromGit(url string) error {
 	}()
 
 	// Clone the repository
-	cmd := exec.Command("git", "clone", "--depth=1", url, tempDir)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
+	if err := git.Clone(url, tempDir, 1); err != nil {
 		return errors.Wrap(err, "cloning repository")
 	}
 

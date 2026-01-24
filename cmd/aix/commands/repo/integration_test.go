@@ -41,17 +41,17 @@ func createLocalGitRepo(t *testing.T, skills, commands, agents, mcpServers map[s
 	}
 
 	// Always create a README so we have at least one file to commit
-	if err := os.WriteFile(filepath.Join(srcDir, "README.md"), []byte("# Test Repository\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(srcDir, "README.md"), []byte("# Test Repository\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create skills
 	for name, content := range skills {
 		skillDir := filepath.Join(srcDir, "skills", name)
-		if err := os.MkdirAll(skillDir, 0o755); err != nil {
+		if err := os.MkdirAll(skillDir, 0o700); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(content), 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -59,10 +59,10 @@ func createLocalGitRepo(t *testing.T, skills, commands, agents, mcpServers map[s
 	// Create commands
 	for name, content := range commands {
 		cmdDir := filepath.Join(srcDir, "commands", name)
-		if err := os.MkdirAll(cmdDir, 0o755); err != nil {
+		if err := os.MkdirAll(cmdDir, 0o700); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(cmdDir, "command.md"), []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(cmdDir, "command.md"), []byte(content), 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -70,10 +70,10 @@ func createLocalGitRepo(t *testing.T, skills, commands, agents, mcpServers map[s
 	// Create agents
 	for name, content := range agents {
 		agentDir := filepath.Join(srcDir, "agents", name)
-		if err := os.MkdirAll(agentDir, 0o755); err != nil {
+		if err := os.MkdirAll(agentDir, 0o700); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(agentDir, "AGENT.md"), []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(agentDir, "AGENT.md"), []byte(content), 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -81,11 +81,11 @@ func createLocalGitRepo(t *testing.T, skills, commands, agents, mcpServers map[s
 	// Create MCP servers
 	if len(mcpServers) > 0 {
 		mcpDir := filepath.Join(srcDir, "mcp")
-		if err := os.MkdirAll(mcpDir, 0o755); err != nil {
+		if err := os.MkdirAll(mcpDir, 0o700); err != nil {
 			t.Fatal(err)
 		}
 		for name, content := range mcpServers {
-			if err := os.WriteFile(filepath.Join(mcpDir, name+".json"), []byte(content), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(mcpDir, name+".json"), []byte(content), 0o600); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -680,11 +680,11 @@ func TestIntegration_RepoUpdate(t *testing.T) {
 
 	// Create initial skill
 	skillDir := filepath.Join(srcDir, "skills", "initial-skill")
-	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+	if err := os.MkdirAll(skillDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"),
-		[]byte(validSkillFrontmatter("initial-skill", "Initial skill")), 0o644); err != nil {
+		[]byte(validSkillFrontmatter("initial-skill", "Initial skill")), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -717,11 +717,11 @@ func TestIntegration_RepoUpdate(t *testing.T) {
 
 	// Add a new skill to source repo
 	newSkillDir := filepath.Join(srcDir, "skills", "new-skill")
-	if err := os.MkdirAll(newSkillDir, 0o755); err != nil {
+	if err := os.MkdirAll(newSkillDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(newSkillDir, "SKILL.md"),
-		[]byte(validSkillFrontmatter("new-skill", "New skill")), 0o644); err != nil {
+		[]byte(validSkillFrontmatter("new-skill", "New skill")), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := runGit(srcDir, "add", "-A"); err != nil {
@@ -897,11 +897,11 @@ func TestIntegration_RepoAddWithValidationWarnings(t *testing.T) {
 
 	// Create malformed skill
 	skillDir := filepath.Join(srcDir, "skills", "broken")
-	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+	if err := os.MkdirAll(skillDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"),
-		[]byte("---\nname: [invalid yaml\n---\n"), 0o644); err != nil {
+		[]byte("---\nname: [invalid yaml\n---\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

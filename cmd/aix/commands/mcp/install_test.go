@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/thoreinstein/aix/internal/git"
 )
 
 func Test_looksLikePath(t *testing.T) {
@@ -212,12 +214,12 @@ func Test_isGitURL(t *testing.T) {
 		{
 			name:   "git@ SSH without .git suffix",
 			source: "git@github.com:user/repo",
-			want:   true,
+			want:   false, // git.IsURL requires .git suffix for scp-like
 		},
 		{
 			name:   ".git suffix only",
 			source: "github.com/user/repo.git",
-			want:   true,
+			want:   false, // git.IsURL requires scheme or scp-like
 		},
 		{
 			name:   "ssh protocol",
@@ -257,20 +259,20 @@ func Test_isGitURL(t *testing.T) {
 		{
 			name:   "ftp protocol",
 			source: "ftp://example.com/repo",
-			want:   true,
+			want:   false, // git.IsURL only allows http, https, ssh, git, file
 		},
 		{
 			name:   "custom protocol",
 			source: "custom://example.com/repo",
-			want:   true,
+			want:   false, // git.IsURL only allows specific schemes
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isGitURL(tt.source)
+			got := git.IsURL(tt.source)
 			if got != tt.want {
-				t.Errorf("isGitURL(%q) = %v, want %v", tt.source, got, tt.want)
+				t.Errorf("git.IsURL(%q) = %v, want %v", tt.source, got, tt.want)
 			}
 		})
 	}
@@ -475,14 +477,14 @@ func Test_sourceResolutionLogic(t *testing.T) {
 			var pathType string
 
 			if tt.installFileFlag {
-				if isGitURL(tt.source) {
+				if git.IsURL(tt.source) {
 					pathType = "git"
 				} else {
 					pathType = "local"
 				}
 			} else {
-				if isGitURL(tt.source) || looksLikePath(tt.source) {
-					if isGitURL(tt.source) {
+				if git.IsURL(tt.source) || looksLikePath(tt.source) {
+					if git.IsURL(tt.source) {
 						pathType = "git"
 					} else {
 						pathType = "local"
@@ -578,8 +580,9 @@ func Test_pathDetectionEdgeCases(t *testing.T) {
 			input:          "not-a-url://test",
 			looksLikePath:  true, // contains "/" which is path separator
 			mightBePath:    false,
-			isGitURLResult: true, // contains "://"
+			isGitURLResult: false, // git.IsURL only allows valid schemes
 		},
+
 		{
 			name:           "git suffix in middle",
 			input:          "my.git.server",
@@ -604,8 +607,8 @@ func Test_pathDetectionEdgeCases(t *testing.T) {
 			if got := mightBePath(tt.input); got != tt.mightBePath {
 				t.Errorf("mightBePath(%q) = %v, want %v", tt.input, got, tt.mightBePath)
 			}
-			if got := isGitURL(tt.input); got != tt.isGitURLResult {
-				t.Errorf("isGitURL(%q) = %v, want %v", tt.input, got, tt.isGitURLResult)
+			if got := git.IsURL(tt.input); got != tt.isGitURLResult {
+				t.Errorf("git.IsURL(%q) = %v, want %v", tt.input, got, tt.isGitURLResult)
 			}
 		})
 	}
@@ -719,9 +722,9 @@ func Test_isGitURL_ProtocolVariations(t *testing.T) {
 		{"git@gitlab.com:user/repo.git", true},
 		{"git@bitbucket.org:user/repo.git", true},
 
-		// .git suffix
-		{"github.com/user/repo.git", true},
-		{"example.com/path/to/repo.git", true},
+		// .git suffix (now invalid without scheme/scp-like)
+		{"github.com/user/repo.git", false},
+		{"example.com/path/to/repo.git", false},
 
 		// Not URLs
 		{"github-mcp", false},
@@ -732,8 +735,8 @@ func Test_isGitURL_ProtocolVariations(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			if got := isGitURL(tt.input); got != tt.want {
-				t.Errorf("isGitURL(%q) = %v, want %v", tt.input, got, tt.want)
+			if got := git.IsURL(tt.input); got != tt.want {
+				t.Errorf("git.IsURL(%q) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
 	}
