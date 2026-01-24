@@ -116,7 +116,7 @@ func (r *Reporter) printIssue(i Issue, c color.Attribute) {
 
 	// Add context if present
 	if len(i.Context) > 0 {
-		ctxParts := []string{}
+		ctxParts := make([]string, 0, len(i.Context))
 
 		for k, v := range i.Context {
 			ctxParts = append(ctxParts, fmt.Sprintf("%s=%s", k, v))
