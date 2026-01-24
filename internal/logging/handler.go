@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+
+	"github.com/thoreinstein/aix/internal/doctor"
 )
 
 // Handler implements slog.Handler for TTY-optimized text output.
@@ -117,7 +119,19 @@ func (h *Handler) appendAttr(a slog.Attr) {
 	if h.keyColor != nil {
 		key = h.keyColor.Sprint(key)
 	}
-	fmt.Fprintf(h.out, " %s=%v", key, a.Value.Any())
+
+	value := a.Value.Any()
+
+	// Redact sensitive values
+	if doctor.ShouldMask(a.Key) {
+		value = doctor.MaskValue(fmt.Sprint(value))
+	} else if strVal, ok := value.(string); ok {
+		if doctor.ContainsTokenPrefix(strVal) {
+			value = doctor.MaskValue(strVal)
+		}
+	}
+
+	fmt.Fprintf(h.out, " %s=%v", key, value)
 }
 
 // WithAttrs returns a new Handler with the given attributes.

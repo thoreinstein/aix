@@ -14,12 +14,12 @@ func TestHandler_Handle(t *testing.T) {
 	logger := slog.New(h)
 
 	now := time.Now()
-	logger.Info("hello world", "key", "value")
+	logger.Info("hello world", "foo", "value")
 
 	output := buf.String()
 
 	// Check format: Time Level Message Attributes
-	// Example: 10:00PM INFO  hello world key=value
+	// Example: 10:00PM INFO  hello world foo=value
 
 	if !strings.Contains(output, "INFO") {
 		t.Errorf("expected level INFO in output, got: %q", output)
@@ -27,7 +27,7 @@ func TestHandler_Handle(t *testing.T) {
 	if !strings.Contains(output, "hello world") {
 		t.Errorf("expected message in output, got: %q", output)
 	}
-	if !strings.Contains(output, "key=value") {
+	if !strings.Contains(output, "foo=value") {
 		t.Errorf("expected attribute in output, got: %q", output)
 	}
 
@@ -85,5 +85,46 @@ func TestHandler_NoTime(t *testing.T) {
 	// Should not start with a time-like pattern (Kitchen format usually has ':')
 	if strings.Contains(output, ":") && strings.Index(output, ":") < 10 {
 		t.Errorf("expected no time in output, got: %q", output)
+	}
+}
+
+func TestHandler_Redaction(t *testing.T) {
+	var buf bytes.Buffer
+	h := NewHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})
+	logger := slog.New(h)
+
+	// Test case-insensitive key matching
+	logger.Info("sensitive data", "api_key", "secret12345", "Token", "ghp_abcdef")
+
+	output := buf.String()
+
+	// Should be redacted
+	if strings.Contains(output, "secret12345") {
+		t.Error("api_key value should be redacted")
+	}
+	if strings.Contains(output, "ghp_abcdef") {
+		t.Error("Token value should be redacted")
+	}
+
+	// Should contain masked values
+	if !strings.Contains(output, "api_key=****2345") {
+		t.Errorf("expected masked api_key, got: %q", output)
+	}
+	// "ghp_abcdef" length is 10. MaskValue: "****" + last 4 ("cdef") -> "****cdef"
+	if !strings.Contains(output, "Token=****cdef") {
+		t.Errorf("expected masked Token, got: %q", output)
+	}
+
+	// Test value prefix matching
+	buf.Reset()
+	logger.Info("token value", "foo", "ghp_secrettoken")
+	output = buf.String()
+
+	if strings.Contains(output, "ghp_secrettoken") {
+		t.Error("value with token prefix should be redacted even if key is safe")
+	}
+	// "ghp_secrettoken" length 15. MaskValue: "****oken"
+	if !strings.Contains(output, "foo=****oken") {
+		t.Errorf("expected masked value based on prefix, got: %q", output)
 	}
 }
