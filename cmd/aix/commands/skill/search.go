@@ -1,10 +1,12 @@
 package skill
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"text/tabwriter"
 
 	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
@@ -20,6 +22,14 @@ var (
 	searchRepo string
 	searchJSON bool
 )
+
+// searchResultJSON represents a skill search result for JSON output.
+type searchResultJSON struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Repository  string `json:"repository"`
+	Path        string `json:"path"`
+}
 
 // searchCmd is the skill search subcommand.
 var searchCmd = &cobra.Command{
@@ -88,7 +98,47 @@ func runSearchWithWriter(w io.Writer, args []string) error {
 	// Search
 	results := resource.Search(resources, query, opts)
 
-	// Phase 2: just print the count of results found (formatting comes in Phase 3)
-	fmt.Fprintf(w, "Found %d skill(s) matching %q\n", len(results), query)
-	return nil
+	if len(results) == 0 {
+		fmt.Fprintf(w, "No skills found matching %q\n", query)
+		return nil
+	}
+
+	// Output results
+	if searchJSON {
+		return outputSearchJSON(w, results)
+	}
+	return outputSearchTable(w, results)
+}
+
+// outputSearchJSON writes search results as JSON.
+func outputSearchJSON(w io.Writer, results []resource.Resource) error {
+	jsonResults := make([]searchResultJSON, 0, len(results))
+	for _, r := range results {
+		jsonResults = append(jsonResults, searchResultJSON{
+			Name:        r.Name,
+			Description: r.Description,
+			Repository:  r.RepoName,
+			Path:        r.Path,
+		})
+	}
+
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(jsonResults)
+}
+
+// outputSearchTable writes search results as a formatted table.
+func outputSearchTable(w io.Writer, results []resource.Resource) error {
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintf(tw, "%sNAME%s\t%sDESCRIPTION%s\t%sREPOSITORY%s\n",
+		colorBold, colorReset, colorBold, colorReset, colorBold, colorReset)
+
+	for _, r := range results {
+		fmt.Fprintf(tw, "%s%s%s\t%s\t%s\n",
+			colorGreen, r.Name, colorReset,
+			truncate(r.Description, 60),
+			r.RepoName)
+	}
+
+	return tw.Flush()
 }
