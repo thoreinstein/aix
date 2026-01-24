@@ -59,6 +59,12 @@ aix mcp add [name] [command] [args...] [flags]
       --url string         remote server endpoint for SSE transport
 ```
 
+### Options inherited from parent commands
+
+```
+  -v, --verbose count   increase verbosity level (e.g., -v, -vv)
+```
+
 ### SEE ALSO
 
 * [aix mcp](/docs/reference/aix_mcp/)	 - Manage MCP server configurations

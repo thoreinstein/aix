@@ -2,12 +2,14 @@
 package commands
 
 import (
+	"log/slog"
 	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/errors"
+	"github.com/thoreinstein/aix/internal/logging"
 	"github.com/thoreinstein/aix/internal/paths"
 )
 
@@ -18,6 +20,9 @@ const version = "0.1.0"
 // platformFlag holds the value of the --platform flag.
 var platformFlag []string
 
+// verbosity holds the count of -v flags.
+var verbosity int
+
 // configLoadErr holds any error that occurred during config loading.
 var configLoadErr error
 
@@ -27,6 +32,8 @@ func init() {
 	// Add persistent flags
 	rootCmd.PersistentFlags().StringSliceVarP(&platformFlag, "platform", "p", nil,
 		`target platform(s): claude, opencode (default: all detected)`)
+	rootCmd.PersistentFlags().CountVarP(&verbosity, "verbose", "v",
+		"increase verbosity level (e.g., -v, -vv)")
 
 	// Add version flag
 	rootCmd.Version = version
@@ -70,10 +77,25 @@ target all detected/installed platforms.`,
   aix skill list --platform claude
 
   See Also: aix init, aix doctor, aix config`,
-	PersistentPreRunE: validatePlatformFlag,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Initialize logging first
+		setupLogging(cmd)
+		return validatePlatformFlag(cmd, args)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},
+}
+
+// setupLogging configures the default logger based on verbosity flags.
+func setupLogging(cmd *cobra.Command) {
+	level := logging.LevelFromVerbosity(verbosity)
+	logger := logging.New(logging.Config{
+		Level:  level,
+		Format: logging.FormatText, // Default to text
+		Output: cmd.ErrOrStderr(),
+	})
+	slog.SetDefault(logger)
 }
 
 // validatePlatformFlag checks that all specified platforms are valid.

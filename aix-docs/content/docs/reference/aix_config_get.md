@@ -40,6 +40,7 @@ See Also: aix config set, aix config list
 
 ```
   -p, --platform strings   target platform(s): claude, opencode (default: all detected)
+  -v, --verbose count      increase verbosity level (e.g., -v, -vv)
 ```
 
 ### SEE ALSO
