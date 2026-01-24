@@ -19,7 +19,8 @@ import (
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 	"github.com/thoreinstein/aix/internal/resource"
 	"github.com/thoreinstein/aix/internal/skill/parser"
-	"github.com/thoreinstein/aix/internal/skill/validator"
+	skillvalidator "github.com/thoreinstein/aix/internal/skill/validator"
+	"github.com/thoreinstein/aix/internal/validator"
 )
 
 var (
@@ -267,13 +268,12 @@ func installFromLocal(skillPath string) error {
 	}
 
 	// Validate the skill
-	v := validator.New()
-	validationErrs := v.ValidateWithPath(skill, skillFile)
-	if len(validationErrs) > 0 {
+	v := skillvalidator.New()
+	result := v.ValidateWithPath(skill, skillFile)
+	if result.HasErrors() {
 		fmt.Println("Skill validation failed:")
-		for _, e := range validationErrs {
-			fmt.Printf("  - %v\n", e)
-		}
+		reporter := validator.NewReporter(os.Stdout, validator.FormatText)
+		_ = reporter.Report(result)
 		return errInstallFailed
 	}
 

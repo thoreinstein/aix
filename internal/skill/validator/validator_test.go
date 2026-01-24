@@ -238,29 +238,24 @@ func TestValidator_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v := New(WithStrict(tt.strict))
-			errs := v.Validate(tt.skill)
+			result := v.Validate(tt.skill)
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("Validate() got %d errors, want %d; errors: %v", len(errs), tt.wantErrs, errs)
+			if len(result.Issues) != tt.wantErrs {
+				t.Errorf("Validate() got %d issues, want %d; issues: %v", len(result.Issues), tt.wantErrs, result.Issues)
 				return
 			}
 
 			if tt.wantErrs > 0 && tt.wantField != "" {
 				found := false
-				for _, err := range errs {
-					verr, ok := err.(*ValidationError)
-					if !ok {
-						t.Errorf("expected *ValidationError, got %T", err)
-						continue
-					}
-					if verr.Field == tt.wantField && strings.Contains(verr.Message, tt.wantMsg) {
+				for _, issue := range result.Issues {
+					if issue.Field == tt.wantField && strings.Contains(issue.Message, tt.wantMsg) {
 						found = true
 						break
 					}
 				}
 				if !found {
-					t.Errorf("expected error for field %q with message containing %q, got: %v",
-						tt.wantField, tt.wantMsg, errs)
+					t.Errorf("expected issue for field %q with message containing %q, got: %v",
+						tt.wantField, tt.wantMsg, result.Issues)
 				}
 			}
 		})
@@ -320,64 +315,25 @@ func TestValidator_ValidateWithPath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v := New()
-			errs := v.ValidateWithPath(tt.skill, tt.path)
+			result := v.ValidateWithPath(tt.skill, tt.path)
 
-			if len(errs) != tt.wantErrs {
-				t.Errorf("ValidateWithPath() got %d errors, want %d; errors: %v", len(errs), tt.wantErrs, errs)
+			if len(result.Issues) != tt.wantErrs {
+				t.Errorf("ValidateWithPath() got %d issues, want %d; issues: %v", len(result.Issues), tt.wantErrs, result.Issues)
 				return
 			}
 
 			if tt.wantErrs > 0 && tt.wantField != "" {
 				found := false
-				for _, err := range errs {
-					verr, ok := err.(*ValidationError)
-					if !ok {
-						t.Errorf("expected *ValidationError, got %T", err)
-						continue
-					}
-					if verr.Field == tt.wantField && strings.Contains(verr.Message, tt.wantMsg) {
+				for _, issue := range result.Issues {
+					if issue.Field == tt.wantField && strings.Contains(issue.Message, tt.wantMsg) {
 						found = true
 						break
 					}
 				}
 				if !found {
-					t.Errorf("expected error for field %q with message containing %q, got: %v",
-						tt.wantField, tt.wantMsg, errs)
+					t.Errorf("expected issue for field %q with message containing %q, got: %v",
+						tt.wantField, tt.wantMsg, result.Issues)
 				}
-			}
-		})
-	}
-}
-
-func TestValidationError_Error(t *testing.T) {
-	tests := []struct {
-		name string
-		err  *ValidationError
-		want string
-	}{
-		{
-			name: "with value",
-			err: &ValidationError{
-				Field:   "name",
-				Message: "name is required",
-				Value:   "bad-name",
-			},
-			want: `validation error: name "bad-name": name is required`,
-		},
-		{
-			name: "without value",
-			err: &ValidationError{
-				Field:   "name",
-				Message: "name is required",
-			},
-			want: "validation error: name: name is required",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.err.Error(); got != tt.want {
-				t.Errorf("Error() = %q, want %q", got, tt.want)
 			}
 		})
 	}
@@ -392,9 +348,9 @@ func TestNew_Options(t *testing.T) {
 			Description:  "Test",
 			AllowedTools: claude.ToolList{"Invalid(("},
 		}
-		errs := v.Validate(skill)
-		if len(errs) != 0 {
-			t.Errorf("non-strict mode should not validate AllowedTools, got errors: %v", errs)
+		result := v.Validate(skill)
+		if len(result.Issues) != 0 {
+			t.Errorf("non-strict mode should not validate AllowedTools, got issues: %v", result.Issues)
 		}
 	})
 
@@ -405,9 +361,9 @@ func TestNew_Options(t *testing.T) {
 			Description:  "Test",
 			AllowedTools: claude.ToolList{"Invalid(("},
 		}
-		errs := v.Validate(skill)
-		if len(errs) != 1 {
-			t.Errorf("strict mode should validate AllowedTools, got %d errors", len(errs))
+		result := v.Validate(skill)
+		if len(result.Issues) != 1 {
+			t.Errorf("strict mode should validate AllowedTools, got %d issues", len(result.Issues))
 		}
 	})
 }

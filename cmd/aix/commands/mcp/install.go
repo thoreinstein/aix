@@ -17,8 +17,9 @@ import (
 	"github.com/thoreinstein/aix/internal/cli"
 	cliprompt "github.com/thoreinstein/aix/internal/cli/prompt"
 	"github.com/thoreinstein/aix/internal/mcp"
-	"github.com/thoreinstein/aix/internal/mcp/validator"
+	mcpvalidator "github.com/thoreinstein/aix/internal/mcp/validator"
 	"github.com/thoreinstein/aix/internal/resource"
+	"github.com/thoreinstein/aix/internal/validator"
 )
 
 var (
@@ -306,22 +307,19 @@ func installFromLocal(serverPath string) error {
 		},
 	}
 
-	v := validator.New()
-	validationErrs := v.Validate(cfg)
-	if validator.HasErrors(validationErrs) {
+	v := mcpvalidator.New()
+	result := v.Validate(cfg)
+	if result.HasErrors() {
 		fmt.Println("MCP server validation failed:")
-		for _, e := range validationErrs {
-			fmt.Printf("  - %v\n", e)
-		}
+		reporter := validator.NewReporter(os.Stdout, validator.FormatText)
+		_ = reporter.Report(result)
 		return errInstallFailed
 	}
 
 	// Print warnings if any
-	if validator.HasWarnings(validationErrs) {
-		for _, e := range validationErrs {
-			if e.Severity == validator.SeverityWarning {
-				fmt.Printf("  Warning: %s\n", e.Message)
-			}
+	if result.HasWarnings() {
+		for _, w := range result.Warnings() {
+			fmt.Printf("  Warning: %s\n", w.Message)
 		}
 	}
 

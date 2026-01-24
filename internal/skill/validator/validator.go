@@ -8,6 +8,7 @@ import (
 
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/skill/toolperm"
+	"github.com/thoreinstein/aix/internal/validator"
 )
 
 const (
@@ -49,35 +50,33 @@ func WithStrict(strict bool) Option {
 }
 
 // Validate checks a Skill for compliance with the Agent Skills Specification.
-// Returns a slice of validation errors, or nil if valid.
-func (v *Validator) Validate(s *claude.Skill) []error {
-	var errs []error
+// Returns a Result containing errors and warnings.
+func (v *Validator) Validate(s *claude.Skill) *validator.Result {
+	result := &validator.Result{}
 
-	errs = append(errs, v.validateName(s.Name)...)
-	errs = append(errs, v.validateDescription(s.Description)...)
+	v.validateName(s.Name, result)
+	v.validateDescription(s.Description, result)
 
 	if v.strict && len(s.AllowedTools) > 0 {
-		errs = append(errs, v.validateAllowedTools(s.AllowedTools.String())...)
+		v.validateAllowedTools(s.AllowedTools.String(), result)
 	}
 
-	if len(errs) == 0 {
-		return nil
-	}
-	return errs
+	return result
 }
 
 // ValidateWithPath validates a Skill and additionally checks that the skill name
 // matches the containing directory name. The path should be the path to the skill file.
-func (v *Validator) ValidateWithPath(s *claude.Skill, path string) []error {
-	errs := v.Validate(s)
+func (v *Validator) ValidateWithPath(s *claude.Skill, path string) *validator.Result {
+	result := v.Validate(s)
 
 	if s.Name != "" {
 		dir := filepath.Base(filepath.Dir(path))
 		if dir != s.Name {
-			errs = append(errs, &ValidationError{
-				Field:   "name",
-				Message: "skill name must match directory name",
-				Value:   s.Name,
+			result.Issues = append(result.Issues, validator.Issue{
+				Severity: validator.SeverityError,
+				Field:    "name",
+				Message:  "skill name must match directory name",
+				Value:    s.Name,
 				Context: map[string]string{
 					"directory": dir,
 					"path":      path,
@@ -86,30 +85,18 @@ func (v *Validator) ValidateWithPath(s *claude.Skill, path string) []error {
 		}
 	}
 
-	if len(errs) == 0 {
-		return nil
-	}
-	return errs
+	return result
 }
 
 // validateName checks the name field for compliance.
-func (v *Validator) validateName(name string) []error {
-	var errs []error
-
+func (v *Validator) validateName(name string, result *validator.Result) {
 	if name == "" {
-		errs = append(errs, &ValidationError{
-			Field:   "name",
-			Message: "name is required",
-		})
-		return errs
+		result.AddError("name", "is required", "")
+		return
 	}
 
 	if len(name) > maxNameLength {
-		errs = append(errs, &ValidationError{
-			Field:   "name",
-			Message: "name exceeds maximum length of 64 characters",
-			Value:   name,
-		})
+		result.AddError("name", "exceeds maximum length of 64 characters", name)
 	}
 
 	if !nameRegex.MatchString(name) {
@@ -121,51 +108,26 @@ func (v *Validator) validateName(name string) []error {
 		} else if strings.ToLower(name) != name {
 			msg = "name must be lowercase"
 		}
-		errs = append(errs, &ValidationError{
-			Field:   "name",
-			Message: msg,
-			Value:   name,
-		})
+		result.AddError("name", msg, name)
 	}
-
-	return errs
 }
 
 // validateDescription checks the description field for compliance.
-func (v *Validator) validateDescription(description string) []error {
-	var errs []error
-
+func (v *Validator) validateDescription(description string, result *validator.Result) {
 	if description == "" {
-		errs = append(errs, &ValidationError{
-			Field:   "description",
-			Message: "description is required",
-		})
-		return errs
+		result.AddError("description", "is required", "")
+		return
 	}
 
 	if strings.TrimSpace(description) == "" {
-		errs = append(errs, &ValidationError{
-			Field:   "description",
-			Message: "description cannot be only whitespace",
-			Value:   description,
-		})
+		result.AddError("description", "cannot be only whitespace", description)
 	}
-
-	return errs
 }
 
 // validateAllowedTools validates the AllowedTools syntax using the toolperm parser.
-func (v *Validator) validateAllowedTools(allowedTools string) []error {
-	var errs []error
-
+func (v *Validator) validateAllowedTools(allowedTools string, result *validator.Result) {
 	_, err := v.toolParser.Parse(allowedTools)
 	if err != nil {
-		errs = append(errs, &ValidationError{
-			Field:   "allowed-tools",
-			Message: err.Error(),
-			Value:   allowedTools,
-		})
+		result.AddError("allowed-tools", err.Error(), allowedTools)
 	}
-
-	return errs
 }

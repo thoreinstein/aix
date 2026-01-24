@@ -11,7 +11,8 @@ import (
 
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/skill/parser"
-	"github.com/thoreinstein/aix/internal/skill/validator"
+	skillvalidator "github.com/thoreinstein/aix/internal/skill/validator"
+	"github.com/thoreinstein/aix/internal/validator"
 )
 
 var (
@@ -98,11 +99,11 @@ func runValidate(_ *cobra.Command, args []string) error {
 	}
 
 	// Validate the skill
-	v := validator.New(validator.WithStrict(validateStrict))
-	validationErrs := v.ValidateWithPath(skill, skillFile)
+	v := skillvalidator.New(skillvalidator.WithStrict(validateStrict))
+	result := v.ValidateWithPath(skill, skillFile)
 
-	if len(validationErrs) > 0 {
-		return outputValidationErrors(absPath, validationErrs)
+	if result.HasErrors() {
+		return outputValidationErrors(absPath, result)
 	}
 
 	// Success
@@ -127,27 +128,27 @@ func outputParseError(path string, err error) error {
 	return errValidationFailed
 }
 
-func outputValidationErrors(path string, errs []error) error {
+func outputValidationErrors(path string, result *validator.Result) error {
 	if validateJSON {
-		errStrings := make([]string, len(errs))
-		for i, e := range errs {
-			errStrings[i] = formatValidationError(e)
+		errStrings := make([]string, len(result.Errors()))
+		for i, e := range result.Errors() {
+			errStrings[i] = e.Error()
 		}
-		result := validateResult{
+		res := validateResult{
 			Valid:      false,
 			Path:       path,
 			StrictMode: validateStrict,
 			Errors:     errStrings,
 		}
-		return outputValidateJSON(result)
+		return outputValidateJSON(res)
 	}
 
 	fmt.Println("✗ Skill validation failed")
 	fmt.Println()
-	fmt.Println("  Errors:")
-	for _, e := range errs {
-		fmt.Printf("    - %s\n", formatValidationError(e))
-	}
+
+	reporter := validator.NewReporter(os.Stdout, validator.FormatText)
+	_ = reporter.Report(result)
+
 	return errValidationFailed
 }
 
@@ -197,15 +198,6 @@ func formatParseError(err error) string {
 			return "SKILL.md not found in directory"
 		}
 		return parseErr.Err.Error()
-	}
-	return err.Error()
-}
-
-// formatValidationError extracts a user-friendly message from validation errors.
-func formatValidationError(err error) string {
-	var valErr *validator.ValidationError
-	if errors.As(err, &valErr) {
-		return fmt.Sprintf("%s: %s", valErr.Field, valErr.Message)
 	}
 	return err.Error()
 }
