@@ -61,6 +61,7 @@ func TestGeminiPaths_BaseDir(t *testing.T) {
 }
 
 func TestGeminiPaths_SubDirs(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", "")
 	home, _ := os.UserHomeDir()
 	base := filepath.Join(home, ".gemini")
 	p := NewGeminiPaths(ScopeUser, "")
@@ -86,6 +87,7 @@ func TestGeminiPaths_SubDirs(t *testing.T) {
 }
 
 func TestGeminiPaths_InstructionsPath(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", "")
 	home, _ := os.UserHomeDir()
 
 	tests := []struct {

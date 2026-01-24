@@ -364,6 +364,7 @@ func TestInstructionsPath(t *testing.T) {
 }
 
 func TestSkillDir(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", "")
 	home := Home()
 	if home == "" {
 		t.Skip("Could not determine home directory")
@@ -412,6 +413,7 @@ func TestSkillDir(t *testing.T) {
 }
 
 func TestCommandDir(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", "")
 	home := Home()
 	if home == "" {
 		t.Skip("Could not determine home directory")
@@ -460,6 +462,7 @@ func TestCommandDir(t *testing.T) {
 }
 
 func TestMCPConfigPath(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", "")
 	home := Home()
 	if home == "" {
 		t.Skip("Could not determine home directory")
