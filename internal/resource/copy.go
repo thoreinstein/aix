@@ -40,13 +40,18 @@ func CopyToTemp(res *Resource) (string, error) {
 func CopyToTempFromCache(res *Resource, cacheDir string) (string, error) {
 	srcPath := filepath.Join(cacheDir, res.RepoName, res.Path)
 
-	// Check if source exists
-	info, err := os.Stat(srcPath)
+	// Check if source exists and is safe (no symlinks)
+	info, err := os.Lstat(srcPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", fmt.Errorf("%w: %s", ErrResourceNotFound, srcPath)
 		}
 		return "", fmt.Errorf("checking source path: %w", err)
+	}
+
+	// Reject symlinks for security (prevent traversal out of repo)
+	if info.Mode()&os.ModeSymlink != 0 {
+		return "", fmt.Errorf("resource path is a symlink (security restriction): %s", srcPath)
 	}
 
 	// Create temp directory
@@ -95,6 +100,11 @@ func copyDir(src, dst string) error {
 	for _, entry := range entries {
 		srcPath := filepath.Join(src, entry.Name())
 		dstPath := filepath.Join(dst, entry.Name())
+
+		// Reject symlinks
+		if entry.Type()&os.ModeSymlink != 0 {
+			continue // Skip symlinks silently or maybe warn? Skipping is safer default.
+		}
 
 		if entry.IsDir() {
 			// Create subdirectory
