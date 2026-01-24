@@ -47,11 +47,12 @@ aix [flags]
 ### Options
 
 ```
-  -h, --help               help for aix
-      --log-file string    write logs to file in JSON format
-  -p, --platform strings   target platform(s): claude, opencode (default: all detected)
-  -q, --quiet              suppress non-error output
-  -v, --verbose count      increase verbosity level (e.g., -v, -vv)
+  -h, --help                help for aix
+      --log-file string     write logs to file in JSON format
+      --log-format string   log format: text, json (default "text")
+  -p, --platform strings    target platform(s): claude, opencode (default: all detected)
+  -q, --quiet               suppress non-error output
+  -v, --verbose count       increase verbosity level (e.g., -v, -vv)
 ```
 
 ### SEE ALSO

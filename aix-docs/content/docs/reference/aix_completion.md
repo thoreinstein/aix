@@ -23,10 +23,11 @@ See each sub-command's help for details on how to use the generated script.
 ### Options inherited from parent commands
 
 ```
-      --log-file string    write logs to file in JSON format
-  -p, --platform strings   target platform(s): claude, opencode (default: all detected)
-  -q, --quiet              suppress non-error output
-  -v, --verbose count      increase verbosity level (e.g., -v, -vv)
+      --log-file string     write logs to file in JSON format
+      --log-format string   log format: text, json (default "text")
+  -p, --platform strings    target platform(s): claude, opencode (default: all detected)
+  -q, --quiet               suppress non-error output
+  -v, --verbose count       increase verbosity level (e.g., -v, -vv)
 ```
 
 ### SEE ALSO
