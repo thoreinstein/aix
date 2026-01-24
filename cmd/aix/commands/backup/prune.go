@@ -85,7 +85,7 @@ func runPruneWithWriter(w io.Writer) error {
 			return errors.Wrapf(err, "pruning backups for %s", p.Name())
 		}
 
-		fmt.Fprintf(w, "%s✓ %s: removed %d old backup(s)%s\n",
+		fmt.Fprintf(w, "%s[OK] %s: removed %d old backup(s)%s\n",
 			colorGreen, p.DisplayName(), toRemove, colorReset)
 		pruned += toRemove
 	}

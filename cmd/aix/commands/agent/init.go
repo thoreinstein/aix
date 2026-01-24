@@ -201,7 +201,7 @@ Your agent instructions go here.
 	}
 
 	// Print success message
-	fmt.Printf("✓ Agent '%s' created at %s\n", name, agentFile)
+	fmt.Printf("[OK] Agent '%s' created at %s\n", name, agentFile)
 	fmt.Println()
 	fmt.Println("Next steps:")
 	fmt.Printf("  1. Edit %s with your agent's instructions\n", agentFile)

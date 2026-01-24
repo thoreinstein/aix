@@ -130,7 +130,7 @@ mainSections = ["docs"]
     maskIconColor = "white" # white (default)
   [seo.schemas]
     type = "SoftwareApplication" # Organization (default) or Person
-    logo = "favicon.png" # Logo of Organization — favicon-512x512.png (default)
+    logo = "favicon.png" # Logo of Organization -- favicon-512x512.png (default)
     name = "aix" # Name of Organization or Person
     sameAs = ["https://github.com/thoreinstein/aix"]
     images = ["cover.jpg"] # ["cover.png"] (default)

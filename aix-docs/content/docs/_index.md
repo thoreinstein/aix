@@ -38,44 +38,44 @@ Ready to unify your AI workflow?
     ```
 
 2.  **Initialize**:
-    Run `aix init` to detect your installed platforms and create a configuration file.
+    Run aix init to detect your installed platforms and create a configuration file.
 
-👉 **[Read the full Getting Started Guide](getting-started/)**
+[Read the full Getting Started Guide](getting-started/)
 
 ## Core Concepts
 
-Explore the core features of `aix` through our detailed guides:
+Explore the core features of aix through our detailed guides:
 
-### 🔌 [MCP Servers](guides/mcp/)
+### [MCP Servers](guides/mcp/)
 Manage Model Context Protocol (MCP) servers to extend your agent's capabilities with external tools and data.
 *   [Add & Configure Servers](guides/mcp/#adding-servers)
 *   [Enable/Disable Servers](guides/mcp/#enabling--disabling)
 
-### 🧠 [Skills](guides/skills/)
+### [Skills](guides/skills/)
 Create and share reusable agent capabilities (prompts + tools) that work across any supported platform.
 *   [Creating Skills](guides/skills/#creating-a-skill)
 *   [Installing Skills](guides/skills/#installing-skills)
 
-### ⚡ [Slash Commands](guides/commands/)
+### [Slash Commands](guides/commands/)
 Define custom slash commands to automate common workflows and context gathering.
 *   [Command Syntax](guides/commands/#syntax)
 *   [Distribution](guides/commands/#sharing)
 
-### 📦 [Repositories](guides/repositories/)
+### [Repositories](guides/repositories/)
 Discover and share AI resources using remote git repositories.
 *   [Adding Repositories](guides/repositories/#adding-a-repository)
 *   [Managing Sources](guides/repositories/#listing-repositories)
 
 ## Reference
 
-Need detailed command syntax? Check the **[API Reference](reference/)** for comprehensive documentation on every `aix` command.
+Need detailed command syntax? Check the **[API Reference](reference/)** for comprehensive documentation on every aix command.
 
 *   [`aix mcp`](reference/mcp/)
 *   [`aix skill`](reference/skill/)
 *   [`aix command`](reference/command/)
 *   [`aix repo`](reference/repo/)
 
-### 🛠️ [Troubleshooting](guides/troubleshooting/)
+### [Troubleshooting](guides/troubleshooting/)
 Diagnose issues, fix permissions, and recover from configuration errors using `aix doctor` and `aix backup`.
 
 ## Resources

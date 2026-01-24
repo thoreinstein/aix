@@ -11,11 +11,11 @@ import "github.com/thoreinstein/aix/internal/errors"
 //
 // When reading from a platform config:
 //
-//	platformJSON → Translator.ToCanonical() → *Config
+//	platformJSON -> Translator.ToCanonical() -> *Config
 //
 // When writing to a platform config:
 //
-//	*Config → Translator.FromCanonical() → platformJSON
+//	*Config -> Translator.FromCanonical() -> platformJSON
 //
 // # Unknown Field Preservation
 //
@@ -41,7 +41,7 @@ import "github.com/thoreinstein/aix/internal/errors"
 //	    if err := json.Unmarshal(platformData, &claude); err != nil {
 //	        return nil, err
 //	    }
-//	    // Convert ClaudeMCPConfig → canonical *Config
+//	    // Convert ClaudeMCPConfig -> canonical *Config
 //	    return convertToCanonical(claude), nil
 //	}
 //

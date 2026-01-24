@@ -70,7 +70,7 @@ func runCreateWithWriter(w io.Writer) error {
 			return errors.Wrapf(err, "backing up %s", p.Name())
 		}
 
-		fmt.Fprintf(w, "%s✓ %s: created backup %s (%d files)%s\n",
+		fmt.Fprintf(w, "%s[OK] %s: created backup %s (%d files)%s\n",
 			colorGreen, p.DisplayName(), manifest.ID, len(manifest.Files), colorReset)
 		created++
 	}

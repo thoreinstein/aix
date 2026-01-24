@@ -128,8 +128,8 @@ The `mode` and `temperature` fields are OpenCode-specific. When translating an O
 agent := &Agent{
     Name:        "creative-writer",
     Description: "Generates creative content",
-    Mode:        "subagent",      // ⚠️ Lost in Claude Code
-    Temperature: 0.8,             // ⚠️ Lost in Claude Code
+    Mode:        "subagent",      // (Warning) Lost in Claude Code
+    Temperature: 0.8,             // (Warning) Lost in Claude Code
 }
 
 // After Claude Code round-trip
@@ -213,9 +213,9 @@ You are a security-focused code reviewer. For every code review:
 ## Response Format
 
 Provide findings as:
-- 🔴 **Critical**: Must fix before merge
-- 🟡 **Warning**: Should address soon
-- 🟢 **Info**: Suggestions for improvement
+- Critical **Critical**: Must fix before merge
+- Warning **Warning**: Should address soon
+- Info **Info**: Suggestions for improvement
 ```
 
 ### OpenCode Agent with Mode and Temperature

@@ -284,7 +284,7 @@ func installFromLocal(source string) error {
 
 	// Print warnings (but don't fail)
 	for _, w := range result.Warnings {
-		fmt.Printf("  ⚠ %s\n", w.Message)
+		fmt.Printf("  [WARN] %s\n", w.Message)
 	}
 
 	// Get target platforms
@@ -330,7 +330,7 @@ func installFromLocal(source string) error {
 	if installedCount != 1 {
 		platformWord = "platforms"
 	}
-	fmt.Printf("✓ Command '%s' installed to %d %s\n", (*cmd).Name, installedCount, platformWord)
+	fmt.Printf("[OK] Command '%s' installed to %d %s\n", (*cmd).Name, installedCount, platformWord)
 
 	return nil
 }

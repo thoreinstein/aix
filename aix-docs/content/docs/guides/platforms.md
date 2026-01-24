@@ -18,69 +18,71 @@ This guide explains where `aix` looks for configurations and how it modifies the
 
 ## Claude Code
 
-Anthropic's **Claude Code** stores its configuration in your home directory.
+Anthropic's Claude Code stores its configuration in your home directory.
 
 ### File Locations
 
-| Scope | Path | Managed By `aix` |
+| Scope | Path | Managed By aix |
 | :--- | :--- | :--- |
-| **Global Config** | `~/.claude.json` | ✅ MCP Servers |
-| **Instructions** | `~/.claude/CLAUDE.md` | ✅ Skills, Agents (User) |
-| **Project Config** | `<project-root>/CLAUDE.md` | ✅ Skills (Project) |
-| **History** | `~/.claude/history/` | ❌ (Ignored) |
+| **Global Config** | `~/.claude.json` | Yes (MCP Servers) |
+| **Instructions** | `~/.claude/CLAUDE.md` | Yes (Skills, Agents) |
+| **Project Config** | `<project-root>/CLAUDE.md` | Yes (Skills) |
+| **History** | `~/.claude/history/` | No (Ignored) |
 
 ### Integration Details
 
-*   **MCP Servers**: `aix mcp add` updates the `mcpServers` object in `~/.claude.json`.
-*   **Skills & Agents**: `aix` compiles your installed skills into the `CLAUDE.md` system prompt file.
+*   **MCP Servers**: aix mcp add updates the mcpServers object in `~/.claude.json`.
+*   **Skills & Agents**: aix compiles your installed skills into the `CLAUDE.md` system prompt file.
 *   **Slash Commands**: Custom commands are generated as executable scripts or instruction blocks that Claude can reference.
 
 ---
 
 ## OpenCode
 
-**OpenCode** uses the XDG configuration standard on Linux/macOS.
+OpenCode uses the XDG configuration standard on Linux/macOS.
 
 ### File Locations
 
-| Scope | Path | Managed By `aix` |
+| Scope | Path | Managed By aix |
 | :--- | :--- | :--- |
-| **Global Config** | `~/.config/opencode/opencode.json` | ✅ MCP Servers, Settings |
-| **Instructions** | `~/.config/opencode/AGENTS.md` | ✅ Skills, Agents |
-| **Agents Dir** | `~/.config/opencode/agent/` | ✅ Agent Definitions |
+| **Global Config** | `~/.config/opencode/opencode.json` | Yes (MCP Servers, Settings) |
+| **Instructions** | `~/.config/opencode/AGENTS.md` | Yes (Skills, Agents) |
+| **Agents Dir** | `~/.config/opencode/agent/` | Yes (Agent Definitions) |
 
 ### Integration Details
 
-*   **MCP Servers**: `aix` manages the `mcpServers` section in `opencode.json`.
-*   **Agents**: `aix agent install` writes new agent definitions to the `agent/` subdirectory.
-*   **Translation**: `aix` automatically converts generic markdown prompts into OpenCode's specific agent format.
+*   **MCP Servers**: aix manages the mcpServers section in `opencode.json`.
+*   **Agents**: aix agent install writes new agent definitions to the `agent/` subdirectory.
+*   **Translation**: aix automatically converts generic markdown prompts into OpenCode's specific agent format.
 
 ---
 
-## Gemini CLI (Planned)
+## Gemini CLI
 
-> **Note:** Gemini CLI support is **planned** and is **not yet available** in the current version of `aix`.
+Google's Gemini CLI stores its configuration in `~/.gemini/` (global) or `.gemini/` (project).
 
-Google's **Gemini CLI** integration in `aix` is planned to be file-based and to use configuration files in `~/.gemini/`.
+### File Locations
 
-### Planned File Locations
-
-| Scope | Path | Managed By `aix` (planned) |
+| Scope | Path | Managed By aix |
 | :--- | :--- | :--- |
-| **Global Config** | `~/.gemini/config.yaml` | ✅ Settings (planned) |
-| **MCP Config** | `~/.gemini/mcp.yaml` | ✅ MCP Servers (planned) |
-| **Instructions** | `~/.gemini/GEMINI.md` | ✅ System Prompts (planned) |
+| **Global Config** | `~/.gemini/` | Yes (MCP Servers, Skills, Commands) |
+| **Project Config** | `<project-root>/.gemini/` | Yes (Project-scoped resources) |
+| **MCP Config** | `~/.gemini/settings.json` | Yes (MCP Servers) |
+| **Instructions** | `~/.gemini/GEMINI.md` | Yes (System Prompts) |
+| **Skills Dir** | `~/.gemini/skills/` | Yes (Skill Definitions) |
+| **Commands Dir** | `~/.gemini/commands/` | Yes (Slash Commands) |
 
-### Planned Integration Details
+### Integration Details
 
-*   **Separate MCP File**: Unlike Claude, Gemini CLI is planned to use a dedicated `mcp.yaml` which `aix` would manage directly.
-*   **Extensions**: Future versions of `aix` may install skills as Gemini "Extensions" if supported by the installed Gemini CLI version.
+*   **MCP Servers**: aix manages the mcpServers section in `settings.json`.
+*   **Skills**: Installed skills are placed in the `skills/` directory.
+*   **Translation**: aix translates skill variables to Gemini's format.
 
 ---
 
 ## Codex (Planned)
 
-> **Note:** Codex support is **planned** and is **not yet available**.
+Note: Codex support is planned and is not yet available.
 
 The **Codex** integration is planned to follow the XDG standard, similar to OpenCode but with its own distinct configuration schema.
 
@@ -88,9 +90,11 @@ The **Codex** integration is planned to follow the XDG standard, similar to Open
 
 | Scope | Path | Managed By `aix` (planned) |
 | :--- | :--- | :--- |
-| **Global Config** | `~/.config/codex/config.toml` | ✅ MCP Servers (planned) |
-| **Instructions** | `~/.config/codex/prompts/` | ✅ System Prompts (planned) |
-| **Skills Dir** | `~/.config/codex/skills/` | ✅ Skill Definitions (planned) |
+| Scope | Path | Managed By aix (planned) |
+| :--- | :--- | :--- |
+| **Global Config** | `~/.config/codex/config.toml` | Yes (MCP Servers) |
+| **Instructions** | `~/.config/codex/prompts/` | Yes (System Prompts) |
+| **Skills Dir** | `~/.config/codex/skills/` | Yes (Skill Definitions) |
 
 ---
 

@@ -95,7 +95,7 @@ func runRestoreWithWriter(_ *cobra.Command, args []string, w io.Writer) error {
 		return errors.Wrap(err, "restoring backup")
 	}
 
-	fmt.Fprintf(w, "%s✓ Restored %s configuration from backup %s%s\n",
+	fmt.Fprintf(w, "%s[OK] Restored %s configuration from backup %s%s\n",
 		colorGreen, platform.DisplayName(), backupID, colorReset)
 
 	return nil

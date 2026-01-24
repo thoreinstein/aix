@@ -40,8 +40,8 @@ func runRemove(_ *cobra.Command, args []string) error {
 		}
 		// Cache cleanup failure is a warning, not a fatal error
 		if errors.Is(err, repo.ErrCacheCleanupFailed) {
-			fmt.Printf("✓ Repository %q removed\n", name)
-			fmt.Printf("⚠ Warning: %v\n", err)
+			fmt.Printf("[OK] Repository %q removed\n", name)
+			fmt.Printf("[WARN] Warning: %v\n", err)
 			return nil
 		}
 		return errors.NewSystemError(
@@ -50,6 +50,6 @@ func runRemove(_ *cobra.Command, args []string) error {
 		)
 	}
 
-	fmt.Printf("✓ Repository %q removed\n", name)
+	fmt.Printf("[OK] Repository %q removed\n", name)
 	return nil
 }

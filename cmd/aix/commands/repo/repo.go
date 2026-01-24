@@ -59,7 +59,7 @@ func printValidationWarnings(w io.Writer, warnings []repo.ValidationWarning) {
 	}
 
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "⚠ Validation warnings:")
+	fmt.Fprintln(w, "[WARN] Validation warnings:")
 	for _, warn := range actionable {
 		fmt.Fprintf(w, "  %s: %s\n", warn.Path, warn.Message)
 	}

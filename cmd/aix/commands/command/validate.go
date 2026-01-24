@@ -133,7 +133,7 @@ func outputValidateResult(w io.Writer, result *validateResult) error {
 
 	// Human-readable output
 	if result.ParseError != "" {
-		fmt.Fprintln(w, "✗ Command validation failed")
+		fmt.Fprintln(w, "[FAIL] Command validation failed")
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "  Parse error:")
 		fmt.Fprintf(w, "    - %s\n", result.ParseError)
@@ -141,14 +141,14 @@ func outputValidateResult(w io.Writer, result *validateResult) error {
 	}
 
 	if !result.Valid {
-		fmt.Fprintf(w, "✗ Command '/%s' is invalid\n", result.Command.Name)
+		fmt.Fprintf(w, "[FAIL] Command '/%s' is invalid\n", result.Command.Name)
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "  Errors:")
 		for _, e := range result.Errors {
 			fmt.Fprintf(w, "    - %s\n", e)
 		}
 	} else {
-		fmt.Fprintf(w, "✓ Command '/%s' is valid\n", result.Command.Name)
+		fmt.Fprintf(w, "[OK] Command '/%s' is valid\n", result.Command.Name)
 		fmt.Fprintln(w)
 		fmt.Fprintf(w, "  Name:        %s\n", result.Command.Name)
 		if result.Command.Description != "" {
@@ -161,7 +161,7 @@ func outputValidateResult(w io.Writer, result *validateResult) error {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "  Warnings:")
 		for _, warning := range result.Warnings {
-			fmt.Fprintf(w, "    ⚠ %s\n", warning)
+			fmt.Fprintf(w, "    [WARN] %s\n", warning)
 		}
 	}
 

@@ -1202,7 +1202,7 @@ func TestScanner_ScanAll_ConcurrencyRace(t *testing.T) {
 			t.Fatalf("ScanAll() error = %v", err)
 		}
 
-		// Should have 40 resources (20 repos × 2 resources each)
+		// Should have 40 resources (20 repos x 2 resources each)
 		if len(resources) != 40 {
 			t.Errorf("expected 40 resources, got %d", len(resources))
 		}

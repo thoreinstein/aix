@@ -1,7 +1,7 @@
 ---
 title: "aix Documentation"
 description: "Unified CLI for managing AI coding assistant configurations"
-lead: "Manage skills, commands, agents, and MCP servers across Claude Code, OpenCode, Codex, and Gemini CLI—all from one tool."
+lead: "Manage skills, commands, agents, and MCP servers across Claude Code, OpenCode, Codex, and Gemini CLI--all from one tool."
 date: 2024-01-01T00:00:00+00:00
 lastmod: 2026-01-23T00:00:00+00:00
 draft: false
@@ -14,7 +14,7 @@ seo:
 
 ## Why aix?
 
-The AI coding assistant landscape is fragmented. Each platform has its own configuration format, file locations, and conventions. `aix` bridges this gap by providing:
+The AI coding assistant landscape is fragmented. Each platform has its own configuration format, file locations, and conventions. aix bridges this gap by providing:
 
 - **Unified Management**: Single interface for all your AI assistants.
 - **Write Once, Deploy Everywhere**: Define skills and commands in a platform-agnostic format.
@@ -22,15 +22,15 @@ The AI coding assistant landscape is fragmented. Each platform has its own confi
 
 ## Core Features
 
-### 🔌 MCP Servers
+### MCP Servers
 Manage Model Context Protocol (MCP) servers to extend your agent's capabilities with external tools and data.
 [Learn more about MCP Servers](./docs/guides/mcp/)
 
-### 🧠 Skills
+### Skills
 Create and share reusable agent capabilities (prompts + tools) that work across any supported platform.
 [Learn more about Skills](./docs/guides/skills/)
 
-### ⚡ Slash Commands
+### Slash Commands
 Define custom slash commands to automate common workflows and context gathering.
 [Learn more about Slash Commands](./docs/guides/commands/)
 
@@ -46,6 +46,6 @@ go install github.com/thoreinstein/aix/cmd/aix@latest
 
 ## Get Started
 
-Run `aix init` to detect your installed platforms and create a configuration file.
+Run aix init to detect your installed platforms and create a configuration file.
 
-👉 **[Read the full Getting Started Guide](./docs/getting-started/)**
+[Read the full Getting Started Guide](./docs/getting-started/)

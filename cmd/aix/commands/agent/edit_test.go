@@ -120,7 +120,7 @@ You are a helpful assistant.
 	if !strings.Contains(output, "Validating agent...") {
 		t.Errorf("expected output to contain 'Validating agent...', got: %s", output)
 	}
-	if !strings.Contains(output, "✓") {
+	if !strings.Contains(output, "[OK]") {
 		t.Errorf("expected output to contain validation success marker, got: %s", output)
 	}
 }
@@ -157,7 +157,7 @@ Just some text without proper metadata.
 	if !strings.Contains(output, "Validating agent...") {
 		t.Errorf("expected output to contain 'Validating agent...', got: %s", output)
 	}
-	if !strings.Contains(output, "✗") {
+	if !strings.Contains(output, "[FAIL]") {
 		t.Errorf("expected output to contain validation error marker, got: %s", output)
 	}
 }

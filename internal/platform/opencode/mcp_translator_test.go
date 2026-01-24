@@ -41,21 +41,21 @@ func TestMCPTranslator_ToCanonical(t *testing.T) {
 				if server == nil {
 					t.Fatal("github server not found")
 				}
-				// Command[0] → Command
+				// Command[0] -> Command
 				if server.Command != "npx" {
 					t.Errorf("Command = %q, want %q", server.Command, "npx")
 				}
-				// Command[1:] → Args
+				// Command[1:] -> Args
 				if len(server.Args) != 2 {
 					t.Errorf("len(Args) = %d, want 2", len(server.Args))
 				} else if server.Args[0] != "-y" {
 					t.Errorf("Args[0] = %q, want %q", server.Args[0], "-y")
 				}
-				// Environment → Env
+				// Environment -> Env
 				if server.Env["GITHUB_TOKEN"] != "token123" {
 					t.Errorf("Env[GITHUB_TOKEN] = %q, want %q", server.Env["GITHUB_TOKEN"], "token123")
 				}
-				// Type "local" → Transport "stdio"
+				// Type "local" -> Transport "stdio"
 				if server.Transport != mcp.TransportStdio {
 					t.Errorf("Transport = %q, want %q", server.Transport, mcp.TransportStdio)
 				}
@@ -305,7 +305,7 @@ func TestMCPTranslator_FromCanonical(t *testing.T) {
 					t.Fatal("test server not found")
 				}
 
-				// Command + Args → Command []string
+				// Command + Args -> Command []string
 				cmd, ok := server["command"].([]any)
 				if !ok {
 					t.Fatal("command not found or not an array")
@@ -324,12 +324,12 @@ func TestMCPTranslator_FromCanonical(t *testing.T) {
 					}
 				}
 
-				// Transport "stdio" → Type "local"
+				// Transport "stdio" -> Type "local"
 				if server["type"] != "local" {
 					t.Errorf("type = %v, want %q", server["type"], "local")
 				}
 
-				// Env → Environment
+				// Env -> Environment
 				env, ok := server["environment"].(map[string]any)
 				if !ok {
 					t.Fatal("environment not found")
@@ -456,7 +456,7 @@ func TestMCPTranslator_FromCanonical(t *testing.T) {
 				servers := result["mcp"].(map[string]any)
 				server := servers["disabled"].(map[string]any)
 
-				// Canonical Disabled=true → OpenCode enabled=false
+				// Canonical Disabled=true -> OpenCode enabled=false
 				if server["enabled"] != false {
 					t.Errorf("enabled = %v, want false", server["enabled"])
 				}
@@ -565,13 +565,13 @@ func TestMCPTranslator_RoundTrip_CanonicalToOpenCode(t *testing.T) {
 		},
 	}
 
-	// canonical → opencode
+	// canonical -> opencode
 	openData, err := translator.FromCanonical(original)
 	if err != nil {
 		t.Fatalf("FromCanonical() error = %v", err)
 	}
 
-	// opencode → canonical
+	// opencode -> canonical
 	result, err := translator.ToCanonical(openData)
 	if err != nil {
 		t.Fatalf("ToCanonical() error = %v", err)
@@ -626,19 +626,19 @@ func TestMCPTranslator_RoundTrip_OpenCodeToCanonical(t *testing.T) {
 		}
 	}`
 
-	// opencode → canonical
+	// opencode -> canonical
 	canonical, err := translator.ToCanonical([]byte(originalJSON))
 	if err != nil {
 		t.Fatalf("ToCanonical() error = %v", err)
 	}
 
-	// canonical → opencode
+	// canonical -> opencode
 	openData, err := translator.FromCanonical(canonical)
 	if err != nil {
 		t.Fatalf("FromCanonical() error = %v", err)
 	}
 
-	// opencode → canonical (again)
+	// opencode -> canonical (again)
 	result, err := translator.ToCanonical(openData)
 	if err != nil {
 		t.Fatalf("ToCanonical() error = %v", err)
@@ -727,7 +727,7 @@ func TestMCPTranslator_PlatformsFieldLossy(t *testing.T) {
 		},
 	}
 
-	// canonical → opencode
+	// canonical -> opencode
 	openData, err := translator.FromCanonical(original)
 	if err != nil {
 		t.Fatalf("FromCanonical() error = %v", err)
@@ -746,7 +746,7 @@ func TestMCPTranslator_PlatformsFieldLossy(t *testing.T) {
 		t.Error("platforms field should NOT exist in OpenCode output")
 	}
 
-	// opencode → canonical
+	// opencode -> canonical
 	roundTripped, err := translator.ToCanonical(openData)
 	if err != nil {
 		t.Fatalf("ToCanonical() error = %v", err)

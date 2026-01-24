@@ -16,9 +16,9 @@
   publish = "public"
   autoLaunch = false
 
-# Redirects and rewrites — https://docs.netlify.com/routing/redirects/#syntax-for-the-netlify-configuration-file
+# Redirects and rewrites -- https://docs.netlify.com/routing/redirects/#syntax-for-the-netlify-configuration-file
 
-# Custom headers — https://docs.netlify.com/routing/headers/#syntax-for-the-netlify-configuration-file
+# Custom headers -- https://docs.netlify.com/routing/headers/#syntax-for-the-netlify-configuration-file
 [[headers]]
   for = "/*"
   [headers.values]

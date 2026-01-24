@@ -43,10 +43,10 @@ func NewMCPTranslator() *MCPTranslator {
 //	{"name": {...}, ...}
 //
 // Field mappings:
-//   - Command ([]string) → Command (string) + Args ([]string)
-//   - Type "local" → Transport "stdio"
-//   - Type "remote" → Transport "sse"
-//   - Environment → Env
+//   - Command ([]string) -> Command (string) + Args ([]string)
+//   - Type "local" -> Transport "stdio"
+//   - Type "remote" -> Transport "sse"
+//   - Environment -> Env
 func (t *MCPTranslator) ToCanonical(platformData []byte) (*mcp.Config, error) {
 	// First try to parse as MCPConfig (with mcp wrapper)
 	var openConfig MCPConfig
@@ -125,10 +125,10 @@ func (t *MCPTranslator) ToCanonical(platformData []byte) (*mcp.Config, error) {
 //	{"mcp": {"name": {...}, ...}}
 //
 // Field mappings:
-//   - Command (string) + Args ([]string) → Command ([]string)
-//   - Transport "stdio" → Type "local"
-//   - Transport "sse" → Type "remote"
-//   - Env → Environment
+//   - Command (string) + Args ([]string) -> Command ([]string)
+//   - Transport "stdio" -> Type "local"
+//   - Transport "sse" -> Type "remote"
+//   - Env -> Environment
 //
 // NOTE: The Platforms field from canonical format is NOT preserved.
 // OpenCode does not support platform restrictions, so this data is lost

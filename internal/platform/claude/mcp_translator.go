@@ -40,9 +40,9 @@ func NewMCPTranslator() *MCPTranslator {
 //	{"name": {...}, ...}
 //
 // Mapping:
-//   - Claude "type" → canonical "transport"
-//   - Claude "http" → canonical "sse"
-//   - Claude "stdio" → canonical "stdio"
+//   - Claude "type" -> canonical "transport"
+//   - Claude "http" -> canonical "sse"
+//   - Claude "stdio" -> canonical "stdio"
 func (t *MCPTranslator) ToCanonical(platformData []byte) (*mcp.Config, error) {
 	// First try to parse as MCPConfig (with mcpServers wrapper)
 	var claudeConfig MCPConfig
@@ -114,9 +114,9 @@ func claudeTypeToCanonicalTransport(claudeType, url, command string) string {
 //	{"mcpServers": {"name": {...}, ...}}
 //
 // Mapping:
-//   - canonical "transport" → Claude "type"
-//   - canonical "sse" → Claude "http"
-//   - canonical "stdio" → Claude "stdio"
+//   - canonical "transport" -> Claude "type"
+//   - canonical "sse" -> Claude "http"
+//   - canonical "stdio" -> Claude "stdio"
 //
 // The output is formatted with 2-space indentation for readability.
 func (t *MCPTranslator) FromCanonical(cfg *mcp.Config) ([]byte, error) {

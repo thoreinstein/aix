@@ -137,18 +137,18 @@ func (v *Validator) Validate(s *Skill) *validator.Result {
 
 ```
 aix/
-├── cmd/aix/              # CLI entry point and Cobra commands
-│   ├── main.go
-│   └── commands/         # Subcommand implementations
-├── internal/             # Private packages
-│   ├── config/           # Configuration management
-│   ├── platform/         # Platform adapters (claude, opencode, etc.)
-│   ├── skill/            # Skill parsing and validation
-│   ├── command/          # Slash command management
-│   ├── mcp/              # MCP server configuration
-│   └── translate/        # Cross-platform translation
-└── pkg/                  # Public packages (if any)
-    └── frontmatter/      # YAML frontmatter parser
+|-- cmd/aix/              # CLI entry point and Cobra commands
+ |   |-- main.go
+ |   `--- commands/         # Subcommand implementations
+|-- internal/             # Private packages
+ |   |-- config/           # Configuration management
+ |   |-- platform/         # Platform adapters (claude, opencode, etc.)
+ |   |-- skill/            # Skill parsing and validation
+ |   |-- command/          # Slash command management
+ |   |-- mcp/              # MCP server configuration
+ |   `--- translate/        # Cross-platform translation
+`--- pkg/                  # Public packages (if any)
+    `--- frontmatter/      # YAML frontmatter parser
 ```
 
 ### Key Interfaces

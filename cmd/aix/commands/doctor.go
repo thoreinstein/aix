@@ -197,9 +197,9 @@ func outputFixResultsText(results []doctor.FixResult) error {
 	fmt.Println("Fix results:")
 	for _, r := range results {
 		if r.Fixed {
-			fmt.Printf("  ✓ Fixed: %s (%s)\n", r.Path, r.Description)
+			fmt.Printf("  [OK] Fixed: %s (%s)\n", r.Path, r.Description)
 		} else {
-			fmt.Printf("  ✗ Failed: %s - %s\n", r.Path, r.Description)
+			fmt.Printf("  [FAIL] Failed: %s - %s\n", r.Path, r.Description)
 		}
 	}
 	return nil
@@ -264,15 +264,15 @@ func outputDoctorText(report *doctor.DoctorReport) error {
 func statusIcon(s doctor.Severity) string {
 	switch s {
 	case doctor.SeverityPass:
-		return "✓"
+		return "[OK]"
 	case doctor.SeverityInfo:
-		return "ℹ"
+		return "[INFO]"
 	case doctor.SeverityWarning:
-		return "⚠"
+		return "[WARN]"
 	case doctor.SeverityError:
-		return "✗"
+		return "[FAIL]"
 	default:
-		return "?"
+		return "[?]"
 	}
 }
 

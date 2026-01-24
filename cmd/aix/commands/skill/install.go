@@ -300,7 +300,7 @@ func installFromLocal(skillPath string) error {
 	if installedCount != 1 {
 		platformWord = "platforms"
 	}
-	fmt.Printf("✓ Skill '%s' installed to %d %s\n", skill.Name, installedCount, platformWord)
+	fmt.Printf("[OK] Skill '%s' installed to %d %s\n", skill.Name, installedCount, platformWord)
 
 	return nil
 }
