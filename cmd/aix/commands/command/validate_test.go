@@ -7,9 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cockroachdb/errors"
-
 	"github.com/thoreinstein/aix/internal/command/parser"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 func TestFormatParseError(t *testing.T) {

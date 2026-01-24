@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/cockroachdb/errors"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // Variables supported by OpenCode.

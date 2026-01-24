@@ -5,9 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cockroachdb/errors"
-
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 func TestEnableCommand_Metadata(t *testing.T) {

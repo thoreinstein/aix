@@ -6,11 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/config"
-	aixerrors "github.com/thoreinstein/aix/internal/errors"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/repo"
 )
 
@@ -110,12 +109,12 @@ func runUpdateWithIO(args []string, w io.Writer) error {
 // handleUpdateError returns a user-friendly error message for known error types.
 func handleUpdateError(name string, err error) error {
 	if errors.Is(err, repo.ErrNotFound) {
-		return aixerrors.NewUserError(
+		return errors.NewUserError(
 			errors.Newf("repository '%s' not found", name),
 			"Run: aix repo list to see available repositories",
 		)
 	}
-	return aixerrors.NewSystemError(
+	return errors.NewSystemError(
 		errors.Wrapf(err, "updating '%s'", name),
 		"Check your network connection and repository access",
 	)

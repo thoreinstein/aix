@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cockroachdb/errors"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 func TestParseKeyValueSlice(t *testing.T) {

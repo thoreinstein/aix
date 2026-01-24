@@ -3,8 +3,7 @@ package opencode
 import (
 	"encoding/json"
 
-	"github.com/cockroachdb/errors"
-
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/mcp"
 )
 

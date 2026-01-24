@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cockroachdb/errors"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // Fixer is an optional interface that checks can implement to support auto-remediation.

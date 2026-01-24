@@ -4,7 +4,7 @@ import (
 	"io/fs"
 	"time"
 
-	"github.com/cockroachdb/errors"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // Manifest format version for forward compatibility.

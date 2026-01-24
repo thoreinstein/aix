@@ -1,9 +1,8 @@
 package command
 
 import (
-	"github.com/cockroachdb/errors"
-
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // mockPlatform implements cli.Platform for testing.

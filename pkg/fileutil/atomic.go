@@ -6,8 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cockroachdb/errors"
 	"gopkg.in/yaml.v3"
+
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // AtomicWriteFile writes data to a file atomically using a temp file + rename pattern.

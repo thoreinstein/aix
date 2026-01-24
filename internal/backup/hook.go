@@ -3,7 +3,7 @@ package backup
 import (
 	"sync"
 
-	"github.com/cockroachdb/errors"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // backupOnce tracks per-platform backup state within a session.

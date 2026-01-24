@@ -3,11 +3,10 @@ package repo
 import (
 	"fmt"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/config"
-	aixerrors "github.com/thoreinstein/aix/internal/errors"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/repo"
 )
 
@@ -34,7 +33,7 @@ func runRemove(_ *cobra.Command, args []string) error {
 
 	if err := manager.Remove(name); err != nil {
 		if errors.Is(err, repo.ErrNotFound) {
-			return aixerrors.NewUserError(
+			return errors.NewUserError(
 				errors.Newf("repository %q not found", name),
 				"Run: aix repo list to see available repositories",
 			)
@@ -45,7 +44,7 @@ func runRemove(_ *cobra.Command, args []string) error {
 			fmt.Printf("⚠ Warning: %v\n", err)
 			return nil
 		}
-		return aixerrors.NewSystemError(
+		return errors.NewSystemError(
 			errors.Wrapf(err, "removing repository %q", name),
 			"Check file permissions on the cache directory",
 		)

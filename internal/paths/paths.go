@@ -5,7 +5,8 @@ import (
 	"path/filepath"
 
 	"github.com/adrg/xdg"
-	"github.com/cockroachdb/errors"
+
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // Platform identifiers for supported AI coding assistants.

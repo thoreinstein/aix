@@ -7,8 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cockroachdb/errors"
 	"github.com/fatih/color"
+
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 // Format specifies the output format for validation reports.
@@ -64,13 +65,13 @@ func (r *Reporter) reportText(result *Result) error {
 	}
 
 	// Group issues by severity
-	errors := result.Errors()
+	errs := result.Errors()
 	warnings := result.Warnings()
 
 	// Print Summary
 	summary := []string{}
-	if len(errors) > 0 {
-		summary = append(summary, color.RedString("%d error(s)", len(errors)))
+	if len(errs) > 0 {
+		summary = append(summary, color.RedString("%d error(s)", len(errs)))
 	}
 	if len(warnings) > 0 {
 		summary = append(summary, color.YellowString("%d warning(s)", len(warnings)))
@@ -78,9 +79,9 @@ func (r *Reporter) reportText(result *Result) error {
 	fmt.Fprintf(r.out, "Validation failed: %s\n\n", strings.Join(summary, ", "))
 
 	// Print Errors
-	if len(errors) > 0 {
+	if len(errs) > 0 {
 		fmt.Fprintln(r.out, "Errors:")
-		for _, err := range errors {
+		for _, err := range errs {
 			r.printIssue(err, color.FgRed)
 		}
 		fmt.Fprintln(r.out)

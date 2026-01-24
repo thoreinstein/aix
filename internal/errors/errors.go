@@ -165,6 +165,14 @@ func As(err error, target interface{}) bool {
 	return pkgerrors.As(err, target)
 }
 
+// Cause returns the root cause of the error chain.
+// This is a passthrough to cockroachdb/errors.Cause.
+//
+//nolint:wrapcheck // Cause intentionally returns the unwrapped root error; that's its purpose.
+func Cause(err error) error {
+	return pkgerrors.Cause(err)
+}
+
 // Join returns an error that wraps the given errors.
 // Any nil error values are discarded.
 // Join returns nil if every value in errs is nil.
