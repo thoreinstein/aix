@@ -31,7 +31,7 @@ Instructions for the agent.
 			strict:      false,
 			jsonOutput:  false,
 			wantErr:     false,
-			wantContain: "✓ Agent 'test-agent' is valid",
+			wantContain: "[OK] Agent 'test-agent' is valid",
 		},
 		{
 			name: "valid agent with name only",
@@ -44,7 +44,7 @@ Instructions here.
 			strict:      false,
 			jsonOutput:  false,
 			wantErr:     false,
-			wantContain: "✓ Agent 'minimal-agent' is valid",
+			wantContain: "[OK] Agent 'minimal-agent' is valid",
 		},
 		{
 			name: "missing name returns error",
@@ -57,7 +57,7 @@ Instructions for the agent.
 			strict:      false,
 			jsonOutput:  false,
 			wantErr:     true,
-			wantContain: "✗ Agent '(unknown)' is invalid",
+			wantContain: "[FAIL] Agent '(unknown)' is invalid",
 		},
 		{
 			name:        "file not found",
@@ -125,8 +125,8 @@ Instructions here.
 `,
 			strict:      true,
 			jsonOutput:  false,
-			wantErr:     false, // warnings don't cause errors
-			wantContain: "⚠",   // warning indicator
+			wantErr:     false,    // warnings don't cause errors
+			wantContain: "[WARN]", // warning indicator
 		},
 	}
 

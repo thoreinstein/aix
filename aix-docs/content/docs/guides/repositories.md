@@ -12,7 +12,7 @@ seo:
   description: "Guide to managing remote Git repositories as sources for AI resources in aix. Learn how to add, list, update, and remove repos."
 ---
 
-**Repositories** are the backbone of the `aix` ecosystem. They allow you to discover and share AI resources—such as skills, commands, and agents—via standard Git repositories.
+**Repositories** are the backbone of the aix ecosystem. They allow you to discover and share AI resources--such as skills, commands, and agents--via standard Git repositories.
 
 Instead of manually downloading and managing individual files, you can add a repository once, and `aix` will handle the caching, indexing, and installation for you.
 

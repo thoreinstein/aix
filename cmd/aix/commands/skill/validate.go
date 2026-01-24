@@ -121,7 +121,7 @@ func outputParseError(path string, err error) error {
 		return outputValidateJSON(result)
 	}
 
-	fmt.Println("✗ Skill validation failed")
+	fmt.Println("[FAIL] Skill validation failed")
 	fmt.Println()
 	fmt.Printf("  Parse error:\n")
 	fmt.Printf("    - %s\n", formatParseError(err))
@@ -143,7 +143,7 @@ func outputValidationErrors(path string, result *validator.Result) error {
 		return outputValidateJSON(res)
 	}
 
-	fmt.Println("✗ Skill validation failed")
+	fmt.Println("[FAIL] Skill validation failed")
 	fmt.Println()
 
 	reporter := validator.NewReporter(os.Stdout, validator.FormatText)
@@ -167,7 +167,7 @@ func outputSuccess(path string, skill *claude.Skill) error {
 		return outputValidateJSON(result)
 	}
 
-	fmt.Printf("✓ Skill '%s' is valid\n", skill.Name)
+	fmt.Printf("[OK] Skill '%s' is valid\n", skill.Name)
 	fmt.Println()
 	fmt.Printf("  Name:        %s\n", skill.Name)
 	fmt.Printf("  Description: %s\n", skill.Description)

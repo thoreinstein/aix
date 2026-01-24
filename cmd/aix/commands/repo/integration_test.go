@@ -1,6 +1,6 @@
 // Package repo provides integration tests for the repository ecosystem.
 //
-// These tests verify the complete repo lifecycle: add → list → update → remove,
+// These tests verify the complete repo lifecycle: add -> list -> update -> remove,
 // as well as validation warnings and resource discovery integration.
 package repo
 
@@ -141,7 +141,7 @@ func setupTestConfig(t *testing.T) string {
 }
 
 // TestIntegration_RepoLifecycle tests the complete repo lifecycle:
-// add → list → update → remove.
+// add -> list -> update -> remove.
 func TestIntegration_RepoLifecycle(t *testing.T) {
 	// Create a local git repo with test resources
 	repoURL := createLocalGitRepo(t,
@@ -576,7 +576,7 @@ func TestIntegration_CLIOutput(t *testing.T) {
 		}
 
 		output := buf.String()
-		if !strings.Contains(output, "✓") {
+		if !strings.Contains(output, "[OK]") {
 			t.Error("expected checkmark in output")
 		}
 		if !strings.Contains(output, "Repository") {
@@ -925,7 +925,7 @@ func TestIntegration_RepoAddWithValidationWarnings(t *testing.T) {
 	}
 
 	output := buf.String()
-	if !strings.Contains(output, "✓") {
+	if !strings.Contains(output, "[OK]") {
 		t.Error("expected success checkmark")
 	}
 	if !strings.Contains(output, "Validation warnings") {

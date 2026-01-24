@@ -22,7 +22,7 @@ If you opt into telemetry via `aix telemetry enable`, we collect:
 | Success/Failure | `true`/`false` | Identify reliability problems |
 | OS/Architecture | `darwin/arm64` | Guide platform compatibility decisions |
 
-This data is collected anonymously—there is no user identifier linking events together.
+This data is collected anonymously--there is no user identifier linking events together.
 
 ## What We Never Collect
 

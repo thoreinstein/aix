@@ -270,7 +270,7 @@ When the user asks to [do something], you should...
 	}
 
 	// Print success message
-	fmt.Printf("✓ Skill '%s' created at %s\n", name, skillFile)
+	fmt.Printf("[OK] Skill '%s' created at %s\n", name, skillFile)
 	fmt.Println()
 	fmt.Println("  Next steps:")
 	fmt.Printf("    1. Edit %s with your skill's instructions\n", skillFile)

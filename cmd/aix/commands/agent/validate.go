@@ -154,7 +154,7 @@ func outputValidateResult(w io.Writer, result *validateResult) error {
 
 	// Human-readable output
 	if result.ParseError != "" {
-		fmt.Fprintln(w, "✗ Agent validation failed")
+		fmt.Fprintln(w, "[FAIL] Agent validation failed")
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "  Parse error:")
 		fmt.Fprintf(w, "    - %s\n", result.ParseError)
@@ -166,14 +166,14 @@ func outputValidateResult(w io.Writer, result *validateResult) error {
 		if name == "" {
 			name = "(unknown)"
 		}
-		fmt.Fprintf(w, "✗ Agent '%s' is invalid\n", name)
+		fmt.Fprintf(w, "[FAIL] Agent '%s' is invalid\n", name)
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "  Errors:")
 		for _, e := range result.Errors {
 			fmt.Fprintf(w, "    - %s\n", e)
 		}
 	} else {
-		fmt.Fprintf(w, "✓ Agent '%s' is valid\n", result.Agent.Name)
+		fmt.Fprintf(w, "[OK] Agent '%s' is valid\n", result.Agent.Name)
 		fmt.Fprintln(w)
 		fmt.Fprintf(w, "  Name:        %s\n", result.Agent.Name)
 		if result.Agent.Description != "" {
@@ -186,7 +186,7 @@ func outputValidateResult(w io.Writer, result *validateResult) error {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "  Warnings:")
 		for _, warning := range result.Warnings {
-			fmt.Fprintf(w, "    ⚠ %s\n", warning)
+			fmt.Fprintf(w, "    [WARN] %s\n", warning)
 		}
 	}
 

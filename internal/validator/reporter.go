@@ -60,18 +60,18 @@ func (r *Reporter) reportJSON(result *Result) error {
 // reportText writes the result as human-readable text.
 func (r *Reporter) reportText(result *Result) error {
 	if !result.HasErrors() && !result.HasWarnings() {
-		fmt.Fprintln(r.out, color.GreenString("✓ Validation passed"))
+		fmt.Fprintln(r.out, color.GreenString("[OK] Validation passed"))
 		return nil
 	}
 
 	// Group issues by severity
-	errs := result.Errors()
+	err := result.Errors()
 	warnings := result.Warnings()
 
 	// Print Summary
 	summary := []string{}
-	if len(errs) > 0 {
-		summary = append(summary, color.RedString("%d error(s)", len(errs)))
+	if len(err) > 0 {
+		summary = append(summary, color.RedString("%d error(s)", len(err)))
 	}
 	if len(warnings) > 0 {
 		summary = append(summary, color.YellowString("%d warning(s)", len(warnings)))
@@ -79,9 +79,9 @@ func (r *Reporter) reportText(result *Result) error {
 	fmt.Fprintf(r.out, "Validation failed: %s\n\n", strings.Join(summary, ", "))
 
 	// Print Errors
-	if len(errs) > 0 {
+	if len(err) > 0 {
 		fmt.Fprintln(r.out, "Errors:")
-		for _, err := range errs {
+		for _, err := range err {
 			r.printIssue(err, color.FgRed)
 		}
 		fmt.Fprintln(r.out)
@@ -102,10 +102,10 @@ func (r *Reporter) reportText(result *Result) error {
 func (r *Reporter) printIssue(i Issue, c color.Attribute) {
 	printer := color.New(c).SprintFunc()
 
-	// Format:  • [field] message (context)
+	// Format:  - [field] message (context)
 
 	var sb strings.Builder
-	sb.WriteString("  • ")
+	sb.WriteString("  - ")
 
 	if i.Field != "" {
 		sb.WriteString(printer(i.Field))

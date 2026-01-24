@@ -4,7 +4,7 @@ This document describes how `aix` manages remote Git repositories containing sha
 
 ## Overview
 
-Repositories are remote Git repos containing shareable aix resources—skills, commands, agents, and MCP configurations. They enable teams to distribute curated tooling across projects and share best practices through versioned, installable packages.
+Repositories are remote Git repos containing shareable aix resources--skills, commands, agents, and MCP configurations. They enable teams to distribute curated tooling across projects and share best practices through versioned, installable packages.
 
 ### Design Goals
 
@@ -19,22 +19,22 @@ A valid aix repository contains one or more resource directories:
 
 ```
 my-aix-repo/
-├── skills/           # Skill definitions
-│   ├── code-review/
-│   │   └── SKILL.md
-│   └── security-audit/
-│       └── SKILL.md
-├── commands/         # Slash command definitions
-│   ├── deploy/
-│   │   └── command.md
-│   └── test-coverage/
-│       └── command.md
-├── agents/           # Agent definitions
-│   ├── go-expert.md
-│   └── security-reviewer.md
-└── mcp/              # MCP server configurations
-    ├── github.json
-    └── postgres.json
+|-- skills/           # Skill definitions
+ |   |-- code-review/
+ |    |   `--- SKILL.md
+ |   `--- security-audit/
+ |       `--- SKILL.md
+|-- commands/         # Slash command definitions
+ |   |-- deploy/
+ |    |   `--- command.md
+ |   `--- test-coverage/
+ |       `--- command.md
+|-- agents/           # Agent definitions
+ |   |-- go-expert.md
+ |   `--- security-reviewer.md
+`--- mcp/              # MCP server configurations
+    |-- github.json
+    `--- postgres.json
 ```
 
 ### Directory Purposes
@@ -285,7 +285,7 @@ When installing resources, the syntax `<repo>:<resource>` specifies which reposi
 
 ```bash
 aix skill install company-tools:code-review
-#                 └─────┬─────┘ └────┬────┘
+#                 `------+-----+ `-----+----+
 #                   repo name    skill name
 ```
 
@@ -315,10 +315,10 @@ When adding or updating a repository, aix validates the repository content and d
 
 ```bash
 $ aix repo add https://github.com/example/skills.git
-✓ Repository 'skills' added from https://github.com/example/skills.git
+[OK] Repository 'skills' added from https://github.com/example/skills.git
   Cached at: ~/.aix/repos/skills
 
-⚠ Validation warnings:
+[WARN] Validation warnings:
   skills/broken/SKILL.md: invalid frontmatter: yaml: line 3: did not find expected '-' indicator
   mcp/server.json: invalid JSON: unexpected end of JSON input
 ```

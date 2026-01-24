@@ -356,13 +356,13 @@ func TestMCPTranslator_RoundTrip_CanonicalToClaude(t *testing.T) {
 		},
 	}
 
-	// canonical → claude
+	// canonical -> claude
 	claudeData, err := translator.FromCanonical(original)
 	if err != nil {
 		t.Fatalf("FromCanonical() error = %v", err)
 	}
 
-	// claude → canonical
+	// claude -> canonical
 	result, err := translator.ToCanonical(claudeData)
 	if err != nil {
 		t.Fatalf("ToCanonical() error = %v", err)
@@ -423,19 +423,19 @@ func TestMCPTranslator_RoundTrip_ClaudeToCanonical(t *testing.T) {
 		}
 	}`
 
-	// claude → canonical
+	// claude -> canonical
 	canonical, err := translator.ToCanonical([]byte(originalJSON))
 	if err != nil {
 		t.Fatalf("ToCanonical() error = %v", err)
 	}
 
-	// canonical → claude
+	// canonical -> claude
 	claudeData, err := translator.FromCanonical(canonical)
 	if err != nil {
 		t.Fatalf("FromCanonical() error = %v", err)
 	}
 
-	// claude → canonical (again)
+	// claude -> canonical (again)
 	result, err := translator.ToCanonical(claudeData)
 	if err != nil {
 		t.Fatalf("ToCanonical() error = %v", err)

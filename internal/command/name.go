@@ -10,11 +10,11 @@ import (
 // It extracts the filename and strips the .md extension.
 //
 // Transformation rules:
-//   - review.md → review
-//   - my-command.md → my-command (case preserved)
-//   - /path/to/review.md → review (path stripped)
-//   - review → review (no extension = unchanged)
-//   - file.test.md → file.test (only .md stripped)
+//   - review.md -> review
+//   - my-command.md -> my-command (case preserved)
+//   - /path/to/review.md -> review (path stripped)
+//   - review -> review (no extension = unchanged)
+//   - file.test.md -> file.test (only .md stripped)
 func InferName(path string) string {
 	base := filepath.Base(path)
 	return strings.TrimSuffix(base, ".md")

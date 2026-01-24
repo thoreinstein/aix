@@ -69,7 +69,7 @@ func runAddWithIO(args []string, w io.Writer) error {
 	fmt.Fprintln(w, "done")
 
 	// Print success message
-	fmt.Fprintf(w, "✓ Repository '%s' added from %s\n", repoConfig.Name, url)
+	fmt.Fprintf(w, "[OK] Repository '%s' added from %s\n", repoConfig.Name, url)
 	fmt.Fprintf(w, "  Cached at: %s\n", repoConfig.Path)
 
 	// Validate repository content and show warnings

@@ -150,7 +150,7 @@ if err := os.WriteFile(outputPath, content, 0o644); err != nil {
 Upon successful creation, the command outputs:
 
 ```
-✓ Agent 'code-reviewer' created at ./code-reviewer/AGENT.md
+[OK] Agent 'code-reviewer' created at ./code-reviewer/AGENT.md
 
 Next steps:
   1. Edit ./code-reviewer/AGENT.md to customize your agent
@@ -162,7 +162,7 @@ Next steps:
 
 | Component | Description |
 |-----------|-------------|
-| Checkmark (`✓`) | Visual success indicator |
+| Checkmark (`[OK]`) | Visual success indicator |
 | Agent name | The name from frontmatter (not necessarily the filename) |
 | Path | Absolute or relative path to the created file |
 | Next steps | Actionable guidance for the user |
@@ -170,7 +170,7 @@ Next steps:
 ### Implementation
 
 ```go
-fmt.Printf("✓ Agent '%s' created at %s\n", name, outputPath)
+fmt.Printf("[OK] Agent '%s' created at %s\n", name, outputPath)
 fmt.Println()
 fmt.Println("Next steps:")
 fmt.Printf("  1. Edit %s to customize your agent\n", outputPath)

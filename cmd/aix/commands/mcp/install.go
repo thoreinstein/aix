@@ -358,7 +358,7 @@ func installFromLocal(serverPath string) error {
 	if installedCount != 1 {
 		platformWord = "platforms"
 	}
-	fmt.Printf("✓ MCP server '%s' installed to %d %s\n", server.Name, installedCount, platformWord)
+	fmt.Printf("[OK] MCP server '%s' installed to %d %s\n", server.Name, installedCount, platformWord)
 
 	return nil
 }

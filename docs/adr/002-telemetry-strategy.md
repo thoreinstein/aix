@@ -52,7 +52,7 @@ This ADR documents the research findings and recommendation for whether to imple
 
 **Cons**:
 - Designed for web page views, not CLI events
-- No native CLI SDK—would require custom HTTP integration
+- No native CLI SDK--would require custom HTTP integration
 - Self-hosting requires infrastructure
 
 **Verdict**: Wrong tool for the job (web-focused).
@@ -72,7 +72,7 @@ This ADR documents the research findings and recommendation for whether to imple
 - Requires self-hosting infrastructure
 - MySQL support dropped in v3
 
-**Verdict**: Similar limitations to Plausible—designed for websites.
+**Verdict**: Similar limitations to Plausible--designed for websites.
 
 #### Custom Solution (HTTP + SQLite/PostgreSQL)
 
@@ -80,7 +80,7 @@ This ADR documents the research findings and recommendation for whether to imple
 
 **Pros**:
 - Full control over data schema
-- Minimal complexity—exactly what's needed
+- Minimal complexity--exactly what's needed
 - No vendor dependency
 - Can be as privacy-focused as desired
 
@@ -173,11 +173,11 @@ The pattern is clear: **opt-out telemetry in developer tools generates backlash*
 
 ### Principles
 
-1. **Off by default** — Telemetry is disabled until explicitly enabled
-2. **Explicit opt-in** — No silent consent, no buried settings
-3. **Easy verification** — Users can check status anytime
-4. **Instant opt-out** — Disabling is immediate and permanent
-5. **Fail silent** — Network issues don't affect CLI operation
+1. **Off by default** -- Telemetry is disabled until explicitly enabled
+2. **Explicit opt-in** -- No silent consent, no buried settings
+3. **Easy verification** -- Users can check status anytime
+4. **Instant opt-out** -- Disabling is immediate and permanent
+5. **Fail silent** -- Network issues don't affect CLI operation
 
 ### Proposed Commands
 
@@ -345,7 +345,7 @@ If the maintenance burden or trust risk seems too high, the recommended alternat
 
 ## Decision
 
-**Recommendation**: Conditional Go — implement minimal, opt-in telemetry only if constraints above are met. Defer to post-1.0 release.
+**Recommendation**: Conditional Go -- implement minimal, opt-in telemetry only if constraints above are met. Defer to post-1.0 release.
 
 **Alternative accepted**: "No Telemetry" is also a valid choice given the small scope of this project and the availability of alternative feedback mechanisms.
 

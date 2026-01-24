@@ -46,7 +46,7 @@ The `platforms` field restricts an MCP server to specific operating systems (e.g
 server := &mcp.Server{
     Name:      "macos-tools",
     Command:   "/usr/local/bin/macos-mcp",
-    Platforms: []string{"darwin"}, // ⚠️ Lost in OpenCode
+    Platforms: []string{"darwin"}, // (Warning) Lost in OpenCode
 }
 
 // After OpenCode round-trip
@@ -240,10 +240,10 @@ Both the canonical format and platform translators preserve unknown fields durin
 Claude Code and the canonical format separate the executable (`command`) from its arguments (`args`). OpenCode combines them into a single `command` array.
 
 ```go
-// Canonical → OpenCode
+// Canonical -> OpenCode
 opencode.Command = append([]string{canonical.Command}, canonical.Args...)
 
-// OpenCode → Canonical
+// OpenCode -> Canonical
 canonical.Command = opencode.Command[0]
 canonical.Args = opencode.Command[1:]
 ```
@@ -252,8 +252,8 @@ canonical.Args = opencode.Command[1:]
 
 When `transport` (canonical/Claude) or `type` (OpenCode) is not explicitly set, it can be inferred:
 
-- If `command` is set → `stdio` / `local`
-- If `url` is set → `sse` / `remote`
+- If `command` is set -> `stdio` / `local`
+- If `url` is set -> `sse` / `remote`
 
 ### JSON Output Format
 

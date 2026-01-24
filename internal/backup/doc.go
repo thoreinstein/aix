@@ -15,10 +15,10 @@
 // Backup locations follow this hierarchy:
 //
 //	~/.config/aix/backups/
-//	└── {platform}/
-//	    └── {timestamp}/
-//	        ├── manifest.json
-//	        └── {copied files...}
+//	`--- {platform}/
+//	    `--- {timestamp}/
+//	        |-- manifest.json
+//	        `--- {copied files...}
 //
 // # Creating Backups
 //

@@ -13,20 +13,20 @@
 
 ```
 aix/
-├── cmd/aix/              # CLI entry point - main.go and commands/
-├── internal/             # Private packages (NOT importable externally)
-│   ├── config/           # Configuration management
-│   ├── errors/           # Error handling utilities
-│   ├── logging/          # Logging utilities
-│   ├── paths/            # Path resolution for platform configs
-│   └── platform/         # Platform adapters (claude/, opencode/)
-├── pkg/                  # Public packages (importable)
-│   └── frontmatter/      # YAML frontmatter parser
-├── docs/adr/             # Architecture Decision Records (see ADR-001)
-├── .github/workflows/    # CI/CD pipelines (ci.yml, codeql.yml, release.yml)
-├── .golangci.yml         # Linter configuration
-├── .pre-commit-config.yaml  # Pre-commit hooks (requires local tools)
-└── .beads/               # Issue tracker (bd CLI)
+|-- cmd/aix/              # CLI entry point - main.go and commands/
+|-- internal/             # Private packages (NOT importable externally)
+ |   |-- config/           # Configuration management
+ |   |-- errors/           # Error handling utilities
+ |   |-- logging/          # Logging utilities
+ |   |-- paths/            # Path resolution for platform configs
+ |   `--- platform/         # Platform adapters (claude/, opencode/)
+|-- pkg/                  # Public packages (importable)
+ |   `--- frontmatter/      # YAML frontmatter parser
+|-- docs/adr/             # Architecture Decision Records (see ADR-001)
+|-- .github/workflows/    # CI/CD pipelines (ci.yml, codeql.yml, release.yml)
+|-- .golangci.yml         # Linter configuration
+|-- .pre-commit-config.yaml  # Pre-commit hooks (requires local tools)
+`--- .beads/               # Issue tracker (bd CLI)
 ```
 
 ## Build, Test, and Lint Commands

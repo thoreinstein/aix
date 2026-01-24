@@ -50,7 +50,7 @@ func Open(path string) error {
 }
 
 // detectEditor returns the editor command to use based on environment variables
-// and available binaries. Fallback chain: $EDITOR → $VISUAL → nano → vi
+// and available binaries. Fallback chain: $EDITOR -> $VISUAL -> nano -> vi
 func detectEditor() string {
 	// Check $EDITOR first (most common)
 	if editor := os.Getenv("EDITOR"); editor != "" {

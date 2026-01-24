@@ -13,14 +13,14 @@ The AI coding assistant landscape has fragmented across multiple platforms, each
 | Claude Code | `~/.claude/`, `.claude/` | `CLAUDE.md` | JSON |
 | OpenCode | `~/.config/opencode/` | `AGENTS.md` | JSON |
 | Codex | `~/.codex/`, `.codex/` | `CODEX.md` / `AGENTS.md` | JSON |
-| Gemini CLI | `~/.gemini/`, `.gemini/` | `GEMINI.md` | TOML |
+| Gemini CLI | `~/.gemini/`, `.gemini/` | `GEMINI.md` | JSON |
 
 This fragmentation creates friction for developers who:
 
-1. **Use multiple assistants** - Different projects or organizations mandate different tools
-2. **Share configurations** - Skills and commands must be manually ported between platforms
-3. **Maintain consistency** - MCP servers, tool permissions, and instructions drift across platforms
-4. **Follow specifications** - Agent Skills Spec and MCP Spec compliance varies by platform
+1. **Use multiple assistants** -- Different projects or organizations mandate different tools
+2. **Share configurations** -- Skills and commands must be manually ported between platforms
+3. **Maintain consistency** -- MCP servers, tool permissions, and instructions drift across platforms
+4. **Follow specifications** -- Agent Skills Spec and MCP Spec compliance varies by platform
 
 Existing tooling is inadequate:
 
@@ -41,7 +41,7 @@ Build a unified Go CLI tool (`aix`) that provides a single interface for managin
 | `herd` | Memorable, verb-friendly, implies managing multiple things | Too cute, unclear for new users |
 | `dot` | Ultra-minimal, references dotfiles | Too generic, conflicts with graphviz |
 
-**Selected: `aix`** - Short, memorable, captures AI + cross-platform essence
+**Selected: `aix`** -- Short, memorable, captures AI + cross-platform essence
 
 ## Decision Drivers
 
@@ -110,9 +110,10 @@ Config Locations:
   Project: .gemini/
 
 Files:
-  Instructions:  GEMINI.md (project root)
-  Config:        ~/.gemini/settings.toml (TOML format!)
-  Commands:      .gemini/commands/<name>.md
+  Instructions:  GEMINI.md (project root) or ~/.gemini/GEMINI.md
+  Commands:      .gemini/commands/<name>.toml
+  MCP Config:    ~/.gemini/settings.json
+  Settings:      ~/.gemini/settings.json
 
 Variables:
   {{argument}}   - Different from $ARGUMENTS!
@@ -128,11 +129,11 @@ Skills are reusable agent capabilities following the [Agent Skills Specification
 **Structure:**
 ```
 skill-name/
-├── SKILL.md           # Required: Frontmatter + instructions
-├── commands/          # Optional: Skill-specific commands
-│   └── run.md
-└── templates/         # Optional: Code templates
-    └── component.tsx
+|-- SKILL.md           # Required: Frontmatter + instructions
+|-- commands/          # Optional: Skill-specific commands
+ |   `--- run.md
+`--- templates/         # Optional: Code templates
+    `--- component.tsx
 ```
 
 **SKILL.md Format:**
@@ -199,37 +200,37 @@ Full agent personas and configurations, primarily for Claude Code and OpenCode.
 
 ```
 aix/
-├── cmd/
-│   └── aix/
-│       ├── main.go            # Entry point
-│       └── commands/          # Cobra command definitions
-│           ├── root.go
-│           ├── skill_*.go     # Skill management
-│           ├── command_*.go   # Command management
-│           ├── mcp_*.go       # MCP management
-│           ├── agent_*.go     # Agent management
-│           ├── config.go      # CLI config
-│           └── init.go        # Initialization
-├── internal/
-│   ├── cli/
-│   │   ├── platform.go        # Platform interface (Consumer)
-│   │   └── registry.go        # Platform registry
-│   ├── config/                # Internal configuration
-│   ├── paths/                 # Path resolution
-│   ├── mcp/
-│   │   ├── types.go           # MCP data structures
-│   │   └── translator.go      # Format translation
-│   ├── skill/                 # Skill logic
-│   ├── command/               # Command logic
-│   └── platform/
-│       ├── claude/            # Claude Code implementation
-│       ├── opencode/          # OpenCode implementation
-│       └── ...                # Other platforms
-├── pkg/
-│   └── frontmatter/           # YAML frontmatter parsing
-├── go.mod
-├── go.sum
-└── README.md
+|-- cmd/
+ |   `--- aix/
+ |       |-- main.go            # Entry point
+ |       `--- commands/          # Cobra command definitions
+ |           |-- root.go
+ |           |-- skill_*.go     # Skill management
+ |           |-- command_*.go   # Command management
+ |           |-- mcp_*.go       # MCP management
+ |           |-- agent_*.go     # Agent management
+ |           |-- config.go      # CLI config
+ |           `--- init.go        # Initialization
+|-- internal/
+ |   |-- cli/
+ |    |   |-- platform.go        # Platform interface (Consumer)
+ |    |   `--- registry.go        # Platform registry
+ |   |-- config/                # Internal configuration
+ |   |-- paths/                 # Path resolution
+ |   |-- mcp/
+ |    |   |-- types.go           # MCP data structures
+ |    |   `--- translator.go      # Format translation
+ |   |-- skill/                 # Skill logic
+ |   |-- command/               # Command logic
+ |   `--- platform/
+ |       |-- claude/            # Claude Code implementation
+ |       |-- opencode/          # OpenCode implementation
+ |       `--- ...                # Other platforms
+|-- pkg/
+ |   `--- frontmatter/           # YAML frontmatter parsing
+|-- go.mod
+|-- go.sum
+`--- README.md
 ```
 
 ### Core Interfaces
