@@ -83,7 +83,8 @@ func runUpdateWithIO(args []string, w io.Writer) error {
 	var allWarnings []repo.ValidationWarning
 	for _, r := range repos {
 		fmt.Fprintf(w, "Updating %s... ", r.Name)
-		if err := manager.Update(r.Name); err != nil {
+		// Use UpdateByPath to avoid redundant config reload
+		if err := manager.UpdateByPath(r.Path); err != nil {
 			fmt.Fprintln(w, "\u2717 failed")
 			failed = append(failed, fmt.Sprintf("%s: %v", r.Name, err))
 			continue

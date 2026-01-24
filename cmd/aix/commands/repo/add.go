@@ -88,7 +88,8 @@ func handleAddError(err error) error {
 	case errors.Is(err, repo.ErrInvalidURL):
 		return errInvalidGitURL
 	case errors.Is(err, repo.ErrNameCollision):
-		return fmt.Errorf("repository '%s' already exists", nameFlag)
+		// Return the full error which includes helpful details
+		return err
 	case errors.Is(err, repo.ErrInvalidName):
 		return errInvalidRepoName
 	default:
