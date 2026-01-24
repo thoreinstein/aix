@@ -1,7 +1,6 @@
 package platform
 
 import (
-	"sort"
 	"sync"
 
 	"github.com/cockroachdb/errors"
@@ -63,53 +62,42 @@ func (r *Registry) Get(name string) bool {
 	return exists
 }
 
-// All returns all registered platform names in deterministic order.
-// Platforms are sorted alphabetically by name.
+// All returns all registered platform names in deterministic order
+// defined in paths.Platforms().
 func (r *Registry) All() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	if len(r.platforms) == 0 {
-		return nil
+	all := paths.Platforms()
+	results := make([]string, 0, len(r.platforms))
+
+	for _, name := range all {
+		if _, registered := r.platforms[name]; registered {
+			results = append(results, name)
+		}
 	}
 
-	names := make([]string, 0, len(r.platforms))
-	for name := range r.platforms {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	return names
+	return results
 }
 
 // Available returns only registered platforms that are installed.
 // Uses DetectPlatform() to check installation status.
-// Platforms are returned in deterministic order, sorted alphabetically by name.
+// Platforms are returned in deterministic order defined in paths.Platforms().
 func (r *Registry) Available() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	if len(r.platforms) == 0 {
-		return nil
-	}
+	all := paths.Platforms()
+	results := make([]string, 0, len(r.platforms))
 
-	names := make([]string, 0, len(r.platforms))
-	for name := range r.platforms {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	result := make([]string, 0, len(names))
-	for _, name := range names {
-		detection := DetectPlatform(name)
-		if detection != nil && detection.Status == StatusInstalled {
-			result = append(result, name)
+	for _, name := range all {
+		if _, registered := r.platforms[name]; registered {
+			detection := DetectPlatform(name)
+			if detection != nil && detection.Status == StatusInstalled {
+				results = append(results, name)
+			}
 		}
 	}
 
-	if len(result) == 0 {
-		return nil
-	}
-
-	return result
+	return results
 }

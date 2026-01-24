@@ -27,13 +27,11 @@ type DetectionResult struct {
 	Name string
 
 	// GlobalConfig is the path to the global configuration directory.
-	// This path is always set for valid platforms, even if the directory
-	// does not exist.
+	// This path may be empty if the home directory cannot be determined.
 	GlobalConfig string
 
 	// MCPConfig is the path to the MCP configuration file.
-	// This path is always set for valid platforms, even if the file
-	// does not exist.
+	// This path may be empty if the home directory cannot be determined.
 	MCPConfig string
 
 	// Status indicates the installation state of the platform.
@@ -64,15 +62,14 @@ func DetectPlatform(name string) *DetectionResult {
 }
 
 // DetectAll returns detection results for all known platforms.
-// Platforms are returned in deterministic order: claude, opencode, codex, gemini.
+// Platforms are returned in deterministic order defined in paths.Platforms().
 func DetectAll() []*DetectionResult {
 	platforms := paths.Platforms()
 	results := make([]*DetectionResult, 0, len(platforms))
 
 	for _, name := range platforms {
-		if result := DetectPlatform(name); result != nil {
-			results = append(results, result)
-		}
+		// paths.Platforms() only returns valid names, so DetectPlatform will not return nil.
+		results = append(results, DetectPlatform(name))
 	}
 
 	return results
