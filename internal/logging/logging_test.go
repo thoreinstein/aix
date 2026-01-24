@@ -49,7 +49,7 @@ func TestNew_TextFormat(t *testing.T) {
 		Output: &buf,
 	})
 
-	logger.Info("test message", "key", "value")
+	logger.Info("test message", "foo", "value")
 
 	output := buf.String()
 	if output == "" {
@@ -66,8 +66,8 @@ func TestNew_TextFormat(t *testing.T) {
 	if !strings.Contains(output, "test message") {
 		t.Errorf("output missing message: %s", output)
 	}
-	if !strings.Contains(output, "key=value") {
-		t.Errorf("output missing key=value attribute: %s", output)
+	if !strings.Contains(output, "foo=value") {
+		t.Errorf("output missing foo=value attribute: %s", output)
 	}
 	if !strings.Contains(output, "INFO") {
 		t.Errorf("output missing level indicator: %s", output)
