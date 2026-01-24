@@ -2,19 +2,42 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 // Open launches the user's preferred editor for the given path.
 // Uses $EDITOR environment variable, falling back to $VISUAL, then nano, then vi.
+// It safely splits the editor command (e.g. "code -w") and validates the executable.
 func Open(path string) error {
-	editorCmd := detectEditor()
+	editorEnv := detectEditor()
 
-	fmt.Printf("Location: %s\n", path)
+	// Split editor command and arguments (e.g., "code -w" -> ["code", "-w"])
+	// We use a simple fields split which handles most cases.
+	// For more complex quoting, shell parsing would be needed but adds complexity/risk.
+	parts := strings.Fields(editorEnv)
+	if len(parts) == 0 {
+		return errors.New("no editor found")
+	}
 
-	cmd := exec.Command(editorCmd, path)
+	bin := parts[0]
+	args := parts[1:]
+
+	// Validate executable exists
+	execPath, err := exec.LookPath(bin)
+	if err != nil {
+		return fmt.Errorf("editor executable %q not found: %w", bin, err)
+	}
+
+	fmt.Printf("Opening %s with %s...\n", path, bin)
+
+	// Append file path to arguments
+	args = append(args, path)
+
+	cmd := exec.Command(execPath, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

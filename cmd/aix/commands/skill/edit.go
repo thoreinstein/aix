@@ -3,7 +3,6 @@ package skill
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -100,27 +99,5 @@ func runEdit(_ *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Opening %s skill %q...\n", foundPlatform.DisplayName(), target)
-	return openInEditor(skillPath)
-}
-
-func openInEditor(path string) error {
-	// Determine editor
-	editorName := os.Getenv("EDITOR")
-	if editorName == "" {
-		editorName = "vi"
-	}
-
-	fmt.Printf("Location: %s\n", path)
-
-	// Launch editor
-	cmd := exec.Command(editorName, path)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "running editor")
-	}
-
-	return nil
+	return errors.Wrap(editor.Open(skillPath), "opening editor")
 }

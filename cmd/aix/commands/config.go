@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -12,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/thoreinstein/aix/internal/config"
+	"github.com/thoreinstein/aix/internal/editor"
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/pkg/fileutil"
@@ -211,20 +211,9 @@ func runConfigEdit(_ *cobra.Command, _ []string) error {
 		return errors.Newf("config file not found at %s\nRun 'aix init' to create it", configPath)
 	}
 
-	// Get editor from environment
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		editor = "vi"
-	}
-
-	// Launch editor
-	cmd := exec.Command(editor, configPath)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "running editor")
+	// Use the editor package to safely launch the user's preferred editor
+	if err := editor.Open(configPath); err != nil {
+		return errors.Wrap(err, "launching editor")
 	}
 
 	return nil
