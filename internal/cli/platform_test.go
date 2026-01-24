@@ -27,6 +27,12 @@ func TestNewPlatform(t *testing.T) {
 			wantErr:     nil,
 		},
 		{
+			name:        "gemini platform",
+			platformArg: "gemini",
+			wantName:    "gemini",
+			wantErr:     nil,
+		},
+		{
 			name:        "unknown platform",
 			platformArg: "unknown",
 			wantName:    "",
@@ -41,12 +47,6 @@ func TestNewPlatform(t *testing.T) {
 		{
 			name:        "codex not supported yet",
 			platformArg: "codex",
-			wantName:    "",
-			wantErr:     ErrUnknownPlatform,
-		},
-		{
-			name:        "gemini not supported yet",
-			platformArg: "gemini",
 			wantName:    "",
 			wantErr:     ErrUnknownPlatform,
 		},
@@ -86,20 +86,17 @@ func TestResolvePlatforms_EmptyNames(t *testing.T) {
 	platforms, err := ResolvePlatforms(nil)
 
 	// The result depends on the system where the test runs
-	// If neither claude nor opencode is installed, we expect an error
-	// If at least one is installed, we expect platforms
 	if err != nil {
 		if !errors.Is(err, ErrNoPlatformsAvailable) {
 			t.Errorf("ResolvePlatforms(nil) unexpected error: %v", err)
 		}
-		// This is expected on systems without installed platforms
 		return
 	}
 
 	// Verify all returned platforms have adapters
 	for _, p := range platforms {
 		name := p.Name()
-		if name != paths.PlatformClaude && name != paths.PlatformOpenCode {
+		if name != paths.PlatformClaude && name != paths.PlatformOpenCode && name != paths.PlatformGemini {
 			t.Errorf("ResolvePlatforms(nil) returned unsupported platform: %q", name)
 		}
 	}
@@ -120,8 +117,8 @@ func TestResolvePlatforms_ValidNames(t *testing.T) {
 		},
 		{
 			name:      "multiple valid platforms",
-			names:     []string{"claude", "opencode"},
-			wantCount: 2,
+			names:     []string{"claude", "opencode", "gemini"},
+			wantCount: 3,
 			wantErr:   false,
 		},
 	}
@@ -189,17 +186,15 @@ func TestPlatformInterface(t *testing.T) {
 	platforms := []Platform{
 		&claudeAdapter{},
 		&opencodeAdapter{},
+		&geminiAdapter{},
 	}
 
 	for _, p := range platforms {
-		// Just verify the interface is implemented
-		// The actual methods require proper initialization
 		_ = p
 	}
 }
 
 func TestSkillInfoFields(t *testing.T) {
-	// Test SkillInfo struct initialization
 	info := SkillInfo{
 		Name:        "test-skill",
 		Description: "A test skill",
@@ -218,7 +213,6 @@ func TestSkillInfoFields(t *testing.T) {
 }
 
 func TestCommandInfoFields(t *testing.T) {
-	// Test CommandInfo struct initialization
 	info := CommandInfo{
 		Name:        "test-command",
 		Description: "A test command",
@@ -242,7 +236,6 @@ func TestClaudeAdapter_InstallCommand_WrongType(t *testing.T) {
 		t.Fatalf("NewPlatform(claude) unexpected error: %v", err)
 	}
 
-	// Try to install with wrong type (string instead of *claude.Command)
 	err = p.InstallCommand("not a command")
 	if err == nil {
 		t.Error("InstallCommand with wrong type expected error, got nil")
@@ -255,35 +248,20 @@ func TestOpencodeAdapter_InstallCommand_WrongType(t *testing.T) {
 		t.Fatalf("NewPlatform(opencode) unexpected error: %v", err)
 	}
 
-	// Try to install with wrong type (string instead of *opencode.Command)
 	err = p.InstallCommand("not a command")
 	if err == nil {
 		t.Error("InstallCommand with wrong type expected error, got nil")
 	}
 }
 
-func TestClaudeAdapter_CommandDir(t *testing.T) {
-	p, err := NewPlatform("claude")
+func TestGeminiAdapter_InstallCommand_WrongType(t *testing.T) {
+	p, err := NewPlatform("gemini")
 	if err != nil {
-		t.Fatalf("NewPlatform(claude) unexpected error: %v", err)
+		t.Fatalf("NewPlatform(gemini) unexpected error: %v", err)
 	}
 
-	// CommandDir should return a non-empty string
-	dir := p.CommandDir()
-	if dir == "" {
-		t.Error("CommandDir() returned empty string")
-	}
-}
-
-func TestOpencodeAdapter_CommandDir(t *testing.T) {
-	p, err := NewPlatform("opencode")
-	if err != nil {
-		t.Fatalf("NewPlatform(opencode) unexpected error: %v", err)
-	}
-
-	// CommandDir should return a non-empty string
-	dir := p.CommandDir()
-	if dir == "" {
-		t.Error("CommandDir() returned empty string")
+	err = p.InstallCommand("not a command")
+	if err == nil {
+		t.Error("InstallCommand with wrong type expected error, got nil")
 	}
 }

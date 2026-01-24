@@ -49,7 +49,7 @@ var platformMCPConfigs = map[string]string{
 	PlatformClaude:   ".mcp.json",
 	PlatformOpenCode: "opencode.json", // MCP config is in the main config file
 	PlatformCodex:    "mcp.json",      // Assumed, may need verification
-	PlatformGemini:   "settings.toml", // MCP config is in the main settings file
+	PlatformGemini:   "settings.json", // MCP config is in the main settings file
 }
 
 // Sentinel errors for path resolution.
@@ -148,7 +148,7 @@ func Platforms() []string {
 //   - claude: ~/.claude/
 //   - opencode: ~/.config/opencode/
 //   - codex: ~/.codex/
-//   - gemini: ~/.gemini/
+//   - gemini: ~/.gemini/ (or $XDG_CONFIG_HOME/gemini if set)
 //
 // Returns an empty string for unknown platforms.
 func GlobalConfigDir(platform string) string {
@@ -156,6 +156,14 @@ func GlobalConfigDir(platform string) string {
 	if !ok {
 		return ""
 	}
+
+	// Gemini CLI respects XDG_CONFIG_HOME if set.
+	if platform == PlatformGemini {
+		if xdgConfig := os.Getenv("XDG_CONFIG_HOME"); xdgConfig != "" {
+			return filepath.Join(xdgConfig, "gemini")
+		}
+	}
+
 	home := Home()
 	if home == "" {
 		return ""
