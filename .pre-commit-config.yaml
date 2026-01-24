@@ -12,11 +12,12 @@ repos:
         always_run: true
 
   # golangci-lint (local hooks to support git worktrees)
+  # Uses --new to only lint staged/changed files, enabling atomic commits
   - repo: local
     hooks:
       - id: golangci-lint
         name: golangci-lint
-        entry: sh -c 'GOFLAGS=-buildvcs=false golangci-lint run --timeout=5m'
+        entry: sh -c 'GOFLAGS=-buildvcs=false golangci-lint run --new --timeout=5m'
         language: system
         types: [go]
         pass_filenames: false
@@ -25,7 +26,7 @@ repos:
         entry: sh -c 'GOFLAGS=-buildvcs=false golangci-lint fmt'
         language: system
         types: [go]
-        pass_filenames: false
+        pass_filenames: true
 
   # Go module maintenance
   - repo: https://github.com/dnephin/pre-commit-golang
@@ -34,6 +35,8 @@ repos:
       - id: go-mod-tidy
 
   # Go build and test
+  # Note: go-build must compile the full package (Go requirement), but only
+  # runs when Go files are staged. This is fast and catches compile errors early.
   - repo: local
     hooks:
       - id: go-build
