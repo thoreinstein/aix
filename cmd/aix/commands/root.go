@@ -3,6 +3,7 @@ package commands
 
 import (
 	"log/slog"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -89,7 +90,21 @@ target all detected/installed platforms.`,
 
 // setupLogging configures the default logger based on verbosity flags.
 func setupLogging(cmd *cobra.Command) {
-	level := logging.LevelFromVerbosity(verbosity)
+	v := verbosity
+
+	// CLI flags take precedence, but if not set, check env var
+	if v == 0 {
+		if val, ok := os.LookupEnv("AIX_DEBUG"); ok {
+			switch val {
+			case "1", "true":
+				v = 2 // Debug
+			case "2":
+				v = 3 // Trace
+			}
+		}
+	}
+
+	level := logging.LevelFromVerbosity(v)
 	logger := logging.New(logging.Config{
 		Level:  level,
 		Format: logging.FormatText, // Default to text
