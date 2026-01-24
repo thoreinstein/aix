@@ -1,14 +1,15 @@
 package repo
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/config"
+	aixerrors "github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/repo"
 )
 
@@ -59,11 +60,14 @@ func runAddWithIO(args []string, w io.Writer) error {
 		opts = append(opts, repo.WithName(nameFlag))
 	}
 
-	// Add the repository
+	// Add the repository with progress indicator
+	fmt.Fprintf(w, "Cloning %s... ", url)
 	repoConfig, err := manager.Add(url, opts...)
 	if err != nil {
+		fmt.Fprintln(w, "failed")
 		return handleAddError(err)
 	}
+	fmt.Fprintln(w, "done")
 
 	// Print success message
 	fmt.Fprintf(w, "✓ Repository '%s' added from %s\n", repoConfig.Name, url)
@@ -76,23 +80,28 @@ func runAddWithIO(args []string, w io.Writer) error {
 	return nil
 }
 
-// Sentinel errors for repo add command.
-var (
-	errInvalidGitURL   = errors.New("invalid Git URL")
-	errInvalidRepoName = errors.New("invalid repository name")
-)
-
 // handleAddError returns a user-friendly error message for known error types.
 func handleAddError(err error) error {
 	switch {
 	case errors.Is(err, repo.ErrInvalidURL):
-		return errInvalidGitURL
+		return aixerrors.NewUserError(
+			errors.New("invalid Git URL"),
+			"Use HTTPS, SSH, or git:// protocol (e.g., https://github.com/org/repo.git)",
+		)
 	case errors.Is(err, repo.ErrNameCollision):
-		// Return the full error which includes helpful details
-		return err
+		return aixerrors.NewUserError(
+			err,
+			"Run: aix repo list to see existing repositories\n       Use: --name <alternate-name> to specify a different name",
+		)
 	case errors.Is(err, repo.ErrInvalidName):
-		return errInvalidRepoName
+		return aixerrors.NewUserError(
+			errors.New("invalid repository name"),
+			"Names must be lowercase alphanumeric with hyphens, starting with a letter (e.g., 'my-skills')",
+		)
 	default:
-		return err
+		return aixerrors.NewSystemError(
+			errors.Wrap(err, "failed to add repository"),
+			"Check your network connection and Git credentials",
+		)
 	}
 }
