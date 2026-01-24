@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	"github.com/thoreinstein/aix/internal/mcp"
+	"github.com/thoreinstein/aix/internal/validator"
 )
 
 // validPlatforms is the set of valid platform identifiers.
@@ -42,83 +43,68 @@ func WithAllowEmpty(allow bool) Option {
 }
 
 // Validate checks a Config for issues.
-// Returns a slice of validation errors/warnings, or nil if valid.
-// Use [HasErrors] to check if any errors (vs warnings) were found.
-func (v *Validator) Validate(cfg *mcp.Config) []*ValidationError {
+// Returns a Result containing errors and warnings.
+func (v *Validator) Validate(cfg *mcp.Config) *validator.Result {
+	result := &validator.Result{}
 	if cfg == nil {
-		return []*ValidationError{{
-			Message:  "config is nil",
-			Severity: SeverityError,
-		}}
+		result.AddError("", "config is nil", nil)
+		return result
 	}
-
-	var errs []*ValidationError
 
 	// Check for empty config
 	if !v.allowEmpty && len(cfg.Servers) == 0 {
-		errs = append(errs, &ValidationError{
-			Message:  "config has no servers",
-			Severity: SeverityError,
-			Err:      ErrEmptyConfig,
-		})
+		result.AddError("", "config has no servers", nil)
 	}
 
 	// Validate each server
 	for name, server := range cfg.Servers {
-		errs = append(errs, v.validateServer(name, server)...)
+		v.validateServer(name, server, result)
 	}
 
-	if len(errs) == 0 {
-		return nil
-	}
-	return errs
+	return result
 }
 
 // validateServer validates a single server configuration.
-func (v *Validator) validateServer(name string, server *mcp.Server) []*ValidationError {
-	var errs []*ValidationError
+func (v *Validator) validateServer(name string, server *mcp.Server, result *validator.Result) {
+	context := map[string]string{"server": name}
 
 	// Server name validation
 	if server.Name == "" {
-		errs = append(errs, &ValidationError{
-			ServerName: name,
-			Field:      "name",
-			Message:    "server name is required",
-			Severity:   SeverityError,
-			Err:        ErrMissingServerName,
+		result.Issues = append(result.Issues, validator.Issue{
+			Severity: validator.SeverityError,
+			Field:    "name",
+			Message:  "server name is required",
+			Context:  context,
 		})
 	}
 
 	// Validate transport value
 	if !slices.Contains(validTransports, server.Transport) {
-		errs = append(errs, &ValidationError{
-			ServerName: name,
-			Field:      "transport",
-			Message:    "transport must be 'stdio', 'sse', or empty",
-			Severity:   SeverityError,
-			Err:        ErrInvalidTransport,
+		result.Issues = append(result.Issues, validator.Issue{
+			Severity: validator.SeverityError,
+			Field:    "transport",
+			Message:  "transport must be 'stdio', 'sse', or empty",
+			Context:  context,
 		})
 	}
 
 	// Determine effective transport and validate required fields
-	errs = append(errs, v.validateTransportFields(name, server)...)
+	v.validateTransportFields(name, server, result)
 
 	// Validate platforms
-	errs = append(errs, v.validatePlatforms(name, server)...)
+	v.validatePlatforms(name, server, result)
 
 	// Validate env keys
-	errs = append(errs, v.validateEnv(name, server)...)
+	v.validateEnv(name, server, result)
 
 	// Validate header keys
-	errs = append(errs, v.validateHeaders(name, server)...)
-
-	return errs
+	v.validateHeaders(name, server, result)
 }
 
 // validateTransportFields validates that the server has the required fields
 // for its transport type.
-func (v *Validator) validateTransportFields(name string, server *mcp.Server) []*ValidationError {
-	var errs []*ValidationError
+func (v *Validator) validateTransportFields(name string, server *mcp.Server, result *validator.Result) {
+	context := map[string]string{"server": name}
 
 	// Determine effective transport
 	isLocal := server.IsLocal()
@@ -128,32 +114,30 @@ func (v *Validator) validateTransportFields(name string, server *mcp.Server) []*
 	switch server.Transport {
 	case mcp.TransportStdio:
 		if server.Command == "" {
-			errs = append(errs, &ValidationError{
-				ServerName: name,
-				Field:      "command",
-				Message:    "stdio transport requires command",
-				Severity:   SeverityError,
-				Err:        ErrMissingCommand,
+			result.Issues = append(result.Issues, validator.Issue{
+				Severity: validator.SeverityError,
+				Field:    "command",
+				Message:  "stdio transport requires command",
+				Context:  context,
 			})
 		}
 	case mcp.TransportSSE:
 		if server.URL == "" {
-			errs = append(errs, &ValidationError{
-				ServerName: name,
-				Field:      "url",
-				Message:    "sse transport requires URL",
-				Severity:   SeverityError,
-				Err:        ErrMissingURL,
+			result.Issues = append(result.Issues, validator.Issue{
+				Severity: validator.SeverityError,
+				Field:    "url",
+				Message:  "sse transport requires URL",
+				Context:  context,
 			})
 		}
 	case "":
 		// No explicit transport - infer from fields
 		if server.Command == "" && server.URL == "" {
-			errs = append(errs, &ValidationError{
-				ServerName: name,
-				Field:      "command/url",
-				Message:    "server must have command (for local) or URL (for remote)",
-				Severity:   SeverityError,
+			result.Issues = append(result.Issues, validator.Issue{
+				Severity: validator.SeverityError,
+				Field:    "command/url",
+				Message:  "server must have command (for local) or URL (for remote)",
+				Context:  context,
 			})
 		}
 	}
@@ -168,71 +152,58 @@ func (v *Validator) validateTransportFields(name string, server *mcp.Server) []*
 		} else {
 			msg += "; without explicit transport, command takes precedence"
 		}
-		errs = append(errs, &ValidationError{
-			ServerName: name,
-			Message:    msg,
-			Severity:   SeverityWarning,
+		result.Issues = append(result.Issues, validator.Issue{
+			Severity: validator.SeverityWarning,
+			Message:  msg,
+			Context:  context,
 		})
 	}
-
-	return errs
 }
 
 // validatePlatforms validates that all platform values are recognized.
-func (v *Validator) validatePlatforms(name string, server *mcp.Server) []*ValidationError {
-	var errs []*ValidationError
-
+func (v *Validator) validatePlatforms(name string, server *mcp.Server, result *validator.Result) {
+	context := map[string]string{"server": name}
 	for _, platform := range server.Platforms {
 		if !slices.Contains(validPlatforms, platform) {
-			errs = append(errs, &ValidationError{
-				ServerName: name,
-				Field:      "platforms",
-				Message:    "invalid platform: " + platform + " (valid: darwin, linux, windows)",
-				Severity:   SeverityError,
-				Err:        ErrInvalidPlatform,
+			result.Issues = append(result.Issues, validator.Issue{
+				Severity: validator.SeverityError,
+				Field:    "platforms",
+				Message:  "invalid platform: " + platform + " (valid: darwin, linux, windows)",
+				Value:    platform,
+				Context:  context,
 			})
 		}
 	}
-
-	return errs
 }
 
 // validateEnv validates that environment variable keys are non-empty.
-func (v *Validator) validateEnv(name string, server *mcp.Server) []*ValidationError {
-	var errs []*ValidationError
-
+func (v *Validator) validateEnv(name string, server *mcp.Server, result *validator.Result) {
+	context := map[string]string{"server": name}
 	for key := range server.Env {
 		if key == "" {
-			errs = append(errs, &ValidationError{
-				ServerName: name,
-				Field:      "env",
-				Message:    "environment variable key cannot be empty",
-				Severity:   SeverityError,
-				Err:        ErrEmptyEnvKey,
+			result.Issues = append(result.Issues, validator.Issue{
+				Severity: validator.SeverityError,
+				Field:    "env",
+				Message:  "environment variable key cannot be empty",
+				Context:  context,
 			})
 			break // Only report once
 		}
 	}
-
-	return errs
 }
 
 // validateHeaders validates that HTTP header keys are non-empty.
-func (v *Validator) validateHeaders(name string, server *mcp.Server) []*ValidationError {
-	var errs []*ValidationError
-
+func (v *Validator) validateHeaders(name string, server *mcp.Server, result *validator.Result) {
+	context := map[string]string{"server": name}
 	for key := range server.Headers {
 		if key == "" {
-			errs = append(errs, &ValidationError{
-				ServerName: name,
-				Field:      "headers",
-				Message:    "header key cannot be empty",
-				Severity:   SeverityError,
-				Err:        ErrEmptyHeaderKey,
+			result.Issues = append(result.Issues, validator.Issue{
+				Severity: validator.SeverityError,
+				Field:    "headers",
+				Message:  "header key cannot be empty",
+				Context:  context,
 			})
 			break // Only report once
 		}
 	}
-
-	return errs
 }

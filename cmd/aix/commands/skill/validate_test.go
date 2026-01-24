@@ -3,6 +3,7 @@ package skill
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,7 +40,7 @@ Instructions here.
 		t.Fatal("expected error for invalid skill, got nil")
 	}
 
-	if err != errValidationFailed {
+	if !errors.Is(err, errValidationFailed) {
 		t.Errorf("expected errValidationFailed, got: %v", err)
 	}
 }

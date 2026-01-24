@@ -9,7 +9,7 @@ import (
 
 	"github.com/thoreinstein/aix/internal/skill/parser"
 	"github.com/thoreinstein/aix/internal/skill/toolperm"
-	"github.com/thoreinstein/aix/internal/skill/validator"
+	skillvalidator "github.com/thoreinstein/aix/internal/skill/validator"
 )
 
 // Test data representing realistic SKILL.md files
@@ -118,7 +118,7 @@ func TestIntegration_ParseAndValidate(t *testing.T) {
 	}
 
 	p := parser.New()
-	v := validator.New(validator.WithStrict(true))
+	v := skillvalidator.New(skillvalidator.WithStrict(true))
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -144,18 +144,16 @@ func TestIntegration_ParseAndValidate(t *testing.T) {
 			}
 
 			// Validate with path
-			errs := v.ValidateWithPath(skill, skillPath)
-			if len(errs) != tt.wantErrors {
-				t.Errorf("got %d validation errors, want %d: %v", len(errs), tt.wantErrors, errs)
+			result := v.ValidateWithPath(skill, skillPath)
+			if len(result.Issues) != tt.wantErrors {
+				t.Errorf("got %d validation errors, want %d: %v", len(result.Issues), tt.wantErrors, result.Issues)
 			}
 
 			// Check error field if expected
-			if tt.wantErrors > 0 && tt.errField != "" && len(errs) > 0 {
-				verr, ok := errs[0].(*validator.ValidationError)
-				if !ok {
-					t.Errorf("expected ValidationError, got %T", errs[0])
-				} else if verr.Field != tt.errField {
-					t.Errorf("error field = %q, want %q", verr.Field, tt.errField)
+			if tt.wantErrors > 0 && tt.errField != "" && len(result.Issues) > 0 {
+				issue := result.Issues[0]
+				if issue.Field != tt.errField {
+					t.Errorf("error field = %q, want %q", issue.Field, tt.errField)
 				}
 			}
 		})
@@ -230,7 +228,7 @@ func TestIntegration_ToolPermissionParsing(t *testing.T) {
 // changes are reflected correctly.
 func TestIntegration_RoundTrip(t *testing.T) {
 	p := parser.New()
-	v := validator.New()
+	v := skillvalidator.New()
 
 	// Parse a complete skill
 	skill, err := p.ParseBytes([]byte(validSkillComplete), "test.md")
@@ -256,15 +254,16 @@ func TestIntegration_RoundTrip(t *testing.T) {
 	}
 
 	// Should validate without errors
-	if errs := v.Validate(skill); len(errs) > 0 {
-		t.Errorf("validation errors: %v", errs)
+	result := v.Validate(skill)
+	if result.HasErrors() {
+		t.Errorf("validation errors: %v", result.Issues)
 	}
 }
 
 // TestIntegration_EdgeCases tests edge cases in the skill parsing pipeline.
 func TestIntegration_EdgeCases(t *testing.T) {
 	p := parser.New()
-	v := validator.New()
+	v := skillvalidator.New()
 
 	tests := []struct {
 		name        string
@@ -333,9 +332,9 @@ description: >
 
 			// Should still validate (unless we expect parse error)
 			if !tt.wantErr {
-				errs := v.Validate(skill)
-				if len(errs) > 0 {
-					t.Errorf("validation errors: %v", errs)
+				result := v.Validate(skill)
+				if result.HasErrors() {
+					t.Errorf("validation errors: %v", result.Issues)
 				}
 			}
 		})
@@ -393,9 +392,9 @@ Invoke with /security-scan to begin analysis.
 	}
 
 	// Step 2: Validate with path (strict mode)
-	v := validator.New(validator.WithStrict(true))
-	if errs := v.ValidateWithPath(skill, skillPath); len(errs) > 0 {
-		t.Fatalf("validation failed: %v", errs)
+	v := skillvalidator.New(skillvalidator.WithStrict(true))
+	if result := v.ValidateWithPath(skill, skillPath); result.HasErrors() {
+		t.Fatalf("validation failed: %v", result.Issues)
 	}
 
 	// Step 3: Parse tool permissions
@@ -451,7 +450,7 @@ Invoke with /security-scan to begin analysis.
 // in a predictable order and contain expected context.
 func TestIntegration_ValidationOrder(t *testing.T) {
 	p := parser.New()
-	v := validator.New(validator.WithStrict(true))
+	v := skillvalidator.New(skillvalidator.WithStrict(true))
 
 	// Create a skill with multiple issues
 	content := `---
@@ -465,22 +464,17 @@ allowed-tools: Bash(
 		t.Fatalf("parse error: %v", err)
 	}
 
-	errs := v.Validate(skill)
+	result := v.Validate(skill)
 
 	// Should have errors for: name (consecutive hyphens), description (empty), allowed-tools (invalid)
-	if len(errs) < 2 {
-		t.Errorf("expected at least 2 errors, got %d: %v", len(errs), errs)
+	if len(result.Issues) < 2 {
+		t.Errorf("expected at least 2 errors, got %d: %v", len(result.Issues), result.Issues)
 	}
 
 	// Verify each error is a ValidationError with proper field
 	fields := make(map[string]bool)
-	for _, err := range errs {
-		verr, ok := err.(*validator.ValidationError)
-		if !ok {
-			t.Errorf("expected ValidationError, got %T", err)
-			continue
-		}
-		fields[verr.Field] = true
+	for _, issue := range result.Issues {
+		fields[issue.Field] = true
 	}
 
 	// Check that we got errors for expected fields

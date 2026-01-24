@@ -1,7 +1,6 @@
 package validator
 
 import (
-	"errors"
 	"strings"
 	"testing"
 
@@ -18,7 +17,6 @@ func TestValidator_Validate(t *testing.T) {
 		wantServerName string
 		wantField      string
 		wantMsgContain string
-		wantErr        error
 	}{
 		// Valid configs
 		{
@@ -113,7 +111,6 @@ func TestValidator_Validate(t *testing.T) {
 			allowEmpty:     false,
 			wantErrCount:   1,
 			wantMsgContain: "no servers",
-			wantErr:        ErrEmptyConfig,
 		},
 		{
 			name: "empty config allowed with option",
@@ -144,7 +141,6 @@ func TestValidator_Validate(t *testing.T) {
 			wantServerName: "test",
 			wantField:      "name",
 			wantMsgContain: "required",
-			wantErr:        ErrMissingServerName,
 		},
 
 		// Transport validation
@@ -163,7 +159,6 @@ func TestValidator_Validate(t *testing.T) {
 			wantServerName: "test",
 			wantField:      "transport",
 			wantMsgContain: "stdio",
-			wantErr:        ErrInvalidTransport,
 		},
 
 		// Command/URL validation
@@ -181,7 +176,6 @@ func TestValidator_Validate(t *testing.T) {
 			wantServerName: "test",
 			wantField:      "command",
 			wantMsgContain: "requires command",
-			wantErr:        ErrMissingCommand,
 		},
 		{
 			name: "sse transport missing URL",
@@ -197,7 +191,6 @@ func TestValidator_Validate(t *testing.T) {
 			wantServerName: "test",
 			wantField:      "url",
 			wantMsgContain: "requires URL",
-			wantErr:        ErrMissingURL,
 		},
 		{
 			name: "no command or URL with no transport",
@@ -290,7 +283,6 @@ func TestValidator_Validate(t *testing.T) {
 			wantServerName: "test",
 			wantField:      "platforms",
 			wantMsgContain: "invalid platform",
-			wantErr:        ErrInvalidPlatform,
 		},
 
 		// Env validation
@@ -322,7 +314,6 @@ func TestValidator_Validate(t *testing.T) {
 			wantServerName: "test",
 			wantField:      "env",
 			wantMsgContain: "empty",
-			wantErr:        ErrEmptyEnvKey,
 		},
 
 		// Headers validation
@@ -356,7 +347,6 @@ func TestValidator_Validate(t *testing.T) {
 			wantServerName: "test",
 			wantField:      "headers",
 			wantMsgContain: "empty",
-			wantErr:        ErrEmptyHeaderKey,
 		},
 
 		// Multiple errors
@@ -383,29 +373,29 @@ func TestValidator_Validate(t *testing.T) {
 				opts = append(opts, WithAllowEmpty(true))
 			}
 			v := New(opts...)
-			errs := v.Validate(tt.config)
+			result := v.Validate(tt.config)
 
-			errCount := len(Errors(errs))
-			warnCount := len(Warnings(errs))
+			errCount := len(result.Errors())
+			warnCount := len(result.Warnings())
 
 			if errCount != tt.wantErrCount {
-				t.Errorf("Validate() got %d errors, want %d; errors: %v", errCount, tt.wantErrCount, errs)
+				t.Errorf("Validate() got %d errors, want %d; issues: %v", errCount, tt.wantErrCount, result.Issues)
 			}
 			if tt.wantWarnCount > 0 && warnCount != tt.wantWarnCount {
-				t.Errorf("Validate() got %d warnings, want %d; errors: %v", warnCount, tt.wantWarnCount, errs)
+				t.Errorf("Validate() got %d warnings, want %d; issues: %v", warnCount, tt.wantWarnCount, result.Issues)
 			}
 
 			// Check for specific error details
-			if len(errs) > 0 && (tt.wantServerName != "" || tt.wantField != "" || tt.wantMsgContain != "") {
+			if len(result.Issues) > 0 && (tt.wantServerName != "" || tt.wantField != "" || tt.wantMsgContain != "") {
 				found := false
-				for _, err := range errs {
-					if tt.wantServerName != "" && err.ServerName != tt.wantServerName {
+				for _, issue := range result.Issues {
+					if tt.wantServerName != "" && issue.Context["server"] != tt.wantServerName {
 						continue
 					}
-					if tt.wantField != "" && err.Field != tt.wantField {
+					if tt.wantField != "" && issue.Field != tt.wantField {
 						continue
 					}
-					if tt.wantMsgContain != "" && !strings.Contains(err.Message, tt.wantMsgContain) {
+					if tt.wantMsgContain != "" && !strings.Contains(issue.Message, tt.wantMsgContain) {
 						continue
 					}
 					found = true
@@ -413,286 +403,35 @@ func TestValidator_Validate(t *testing.T) {
 				}
 				if !found {
 					t.Errorf("expected error with server=%q field=%q msg containing %q, got: %v",
-						tt.wantServerName, tt.wantField, tt.wantMsgContain, errs)
-				}
-			}
-
-			// Check for specific sentinel error
-			if tt.wantErr != nil && len(errs) > 0 {
-				found := false
-				for _, err := range errs {
-					if errors.Is(err, tt.wantErr) {
-						found = true
-						break
-					}
-				}
-				if !found {
-					t.Errorf("expected error %v, got: %v", tt.wantErr, errs)
+						tt.wantServerName, tt.wantField, tt.wantMsgContain, result.Issues)
 				}
 			}
 		})
-	}
-}
-
-func TestValidationError_Error(t *testing.T) {
-	tests := []struct {
-		name string
-		err  *ValidationError
-		want string
-	}{
-		{
-			name: "error with server and field",
-			err: &ValidationError{
-				ServerName: "myserver",
-				Field:      "command",
-				Message:    "is required",
-				Severity:   SeverityError,
-			},
-			want: `error: server "myserver" field "command": is required`,
-		},
-		{
-			name: "error with server only",
-			err: &ValidationError{
-				ServerName: "myserver",
-				Message:    "is misconfigured",
-				Severity:   SeverityError,
-			},
-			want: `error: server "myserver": is misconfigured`,
-		},
-		{
-			name: "error with field only",
-			err: &ValidationError{
-				Field:    "servers",
-				Message:  "must not be empty",
-				Severity: SeverityError,
-			},
-			want: `error: field "servers": must not be empty`,
-		},
-		{
-			name: "error with message only",
-			err: &ValidationError{
-				Message:  "config is invalid",
-				Severity: SeverityError,
-			},
-			want: "error: config is invalid",
-		},
-		{
-			name: "warning with server and field",
-			err: &ValidationError{
-				ServerName: "myserver",
-				Field:      "transport",
-				Message:    "should be explicit",
-				Severity:   SeverityWarning,
-			},
-			want: `warning: server "myserver" field "transport": should be explicit`,
-		},
-		{
-			name: "warning with message only",
-			err: &ValidationError{
-				Message:  "config may have issues",
-				Severity: SeverityWarning,
-			},
-			want: "warning: config may have issues",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.err.Error(); got != tt.want {
-				t.Errorf("Error() = %q, want %q", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestValidationError_Unwrap(t *testing.T) {
-	underlying := ErrMissingCommand
-	err := &ValidationError{
-		ServerName: "test",
-		Field:      "command",
-		Message:    "stdio transport requires command",
-		Severity:   SeverityError,
-		Err:        underlying,
-	}
-
-	if !errors.Is(err, underlying) {
-		t.Error("Unwrap() should allow errors.Is to match underlying error")
-	}
-}
-
-func TestHasErrors(t *testing.T) {
-	tests := []struct {
-		name string
-		errs []*ValidationError
-		want bool
-	}{
-		{
-			name: "nil slice",
-			errs: nil,
-			want: false,
-		},
-		{
-			name: "empty slice",
-			errs: []*ValidationError{},
-			want: false,
-		},
-		{
-			name: "only warnings",
-			errs: []*ValidationError{
-				{Severity: SeverityWarning, Message: "warn1"},
-				{Severity: SeverityWarning, Message: "warn2"},
-			},
-			want: false,
-		},
-		{
-			name: "only errors",
-			errs: []*ValidationError{
-				{Severity: SeverityError, Message: "err1"},
-			},
-			want: true,
-		},
-		{
-			name: "mixed",
-			errs: []*ValidationError{
-				{Severity: SeverityWarning, Message: "warn1"},
-				{Severity: SeverityError, Message: "err1"},
-			},
-			want: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := HasErrors(tt.errs); got != tt.want {
-				t.Errorf("HasErrors() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestHasWarnings(t *testing.T) {
-	tests := []struct {
-		name string
-		errs []*ValidationError
-		want bool
-	}{
-		{
-			name: "nil slice",
-			errs: nil,
-			want: false,
-		},
-		{
-			name: "only errors",
-			errs: []*ValidationError{
-				{Severity: SeverityError, Message: "err1"},
-			},
-			want: false,
-		},
-		{
-			name: "only warnings",
-			errs: []*ValidationError{
-				{Severity: SeverityWarning, Message: "warn1"},
-			},
-			want: true,
-		},
-		{
-			name: "mixed",
-			errs: []*ValidationError{
-				{Severity: SeverityError, Message: "err1"},
-				{Severity: SeverityWarning, Message: "warn1"},
-			},
-			want: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := HasWarnings(tt.errs); got != tt.want {
-				t.Errorf("HasWarnings() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestErrors(t *testing.T) {
-	errs := []*ValidationError{
-		{Severity: SeverityError, Message: "err1"},
-		{Severity: SeverityWarning, Message: "warn1"},
-		{Severity: SeverityError, Message: "err2"},
-		{Severity: SeverityWarning, Message: "warn2"},
-	}
-
-	result := Errors(errs)
-	if len(result) != 2 {
-		t.Errorf("Errors() returned %d items, want 2", len(result))
-	}
-	for _, e := range result {
-		if e.Severity != SeverityError {
-			t.Errorf("Errors() returned non-error: %v", e)
-		}
-	}
-}
-
-func TestWarnings(t *testing.T) {
-	errs := []*ValidationError{
-		{Severity: SeverityError, Message: "err1"},
-		{Severity: SeverityWarning, Message: "warn1"},
-		{Severity: SeverityError, Message: "err2"},
-		{Severity: SeverityWarning, Message: "warn2"},
-	}
-
-	result := Warnings(errs)
-	if len(result) != 2 {
-		t.Errorf("Warnings() returned %d items, want 2", len(result))
-	}
-	for _, w := range result {
-		if w.Severity != SeverityWarning {
-			t.Errorf("Warnings() returned non-warning: %v", w)
-		}
 	}
 }
 
 func TestNew_Options(t *testing.T) {
 	t.Run("default does not allow empty", func(t *testing.T) {
 		v := New()
-		errs := v.Validate(&mcp.Config{Servers: map[string]*mcp.Server{}})
-		if len(errs) == 0 {
+		result := v.Validate(&mcp.Config{Servers: map[string]*mcp.Server{}})
+		if !result.HasErrors() {
 			t.Error("default validator should not allow empty config")
 		}
 	})
 
 	t.Run("WithAllowEmpty(true) allows empty", func(t *testing.T) {
 		v := New(WithAllowEmpty(true))
-		errs := v.Validate(&mcp.Config{Servers: map[string]*mcp.Server{}})
-		if len(errs) != 0 {
-			t.Errorf("validator with allowEmpty should allow empty config, got errors: %v", errs)
+		result := v.Validate(&mcp.Config{Servers: map[string]*mcp.Server{}})
+		if result.HasErrors() {
+			t.Errorf("validator with allowEmpty should allow empty config, got errors: %v", result.Issues)
 		}
 	})
 
 	t.Run("WithAllowEmpty(false) does not allow empty", func(t *testing.T) {
 		v := New(WithAllowEmpty(false))
-		errs := v.Validate(&mcp.Config{Servers: map[string]*mcp.Server{}})
-		if len(errs) == 0 {
+		result := v.Validate(&mcp.Config{Servers: map[string]*mcp.Server{}})
+		if !result.HasErrors() {
 			t.Error("validator with !allowEmpty should not allow empty config")
 		}
 	})
-}
-
-func TestSeverity_String(t *testing.T) {
-	tests := []struct {
-		severity Severity
-		want     string
-	}{
-		{SeverityError, "error"},
-		{SeverityWarning, "warning"},
-		{Severity(99), "unknown"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.want, func(t *testing.T) {
-			if got := tt.severity.String(); got != tt.want {
-				t.Errorf("Severity.String() = %q, want %q", got, tt.want)
-			}
-		})
-	}
 }
