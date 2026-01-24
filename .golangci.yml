@@ -60,7 +60,7 @@ linters:
         - .Newf(
         - .WithDetail(
         - .WithDetailf(
-      ignorePackageGlobs:
+      ignore-package-globs:
         - github.com/cockroachdb/errors
         - github.com/thoreinstein/aix/internal/errors
   exclusions:
