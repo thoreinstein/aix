@@ -296,6 +296,33 @@ func TestNew_WithAttributes(t *testing.T) {
 	}
 }
 
+func TestLevelFromVerbosity(t *testing.T) {
+	tests := []struct {
+		verbosity int
+		want      slog.Level
+	}{
+		{-1, slog.LevelWarn},
+		{0, slog.LevelWarn},
+		{1, slog.LevelInfo},
+		{2, slog.LevelDebug},
+		{3, LevelTrace},
+		{4, LevelTrace},
+	}
+
+	for _, tt := range tests {
+		got := LevelFromVerbosity(tt.verbosity)
+		if got != tt.want {
+			t.Errorf("LevelFromVerbosity(%d) = %v, want %v", tt.verbosity, got, tt.want)
+		}
+	}
+}
+
+func TestLevelTrace(t *testing.T) {
+	if LevelTrace >= slog.LevelDebug {
+		t.Error("LevelTrace should be lower than LevelDebug")
+	}
+}
+
 func TestTestWriter_TrimsNewline(t *testing.T) {
 	// Verify the testWriter properly trims trailing newlines
 	tw := &testWriter{t: t}

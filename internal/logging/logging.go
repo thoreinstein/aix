@@ -17,6 +17,28 @@ const (
 	FormatJSON Format = "json"
 )
 
+// LevelTrace is the log level for trace messages.
+// It is lower than Debug (-4) to allow for very verbose output.
+const LevelTrace = slog.LevelDebug - 4
+
+// LevelFromVerbosity returns the log level for the given verbosity count.
+// 0 -> Warn
+// 1 -> Info
+// 2 -> Debug
+// 3+ -> Trace
+func LevelFromVerbosity(v int) slog.Level {
+	switch {
+	case v >= 3:
+		return LevelTrace
+	case v == 2:
+		return slog.LevelDebug
+	case v == 1:
+		return slog.LevelInfo
+	default:
+		return slog.LevelWarn
+	}
+}
+
 // Config holds the configuration for creating a new logger.
 type Config struct {
 	// Level sets the minimum log level. Messages below this level are discarded.
@@ -52,10 +74,10 @@ func New(cfg Config) *slog.Logger {
 }
 
 // Default returns a sensible default logger configured for CLI use.
-// It logs at Info level in text format to stderr.
+// It logs at Warn level in text format to stderr, matching the CLI's default verbosity.
 func Default() *slog.Logger {
 	return New(Config{
-		Level:  slog.LevelInfo,
+		Level:  slog.LevelWarn,
 		Format: FormatText,
 		Output: os.Stderr,
 	})
