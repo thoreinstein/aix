@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/cockroachdb/errors"
 )
 
 func TestHome(t *testing.T) {
@@ -16,6 +18,21 @@ func TestHome(t *testing.T) {
 	}
 	if got != want {
 		t.Errorf("Home() = %q, want %q", got, want)
+	}
+}
+
+func TestResolveHome(t *testing.T) {
+	got, err := ResolveHome()
+	want, _ := os.UserHomeDir()
+
+	if err != nil {
+		// This might happen in some restricted environments,
+		// but normally should succeed.
+		if !errors.Is(err, ErrHomeDirNotFound) {
+			t.Errorf("unexpected error type: %v", err)
+		}
+	} else if got != want {
+		t.Errorf("ResolveHome() = %q, want %q", got, want)
 	}
 }
 
@@ -523,6 +540,69 @@ func TestInstructionFilename(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEnsureDir(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	t.Run("creates new directory with default perms", func(t *testing.T) {
+		path := filepath.Join(tmpDir, "new-dir")
+		err := EnsureDir(path, 0)
+		if err != nil {
+			t.Fatalf("EnsureDir failed: %v", err)
+		}
+
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("stat failed: %v", err)
+		}
+		if !info.IsDir() {
+			t.Errorf("expected directory, got file")
+		}
+		// On some systems (like macOS), the mode might have extra bits (like 0700 or 0755)
+		// but we want to check the permission bits.
+		if info.Mode().Perm() != DefaultDirPerm {
+			t.Errorf("expected perm %o, got %o", DefaultDirPerm, info.Mode().Perm())
+		}
+	})
+
+	t.Run("creates nested directories", func(t *testing.T) {
+		path := filepath.Join(tmpDir, "parent", "child", "grandchild")
+		err := EnsureDir(path, 0o755)
+		if err != nil {
+			t.Fatalf("EnsureDir failed: %v", err)
+		}
+
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("stat failed: %v", err)
+		}
+		if info.Mode().Perm() != 0o755 {
+			t.Errorf("expected perm 0755, got %o", info.Mode().Perm())
+		}
+	})
+
+	t.Run("idempotent", func(t *testing.T) {
+		path := filepath.Join(tmpDir, "existing")
+		err := os.Mkdir(path, 0o755)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = EnsureDir(path, 0o700)
+		if err != nil {
+			t.Errorf("EnsureDir failed on existing directory: %v", err)
+		}
+
+		// Note: MkdirAll (and thus EnsureDir) does NOT change permissions of existing directories.
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if info.Mode().Perm() != 0o755 {
+			t.Errorf("expected original perm 0755 to be preserved, got %o", info.Mode().Perm())
+		}
+	})
 }
 
 // TestXDGHomeConsistency verifies XDG functions return consistent results

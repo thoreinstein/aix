@@ -36,6 +36,7 @@ aix command show <name> [flags]
 
   See Also:
     aix command list     - List installed commands
+    aix command edit     - Edit a command definition
     aix command validate - Validate a command file
 ```
 

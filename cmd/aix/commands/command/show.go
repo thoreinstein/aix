@@ -51,6 +51,7 @@ Searches for the command across all detected platforms (or only the specified
 
   See Also:
     aix command list     - List installed commands
+    aix command edit     - Edit a command definition
     aix command validate - Validate a command file`,
 	Args: cobra.ExactArgs(1),
 	RunE: runShow,

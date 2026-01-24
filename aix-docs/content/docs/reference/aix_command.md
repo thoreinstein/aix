@@ -14,7 +14,7 @@ Manage reusable AI assistant slash commands.
 
 Slash commands extend AI assistant functionality with custom workflows,
 templates, and automated operations. Use subcommands to install, list,
-show, and remove commands across supported platforms.
+show, edit, and remove commands across supported platforms.
 
 ```
 aix command [flags]
@@ -32,10 +32,14 @@ aix command [flags]
   # Show details for a command
   aix command show review
 
+  # Edit a command's source definition
+  aix command edit review
+
   See Also:
     aix command list     - List installed commands
     aix command install  - Install a command
     aix command show     - Show command details
+    aix command edit     - Edit a command definition
     aix command remove   - Remove a command
 ```
 
@@ -54,6 +58,7 @@ aix command [flags]
 ### SEE ALSO
 
 * [aix](/docs/reference/aix/)	 - Unified CLI for AI coding assistant configurations
+* [aix command edit](/docs/reference/aix_command_edit/)	 - Open a command definition in $EDITOR
 * [aix command init](/docs/reference/aix_command_init/)	 - Create a new slash command interactively
 * [aix command install](/docs/reference/aix_command_install/)	 - Install a slash command from a repository, local path, or git URL
 * [aix command list](/docs/reference/aix_command_list/)	 - List installed slash commands

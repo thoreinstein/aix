@@ -75,6 +75,11 @@ is installed, and the temporary directory is cleaned up.`,
 
   # Install to a specific platform
   aix command install review --platform claude`,
+
+  See Also:
+    aix command remove   - Remove an installed command
+    aix command edit     - Edit a command definition
+    aix command init     - Create a new command`,
 	Args: cobra.ExactArgs(1),
 	RunE: runInstall,
 }

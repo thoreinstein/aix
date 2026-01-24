@@ -44,8 +44,12 @@ jobs:
           args: --timeout=5m
 
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     needs: lint
     steps:
       - name: Checkout code
@@ -60,12 +64,12 @@ jobs:
           cache: true
 
       - name: Run tests with coverage
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+        run: go test -v -race -coverprofile=coverage-${{ matrix.os }}.out -covermode=atomic ./...
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574 # v5.4.0
         with:
-          files: ./coverage.out
+          files: ./coverage-${{ matrix.os }}.out
           fail_ci_if_error: false
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -73,8 +77,8 @@ jobs:
       - name: Upload coverage artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: coverage
-          path: coverage.out
+          name: coverage-${{ matrix.os }}
+          path: coverage-${{ matrix.os }}.out
           retention-days: 30
 
   build:
