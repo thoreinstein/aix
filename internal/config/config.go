@@ -71,6 +71,8 @@ func (c *Config) Validate() error {
 // Init initializes Viper with default configuration.
 // Call this once at application startup before accessing config values.
 func Init() {
+	viper.Reset()
+
 	// Config file settings
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
