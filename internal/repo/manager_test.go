@@ -1,8 +1,8 @@
 package repo
 
 import (
+	"errors"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/thoreinstein/aix/internal/git"
@@ -372,25 +372,13 @@ func TestManager_SaveLoadConfig(t *testing.T) {
 
 // Helper functions for error type checking
 func isNotFoundError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return err.Error() == ErrNotFound.Error() ||
-		strings.Contains(err.Error(), "not found")
+	return errors.Is(err, ErrNotFound)
 }
 
 func isInvalidURLError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return err.Error() == ErrInvalidURL.Error() ||
-		strings.Contains(err.Error(), "invalid git URL")
+	return errors.Is(err, ErrInvalidURL)
 }
 
 func isInvalidNameError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return err.Error() == ErrInvalidName.Error() ||
-		strings.Contains(err.Error(), "invalid repository name")
+	return errors.Is(err, ErrInvalidName)
 }

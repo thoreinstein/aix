@@ -88,8 +88,10 @@ func (m *Manager) Add(url string, opts ...Option) (*config.RepoConfig, error) {
 
 	// Check for name collision
 	if cfg.Repos != nil {
-		if _, exists := cfg.Repos[name]; exists {
-			return nil, errors.WithDetailf(ErrNameCollision, "repository %q already exists", name)
+		if existing, exists := cfg.Repos[name]; exists {
+			return nil, errors.WithDetailf(ErrNameCollision,
+				"name %q is already used by %s; use --name to specify an alternate name",
+				name, existing.URL)
 		}
 	}
 
@@ -102,8 +104,12 @@ func (m *Manager) Add(url string, opts ...Option) (*config.RepoConfig, error) {
 	// Build destination path
 	destPath := filepath.Join(cacheDir, name)
 
-	// Clone repository
+	// Clone repository - clean up partial clone on failure
 	if err := git.Clone(url, destPath, 1); err != nil {
+		// Remove any partially-created directory
+		if cleanupErr := os.RemoveAll(destPath); cleanupErr != nil {
+			return nil, errors.Wrapf(err, "cloning repository (cleanup also failed: %v)", cleanupErr)
+		}
 		return nil, errors.Wrap(err, "cloning repository")
 	}
 
@@ -222,6 +228,13 @@ func (m *Manager) Update(name string) error {
 	}
 
 	return nil
+}
+
+// UpdateByPath pulls the latest changes for a repository at the given path.
+// This is more efficient when you already have the repo config and don't need
+// to reload configuration.
+func (m *Manager) UpdateByPath(path string) error {
+	return git.Pull(path)
 }
 
 // Get retrieves a repository by name.
