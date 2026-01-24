@@ -147,7 +147,7 @@ func setupLogging(cmd *cobra.Command) error {
 	handlers := []slog.Handler{primaryHandler}
 
 	if logFile != "" {
-		f, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		f, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 		if err != nil {
 			return errors.NewUserError(err, "failed to open log file")
 		}
