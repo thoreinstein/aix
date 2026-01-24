@@ -14,6 +14,7 @@ import (
 	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/mcp"
+	"github.com/thoreinstein/aix/pkg/fileutil"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
 
@@ -490,7 +491,7 @@ func (s *Scanner) scanMCP(repoPath, repoName, repoURL string) ([]Resource, error
 		}
 
 		mcpPath := filepath.Join(mcpDir, entry.Name())
-		data, err := os.ReadFile(mcpPath)
+		data, err := fileutil.ReadFileWithLimit(mcpPath)
 		if err != nil {
 			s.logger.Warn("failed to read MCP file",
 				"path", mcpPath,

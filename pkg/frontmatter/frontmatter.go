@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/thoreinstein/aix/internal/errors"
+	"github.com/thoreinstein/aix/pkg/fileutil"
 )
 
 // ErrMissingFrontmatter is returned by MustParse when no frontmatter is found.
@@ -30,10 +31,14 @@ func MustParse[T any](r io.Reader, matter *T) (body []byte, err error) {
 }
 
 func parse[T any](r io.Reader, matter *T, required bool) ([]byte, error) {
-	// Read full content
-	content, err := io.ReadAll(r)
+	// Read full content with limit
+	lr := io.LimitReader(r, fileutil.MaxFileSize+1)
+	content, err := io.ReadAll(lr)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading content")
+	}
+	if len(content) > fileutil.MaxFileSize {
+		return nil, fileutil.ErrFileTooLarge
 	}
 
 	// Check for start delimiter
