@@ -204,7 +204,7 @@ func runConfigList(_ *cobra.Command, _ []string) error {
 }
 
 func runConfigEdit(_ *cobra.Command, _ []string) error {
-	configPath := filepath.Join(paths.ConfigHome(), config.AppName, "config.yaml")
+	configPath := config.DefaultConfigPath()
 
 	// Check if config file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -233,7 +233,7 @@ func parsePlatforms(s string) []string {
 
 // writeConfig writes the current viper configuration to the config file.
 func writeConfig() error {
-	configPath := filepath.Join(paths.ConfigHome(), config.AppName, "config.yaml")
+	configPath := config.DefaultConfigPath()
 
 	// Build config structure
 	cfg := map[string]any{

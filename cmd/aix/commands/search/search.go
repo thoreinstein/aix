@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/errors"
-	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/repo"
 	"github.com/thoreinstein/aix/internal/resource"
 )
@@ -80,7 +78,7 @@ func runSearchWithWriter(w io.Writer, args []string) error {
 	}
 
 	// Get repo list
-	configPath := filepath.Join(paths.ConfigHome(), config.AppName, "config.yaml")
+	configPath := config.DefaultConfigPath()
 	mgr := repo.NewManager(configPath)
 
 	repos, err := mgr.List()

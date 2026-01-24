@@ -1,11 +1,8 @@
 package resource
 
 import (
-	"path/filepath"
-
 	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/errors"
-	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/repo"
 )
 
@@ -15,7 +12,7 @@ var ErrNoReposConfigured = errors.New("no repositories configured")
 // FindByName scans all configured repositories and returns resources matching
 // the given name and type exactly. Returns an empty slice if no matches found.
 func FindByName(name string, resourceType ResourceType) ([]Resource, error) {
-	configPath := filepath.Join(paths.ConfigHome(), config.AppName, "config.yaml")
+	configPath := config.DefaultConfigPath()
 	mgr := repo.NewManager(configPath)
 
 	repos, err := mgr.List()
@@ -39,7 +36,7 @@ func FindByName(name string, resourceType ResourceType) ([]Resource, error) {
 // FindByNameInRepo scans a specific repository and returns the resource matching
 // the given name and type exactly. Returns nil if no match found.
 func FindByNameInRepo(name string, resourceType ResourceType, repoName string) (*Resource, error) {
-	configPath := filepath.Join(paths.ConfigHome(), config.AppName, "config.yaml")
+	configPath := config.DefaultConfigPath()
 	mgr := repo.NewManager(configPath)
 
 	repoConfig, err := mgr.Get(repoName)
