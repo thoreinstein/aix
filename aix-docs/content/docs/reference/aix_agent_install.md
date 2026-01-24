@@ -6,15 +6,20 @@ toc: true
 ---
 ## aix agent install
 
-Install an agent from a local path
+Install an agent from a repository or local path
 
 ### Synopsis
 
-Install an AI coding agent from a local AGENT.md file.
+Install an AI coding agent from a configured repository or local AGENT.md file.
 
 The source can be:
+  - An agent name to search in configured repositories
   - A path to an AGENT.md file
   - A directory containing an AGENT.md file
+
+When given a name (not a path), aix searches configured repositories first.
+If the agent exists in multiple repositories, you will be prompted to select one.
+Use --file to skip repo search and treat the argument as a file path.
 
 The AGENT.md file should contain YAML frontmatter with at least a 'name' field,
 followed by the agent's instructions in markdown format.
@@ -27,9 +32,6 @@ Example AGENT.md:
 
   You are a code review expert. When reviewing code...
 
-Flags:
-  --force, -f     Overwrite existing agent without confirmation
-
 ```
 aix agent install <source> [flags]
 ```
@@ -37,23 +39,28 @@ aix agent install <source> [flags]
 ### Examples
 
 ```
+  # Install by name from configured repos
+  aix agent install code-reviewer
+
   # Install from a file
   aix agent install ./my-agent/AGENT.md
+  aix agent install --file my-agent  # Force file path interpretation
 
   # Install from a directory
   aix agent install ./my-agent/
 
   # Install to specific platform
-  aix agent install ./my-agent/ --platform claude
+  aix agent install code-reviewer --platform claude
 
   # Force overwrite existing agent
-  aix agent install ./my-agent/ --force
+  aix agent install code-reviewer --force
 ```
 
 ### Options
 
 ```
-  -f, --force   overwrite existing agent without confirmation
+  -f, --file    treat argument as a file path instead of searching repos
+      --force   overwrite existing agent without confirmation
   -h, --help    help for install
 ```
 

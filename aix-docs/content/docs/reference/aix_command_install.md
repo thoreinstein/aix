@@ -6,16 +6,21 @@ toc: true
 ---
 ## aix command install
 
-Install a slash command from a local path or git URL
+Install a slash command from a repository, local path, or git URL
 
 ### Synopsis
 
-Install a slash command from a local file, directory, or git repository.
+Install a slash command from a configured repository, local file/directory, or git URL.
 
 The source can be:
+  - A command name to search in configured repositories
   - A local .md file containing the command definition
   - A directory containing a command.md file or any .md file
   - A git URL (https://, git@, or .git suffix)
+
+When given a name (not a path), aix searches configured repositories first.
+If the command exists in multiple repositories, you will be prompted to select one.
+Use --file to skip repo search and treat the argument as a file path.
 
 For git URLs, the repository is cloned to a temporary directory, the command
 is installed, and the temporary directory is cleaned up.
@@ -27,8 +32,12 @@ aix command install <source> [flags]
 ### Examples
 
 ```
+  # Install by name from configured repos
+  aix command install review
+
   # Install from a local file
   aix command install ./review.md
+  aix command install --file review.md  # Force file path interpretation
 
   # Install from a directory
   aix command install ./my-command/
@@ -38,20 +47,17 @@ aix command install <source> [flags]
   aix command install git@github.com:user/my-command.git
 
   # Force overwrite existing command
-  aix command install ./review.md --force
+  aix command install review --force
 
   # Install to a specific platform
-  aix command install ./review.md --platform claude
-
-  See Also:
-    aix command remove   - Remove an installed command
-    aix command init     - Create a new command
+  aix command install review --platform claude
 ```
 
 ### Options
 
 ```
-  -f, --force   overwrite existing command without confirmation
+  -f, --file    treat argument as a file path instead of searching repos
+      --force   overwrite existing command without confirmation
   -h, --help    help for install
 ```
 
