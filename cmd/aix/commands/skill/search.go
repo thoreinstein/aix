@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"text/tabwriter"
 
 	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/config"
-	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/repo"
 	"github.com/thoreinstein/aix/internal/resource"
 )
@@ -64,7 +62,7 @@ func runSearchWithWriter(w io.Writer, args []string) error {
 	query := args[0]
 
 	// Get repo list
-	configPath := filepath.Join(paths.ConfigHome(), config.AppName, "config.yaml")
+	configPath := config.DefaultConfigPath()
 	mgr := repo.NewManager(configPath)
 
 	repos, err := mgr.List()
@@ -78,6 +76,20 @@ func runSearchWithWriter(w io.Writer, args []string) error {
 		fmt.Fprintln(w, "Add a repository with:")
 		fmt.Fprintln(w, "  aix repo add <url>")
 		return nil
+	}
+
+	// Validate --repo filter against known repositories.
+	if searchRepo != "" {
+		found := false
+		for _, r := range repos {
+			if r.Name == searchRepo {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return errors.Errorf("repository %q not found; run 'aix repo list' to see available repositories", searchRepo)
+		}
 	}
 
 	// Scan all repos
