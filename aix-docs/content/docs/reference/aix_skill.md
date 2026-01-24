@@ -54,6 +54,7 @@ aix skill [flags]
 * [aix skill install](/docs/reference/aix_skill_install/)	 - Install a skill from a repository, local path, or git URL
 * [aix skill list](/docs/reference/aix_skill_list/)	 - List installed skills
 * [aix skill remove](/docs/reference/aix_skill_remove/)	 - Remove an installed skill
+* [aix skill search](/docs/reference/aix_skill_search/)	 - Search for skills in repositories
 * [aix skill show](/docs/reference/aix_skill_show/)	 - Display detailed skill information
 * [aix skill validate](/docs/reference/aix_skill_validate/)	 - Validate a skill file
 
