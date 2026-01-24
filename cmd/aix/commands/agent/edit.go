@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
@@ -44,11 +45,11 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		// It's a local file, use it directly
 		absPath, err := filepath.Abs(target)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "getting absolute path")
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "Opening local agent file: %s\n", absPath)
 		if err := editor.Open(absPath); err != nil {
-			return err
+			return errors.Wrap(err, "opening editor")
 		}
 		return validateAfterEdit(absPath, cmd)
 	}
@@ -56,7 +57,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 	// 2. Lookup as installed agent name
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolving platforms")
 	}
 
 	var agentPath string
@@ -73,17 +74,17 @@ func runEdit(cmd *cobra.Command, args []string) error {
 	}
 
 	if foundPlatform == nil {
-		return fmt.Errorf("agent %q not found (checked local path and installed platforms)", target)
+		return errors.Newf("agent %q not found (checked local path and installed platforms)", target)
 	}
 
 	// Verify file exists
 	if _, err := os.Stat(agentPath); os.IsNotExist(err) {
-		return fmt.Errorf("agent file not found at %s", agentPath)
+		return errors.Newf("agent file not found at %s", agentPath)
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Opening %s agent %q...\n", foundPlatform.DisplayName(), target)
 	if err := editor.Open(agentPath); err != nil {
-		return err
+		return errors.Wrap(err, "opening editor")
 	}
 	return validateAfterEdit(agentPath, cmd)
 }

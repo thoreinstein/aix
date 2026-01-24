@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -877,7 +878,7 @@ func Test_installFromLocal_ValidServerWithWarnings(t *testing.T) {
 	// This should pass validation (with warnings) and proceed to platform install
 	err := installFromLocal(jsonPath)
 	// Expect success or platform-related error (not validation error)
-	if err == errInstallFailed {
+	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass (possibly with warnings), got errInstallFailed")
 	}
 }
@@ -896,7 +897,7 @@ func Test_installFromLocal_URLServer(t *testing.T) {
 	// This should pass validation and proceed to platform install
 	err := installFromLocal(jsonPath)
 	// Should not fail at validation
-	if err == errInstallFailed {
+	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass for valid remote server")
 	}
 }
@@ -918,7 +919,7 @@ func Test_installFromLocal_ServerWithEnvAndHeaders(t *testing.T) {
 
 	err := installFromLocal(jsonPath)
 	// Should not fail at validation
-	if err == errInstallFailed {
+	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass for server with headers and env")
 	}
 }
@@ -939,7 +940,7 @@ func Test_installFromLocal_ServerWithPlatforms(t *testing.T) {
 
 	err := installFromLocal(jsonPath)
 	// Should not fail at validation
-	if err == errInstallFailed {
+	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass for server with platform restriction")
 	}
 }
@@ -960,7 +961,7 @@ func Test_installFromLocal_ServerWithInvalidPlatform(t *testing.T) {
 
 	err := installFromLocal(jsonPath)
 	// Should fail validation
-	if err != errInstallFailed {
+	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed for invalid platform, got: %v", err)
 	}
 }
@@ -981,7 +982,7 @@ func Test_installFromLocal_ServerWithInvalidTransport(t *testing.T) {
 
 	err := installFromLocal(jsonPath)
 	// Should fail validation
-	if err != errInstallFailed {
+	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed for invalid transport, got: %v", err)
 	}
 }
@@ -1002,7 +1003,7 @@ func Test_installFromLocal_ServerWithEmptyEnvKey(t *testing.T) {
 
 	err := installFromLocal(jsonPath)
 	// Should fail validation
-	if err != errInstallFailed {
+	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed for empty env key, got: %v", err)
 	}
 }
@@ -1023,7 +1024,7 @@ func Test_installFromLocal_ServerWithEmptyHeaderKey(t *testing.T) {
 
 	err := installFromLocal(jsonPath)
 	// Should fail validation
-	if err != errInstallFailed {
+	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed for empty header key, got: %v", err)
 	}
 }
@@ -1044,7 +1045,7 @@ func Test_installFromLocal_StdioTransportWithURL(t *testing.T) {
 
 	err := installFromLocal(jsonPath)
 	// Should fail validation (stdio requires command)
-	if err != errInstallFailed {
+	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed for stdio without command, got: %v", err)
 	}
 }
@@ -1065,7 +1066,7 @@ func Test_installFromLocal_SSETransportWithCommand(t *testing.T) {
 
 	err := installFromLocal(jsonPath)
 	// Should fail validation (sse requires url)
-	if err != errInstallFailed {
+	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed for sse without url, got: %v", err)
 	}
 }
@@ -1087,7 +1088,7 @@ func Test_installFromLocal_ExplicitTransportStdio(t *testing.T) {
 
 	err := installFromLocal(jsonPath)
 	// Should not fail at validation
-	if err == errInstallFailed {
+	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass for valid stdio server")
 	}
 }
@@ -1108,7 +1109,7 @@ func Test_installFromLocal_ExplicitTransportSSE(t *testing.T) {
 
 	err := installFromLocal(jsonPath)
 	// Should not fail at validation
-	if err == errInstallFailed {
+	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass for valid sse server")
 	}
 }
@@ -1129,7 +1130,7 @@ func Test_installFromLocal_DisabledServer(t *testing.T) {
 
 	err := installFromLocal(jsonPath)
 	// Should not fail at validation - disabled is just a flag
-	if err == errInstallFailed {
+	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass for disabled server")
 	}
 }

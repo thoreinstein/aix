@@ -32,7 +32,7 @@ func parse[T any](r io.Reader, matter *T, required bool) ([]byte, error) {
 	// Read full content
 	content, err := io.ReadAll(r)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "reading content")
 	}
 
 	// Check for start delimiter
@@ -80,7 +80,7 @@ func parse[T any](r io.Reader, matter *T, required bool) ([]byte, error) {
 	}
 
 	if err := yaml.Unmarshal(fm, matter); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parsing YAML frontmatter")
 	}
 
 	return bodyContent, nil
@@ -95,7 +95,7 @@ func ParseHeader(r io.Reader, matter any) error {
 
 	// Check first line
 	if !scanner.Scan() {
-		return scanner.Err()
+		return errors.Wrap(scanner.Err(), "reading header")
 	}
 	line := strings.TrimSpace(scanner.Text())
 	if line != "---" {
@@ -108,13 +108,13 @@ func ParseHeader(r io.Reader, matter any) error {
 		line := scanner.Text()
 		if strings.TrimSpace(line) == "---" {
 			// Found closing delimiter
-			return yaml.Unmarshal(buf.Bytes(), matter)
+			return errors.Wrap(yaml.Unmarshal(buf.Bytes(), matter), "parsing YAML header")
 		}
 		buf.WriteString(line)
 		buf.WriteString("\n")
 	}
 
-	return scanner.Err()
+	return errors.Wrap(scanner.Err(), "scanning header")
 }
 
 // Format formats content with YAML frontmatter.
@@ -127,7 +127,7 @@ func Format(matter any, body string) ([]byte, error) {
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(2)
 	if err := enc.Encode(matter); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "encoding YAML frontmatter")
 	}
 
 	buf.WriteString("---\n")

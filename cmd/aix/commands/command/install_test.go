@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -120,7 +121,7 @@ Some instructions.
 	}
 
 	// Should fail validation
-	if err != errInstallFailed {
+	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed, got: %v", err)
 	}
 }

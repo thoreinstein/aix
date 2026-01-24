@@ -73,7 +73,7 @@ func EnsureDir(path string, perm os.FileMode) error {
 	if perm == 0 {
 		perm = DefaultDirPerm
 	}
-	return os.MkdirAll(path, perm)
+	return errors.Wrapf(os.MkdirAll(path, perm), "creating directory %s", path)
 }
 
 // Home returns the user's home directory.

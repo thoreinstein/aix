@@ -2,6 +2,8 @@ package mcp
 
 import (
 	"encoding/json"
+
+	"github.com/cockroachdb/errors"
 )
 
 // Transport type constants for MCP server communication.
@@ -92,7 +94,7 @@ func (s *Server) MarshalJSON() ([]byte, error) {
 	for k, v := range s.unknownFields {
 		var val any
 		if err := json.Unmarshal(v, &val); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "unmarshaling unknown field")
 		}
 		result[k] = val
 	}
@@ -132,61 +134,61 @@ func (s *Server) UnmarshalJSON(data []byte) error {
 	// First, unmarshal into a generic map to capture all fields
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
+		return errors.Wrap(err, "unmarshaling raw server data")
 	}
 
 	// Extract known fields
 	if v, ok := raw["name"]; ok {
 		if err := json.Unmarshal(v, &s.Name); err != nil {
-			return err
+			return errors.Wrap(err, "unmarshaling name")
 		}
 		delete(raw, "name")
 	}
 	if v, ok := raw["command"]; ok {
 		if err := json.Unmarshal(v, &s.Command); err != nil {
-			return err
+			return errors.Wrap(err, "unmarshaling command")
 		}
 		delete(raw, "command")
 	}
 	if v, ok := raw["args"]; ok {
 		if err := json.Unmarshal(v, &s.Args); err != nil {
-			return err
+			return errors.Wrap(err, "unmarshaling args")
 		}
 		delete(raw, "args")
 	}
 	if v, ok := raw["url"]; ok {
 		if err := json.Unmarshal(v, &s.URL); err != nil {
-			return err
+			return errors.Wrap(err, "unmarshaling url")
 		}
 		delete(raw, "url")
 	}
 	if v, ok := raw["transport"]; ok {
 		if err := json.Unmarshal(v, &s.Transport); err != nil {
-			return err
+			return errors.Wrap(err, "unmarshaling transport")
 		}
 		delete(raw, "transport")
 	}
 	if v, ok := raw["env"]; ok {
 		if err := json.Unmarshal(v, &s.Env); err != nil {
-			return err
+			return errors.Wrap(err, "unmarshaling env")
 		}
 		delete(raw, "env")
 	}
 	if v, ok := raw["headers"]; ok {
 		if err := json.Unmarshal(v, &s.Headers); err != nil {
-			return err
+			return errors.Wrap(err, "unmarshaling headers")
 		}
 		delete(raw, "headers")
 	}
 	if v, ok := raw["platforms"]; ok {
 		if err := json.Unmarshal(v, &s.Platforms); err != nil {
-			return err
+			return errors.Wrap(err, "unmarshaling platforms")
 		}
 		delete(raw, "platforms")
 	}
 	if v, ok := raw["disabled"]; ok {
 		if err := json.Unmarshal(v, &s.Disabled); err != nil {
-			return err
+			return errors.Wrap(err, "unmarshaling disabled status")
 		}
 		delete(raw, "disabled")
 	}
@@ -226,7 +228,7 @@ func (c *Config) MarshalJSON() ([]byte, error) {
 	for k, v := range c.unknownFields {
 		var val any
 		if err := json.Unmarshal(v, &val); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "unmarshaling unknown field")
 		}
 		result[k] = val
 	}
@@ -242,13 +244,13 @@ func (c *Config) UnmarshalJSON(data []byte) error {
 	// First, unmarshal into a generic map to capture all fields
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
+		return errors.Wrap(err, "unmarshaling raw config data")
 	}
 
 	// Extract the known field
 	if serversData, ok := raw["servers"]; ok {
 		if err := json.Unmarshal(serversData, &c.Servers); err != nil {
-			return err
+			return errors.Wrap(err, "unmarshaling servers")
 		}
 		delete(raw, "servers")
 

@@ -1,6 +1,7 @@
 package claude
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -191,7 +192,7 @@ func TestAgentManager_Get_NonExistentAgent(t *testing.T) {
 	mgr := NewAgentManager(paths.ClaudePaths)
 
 	_, err := mgr.Get("nonexistent")
-	if err != ErrAgentNotFound {
+	if !errors.Is(err, ErrAgentNotFound) {
 		t.Errorf("Get() error = %v, want ErrAgentNotFound", err)
 	}
 }
@@ -201,7 +202,7 @@ func TestAgentManager_Get_EmptyName(t *testing.T) {
 	mgr := NewAgentManager(paths.ClaudePaths)
 
 	_, err := mgr.Get("")
-	if err != ErrInvalidAgent {
+	if !errors.Is(err, ErrInvalidAgent) {
 		t.Errorf("Get() error = %v, want ErrInvalidAgent", err)
 	}
 }
@@ -303,7 +304,7 @@ func TestAgentManager_Install_NilAgent(t *testing.T) {
 	mgr := NewAgentManager(paths.ClaudePaths)
 
 	err := mgr.Install(nil)
-	if err != ErrInvalidAgent {
+	if !errors.Is(err, ErrInvalidAgent) {
 		t.Errorf("Install(nil) error = %v, want ErrInvalidAgent", err)
 	}
 }
@@ -318,7 +319,7 @@ func TestAgentManager_Install_EmptyName(t *testing.T) {
 	}
 
 	err := mgr.Install(agent)
-	if err != ErrInvalidAgent {
+	if !errors.Is(err, ErrInvalidAgent) {
 		t.Errorf("Install() with empty name error = %v, want ErrInvalidAgent", err)
 	}
 }
@@ -368,7 +369,7 @@ func TestAgentManager_Uninstall_EmptyName(t *testing.T) {
 	mgr := NewAgentManager(paths.ClaudePaths)
 
 	err := mgr.Uninstall("")
-	if err != ErrInvalidAgent {
+	if !errors.Is(err, ErrInvalidAgent) {
 		t.Errorf("Uninstall() with empty name error = %v, want ErrInvalidAgent", err)
 	}
 }

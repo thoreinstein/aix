@@ -2,6 +2,7 @@ package claude
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -144,7 +145,7 @@ func TestMCPManager_Get_NonExistentServer(t *testing.T) {
 	mgr := NewMCPManager(paths)
 
 	_, err := mgr.Get("nonexistent")
-	if err != ErrMCPServerNotFound {
+	if !errors.Is(err, ErrMCPServerNotFound) {
 		t.Errorf("Get() error = %v, want %v", err, ErrMCPServerNotFound)
 	}
 }
@@ -252,7 +253,7 @@ func TestMCPManager_Add_InvalidServer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := mgr.Add(tt.server)
-			if err != ErrInvalidMCPServer {
+			if !errors.Is(err, ErrInvalidMCPServer) {
 				t.Errorf("Add() error = %v, want %v", err, ErrInvalidMCPServer)
 			}
 		})
@@ -285,7 +286,7 @@ func TestMCPManager_Remove_ExistingServer(t *testing.T) {
 
 	// Verify removal
 	_, err := mgr.Get("to-remove")
-	if err != ErrMCPServerNotFound {
+	if !errors.Is(err, ErrMCPServerNotFound) {
 		t.Errorf("Get(to-remove) error = %v, want %v", err, ErrMCPServerNotFound)
 	}
 
@@ -383,7 +384,7 @@ func TestMCPManager_Enable_NonExistentServer(t *testing.T) {
 	mgr := NewMCPManager(paths)
 
 	err := mgr.Enable("nonexistent")
-	if err != ErrMCPServerNotFound {
+	if !errors.Is(err, ErrMCPServerNotFound) {
 		t.Errorf("Enable() error = %v, want %v", err, ErrMCPServerNotFound)
 	}
 }
@@ -394,7 +395,7 @@ func TestMCPManager_Disable_NonExistentServer(t *testing.T) {
 	mgr := NewMCPManager(paths)
 
 	err := mgr.Disable("nonexistent")
-	if err != ErrMCPServerNotFound {
+	if !errors.Is(err, ErrMCPServerNotFound) {
 		t.Errorf("Disable() error = %v, want %v", err, ErrMCPServerNotFound)
 	}
 }
