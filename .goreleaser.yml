@@ -122,7 +122,7 @@ homebrew_casks:
     homepage: https://github.com/thoreinstein/aix
     description: "A tool for managing, creating and sharing agent skills, commands and hooks"
     license: "MIT"
-    binary: aix
+    binaries: [aix]
 
 release:
   github:
