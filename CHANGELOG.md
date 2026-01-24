@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.0] - 2026-01-24
+
+### Features
+- 4152db6 feat(platform): implement Gemini CLI platform adapter
+
+### Fixes
+- 53c7467 fix(tests): unset XDG_CONFIG_HOME in path tests to fix CI failure
+
+### Documentation
+- 8c27fd0 docs: fix blog post frontmatter
+- d04c7ef docs: remove emojis and non-ascii characters for clean release
+
+### CI/CD
+- 67b93c3 ci: run release on macos-latest with signing secrets
+
 ## [0.1.0] - 2024-01-24
 
 ### Added
