@@ -26,23 +26,16 @@ func TestSetupLogging_VerbosityFlags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			verbosity = tt.verbosity
-			setupLogging(rootCmd)
+			if err := setupLogging(rootCmd); err != nil {
+				t.Fatalf("setupLogging failed: %v", err)
+			}
 
 			logger := slog.Default()
 			if !logger.Enabled(t.Context(), tt.wantLevel) {
 				t.Errorf("expected level %v to be enabled", tt.wantLevel)
 			}
 			if tt.wantLevel > logging.LevelTrace {
-				// Check that a lower level is NOT enabled (e.g. if we want Info, Debug shouldn't be enabled)
-
-				// Wait, slog levels are: Debug(-4), Info(0), Warn(4), Error(8)
-				// My LevelTrace is Debug-4 (-8).
-				// If I want Info (0), Debug (-4) should NOT be enabled.
-				// But wait, enabled checks if >= level.
-				// If logger is at Info, Enabled(Info) is true. Enabled(Debug) is false.
-
-				// Let's verify exact match by checking boundary
-				shouldBeDisabled := tt.wantLevel - 4 // approximate next lower standard level
+				shouldBeDisabled := tt.wantLevel - 4
 				if logger.Enabled(t.Context(), shouldBeDisabled) {
 					t.Errorf("expected level %v to be disabled", shouldBeDisabled)
 				}
@@ -52,7 +45,6 @@ func TestSetupLogging_VerbosityFlags(t *testing.T) {
 }
 
 func TestSetupLogging_EnvVar(t *testing.T) {
-	// Save/Restore original state
 	origVerbosity := verbosity
 	defer func() { verbosity = origVerbosity }()
 
@@ -70,17 +62,18 @@ func TestSetupLogging_EnvVar(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			verbosity = 0 // ensure flag doesn't override
+			verbosity = 0
 			t.Setenv("AIX_DEBUG", tt.envVal)
 
-			setupLogging(rootCmd)
+			if err := setupLogging(rootCmd); err != nil {
+				t.Fatalf("setupLogging failed: %v", err)
+			}
 
 			logger := slog.Default()
 			if !logger.Enabled(t.Context(), tt.wantLevel) {
 				t.Errorf("expected level %v to be enabled", tt.wantLevel)
 			}
 
-			// Verify it's not too verbose (e.g. 1 shouldn't give Trace)
 			if tt.wantLevel == slog.LevelDebug {
 				if logger.Enabled(t.Context(), logging.LevelTrace) {
 					t.Error("expected Trace level to be disabled when AIX_DEBUG=1")
@@ -91,14 +84,15 @@ func TestSetupLogging_EnvVar(t *testing.T) {
 }
 
 func TestSetupLogging_FlagPrecedence(t *testing.T) {
-	// Flag should override Env Var
 	origVerbosity := verbosity
 	defer func() { verbosity = origVerbosity }()
 
-	t.Setenv("AIX_DEBUG", "2") // Set to Trace
-	verbosity = 1              // Set flag to Info
+	t.Setenv("AIX_DEBUG", "2")
+	verbosity = 1
 
-	setupLogging(rootCmd)
+	if err := setupLogging(rootCmd); err != nil {
+		t.Fatalf("setupLogging failed: %v", err)
+	}
 
 	logger := slog.Default()
 	if !logger.Enabled(t.Context(), slog.LevelInfo) {
@@ -106,5 +100,45 @@ func TestSetupLogging_FlagPrecedence(t *testing.T) {
 	}
 	if logger.Enabled(t.Context(), slog.LevelDebug) {
 		t.Error("expected Debug level to be disabled (flag should override env var)")
+	}
+}
+
+func TestSetupLogging_Quiet(t *testing.T) {
+	origQuiet := quiet
+	origVerbosity := verbosity
+	defer func() {
+		quiet = origQuiet
+		verbosity = origVerbosity
+	}()
+
+	quiet = true
+	verbosity = 0
+
+	if err := setupLogging(rootCmd); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	logger := slog.Default()
+	if !logger.Enabled(t.Context(), slog.LevelError) {
+		t.Error("expected Error level to be enabled")
+	}
+	if logger.Enabled(t.Context(), slog.LevelWarn) {
+		t.Error("expected Warn level to be disabled")
+	}
+}
+
+func TestSetupLogging_QuietMutualExclusion(t *testing.T) {
+	origVerbosity := verbosity
+	origQuiet := quiet
+	defer func() {
+		verbosity = origVerbosity
+		quiet = origQuiet
+	}()
+
+	verbosity = 1
+	quiet = true
+
+	if err := setupLogging(rootCmd); err == nil {
+		t.Error("expected error when both quiet and verbose are set")
 	}
 }

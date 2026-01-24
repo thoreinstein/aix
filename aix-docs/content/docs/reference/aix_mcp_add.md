@@ -62,6 +62,7 @@ aix mcp add [name] [command] [args...] [flags]
 ### Options inherited from parent commands
 
 ```
+  -q, --quiet           suppress non-error output
   -v, --verbose count   increase verbosity level (e.g., -v, -vv)
 ```
 

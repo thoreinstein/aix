@@ -54,6 +54,7 @@ aix skill edit <name|path> [flags]
 
 ```
   -p, --platform strings   target platform(s): claude, opencode (default: all detected)
+  -q, --quiet              suppress non-error output
   -v, --verbose count      increase verbosity level (e.g., -v, -vv)
 ```
 
