@@ -55,6 +55,14 @@ linters:
               desc: "Use io and os packages instead"
             - pkg: "github.com/pkg/errors"
               desc: "Use standard library errors package with fmt.Errorf"
+    wrapcheck:
+      extra-ignore-sigs:
+        - .Newf(
+        - .WithDetail(
+        - .WithDetailf(
+      ignorePackageGlobs:
+        - github.com/cockroachdb/errors
+        - github.com/thoreinstein/aix/internal/errors
   exclusions:
     generated: lax
     presets:
