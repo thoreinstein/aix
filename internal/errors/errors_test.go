@@ -272,7 +272,7 @@ func TestNewConstructors(t *testing.T) {
 	t.Run("NewExitErrorWithSuggestion", func(t *testing.T) {
 		err := errors.New("oops")
 		e := NewExitErrorWithSuggestion(err, 123, "try this")
-		if e.Err != err {
+		if !errors.Is(e.Err, err) {
 			t.Errorf("Err = %v, want %v", e.Err, err)
 		}
 		if e.Code != 123 {
@@ -315,4 +315,52 @@ func TestNewConstructors(t *testing.T) {
 			t.Errorf("Suggestion = %q, want 'Run: aix doctor'", e.Suggestion)
 		}
 	})
+}
+
+func TestWrappingHelpers(t *testing.T) {
+	t.Run("Wrap", func(t *testing.T) {
+		err := ErrNotFound
+		wrapped := Wrap(err, "context")
+		if !Is(wrapped, ErrNotFound) {
+			t.Error("Is(wrapped, ErrNotFound) = false, want true")
+		}
+		want := "context: resource not found"
+		if got := wrapped.Error(); got != want {
+			t.Errorf("Error() = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("Wrapf", func(t *testing.T) {
+		err := ErrInvalidConfig
+		wrapped := Wrapf(err, "loading %s", "skill")
+		if !Is(wrapped, ErrInvalidConfig) {
+			t.Error("Is(wrapped, ErrInvalidConfig) = false, want true")
+		}
+		want := "loading skill: invalid configuration"
+		if got := wrapped.Error(); got != want {
+			t.Errorf("Error() = %q, want %q", got, want)
+		}
+	})
+}
+
+func TestJoin(t *testing.T) {
+	err1 := errors.New("error 1")
+	err2 := errors.New("error 2")
+	joined := Join(err1, err2)
+
+	if joined == nil {
+		t.Fatal("Join() returned nil, want error")
+	}
+
+	want := "error 1\nerror 2"
+	if got := joined.Error(); got != want {
+		t.Errorf("Error() = %q, want %q", got, want)
+	}
+
+	if !Is(joined, err1) {
+		t.Error("Is(joined, err1) = false, want true")
+	}
+	if !Is(joined, err2) {
+		t.Error("Is(joined, err2) = false, want true")
+	}
 }

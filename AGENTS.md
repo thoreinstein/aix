@@ -68,27 +68,27 @@ import (
 
 ### Error Handling
 
-Wrap errors with context using `%w`:
+Use the `internal/errors` package for consistent error handling and wrapping:
 
 ```go
+import "github.com/thoreinstein/aix/internal/errors"
+
 // Good - adds context while preserving the error chain
 if err := s.loadConfig(); err != nil {
-    return fmt.Errorf("loading skill %s: %w", name, err)
+    return errors.Wrapf(err, "loading skill %s", name)
 }
 
-// Define sentinel errors for expected conditions
-var (
-    ErrMissingName = errors.New("skill name is required")
-    ErrNotFound    = errors.New("resource not found")
-)
+// Define sentinel errors in internal/errors/errors.go for common conditions
+if errors.Is(err, errors.ErrNotFound) {
+    // handle not found case
+}
 
-// Return early on errors
-func (p *Parser) Parse(path string) (*Skill, error) {
-    data, err := os.ReadFile(path)
-    if err != nil {
-        return nil, fmt.Errorf("reading skill file: %w", err)
+// For CLI-facing errors, use ExitError to control exit code and provide suggestions
+func (cmd *MyCommand) Run() error {
+    if err := validate(); err != nil {
+        return errors.NewUserError(err, "Check your input and try again")
     }
-    // ... continue processing
+    return nil
 }
 ```
 
@@ -116,16 +116,18 @@ type Platform interface {
 // Package skill provides Agent Skills Spec compliant skill management.
 package skill
 
+import "github.com/thoreinstein/aix/internal/validator"
+
 // Validator validates skills against the Agent Skills Specification.
 // It supports both strict and lenient validation modes.
 type Validator struct {
-    strict bool
+	strict bool
 }
 
 // Validate checks a skill for spec compliance.
-// Returns a slice of validation errors, or nil if valid.
-func (v *Validator) Validate(s *Skill) []error {
-    // Implementation
+// Returns a Result containing errors and warnings.
+func (v *Validator) Validate(s *Skill) *validator.Result {
+	// Implementation
 }
 ```
 
@@ -190,16 +192,17 @@ func TestValidator_Validate(t *testing.T) {
             wantErr: true,
         },
     }
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            v := NewValidator(true)
-            errs := v.Validate(tt.skill)
-            if (len(errs) > 0) != tt.wantErr {
-                t.Errorf("Validate() errors = %v, wantErr %v", errs, tt.wantErr)
-            }
-        })
+    	for _, tt := range tests {
+    		t.Run(tt.name, func(t *testing.T) {
+    			v := NewValidator(true)
+    			result := v.Validate(tt.skill)
+    			if result.HasErrors() != tt.wantErr {
+    				t.Errorf("Validate() errors = %v, wantErr %v", result.Issues, tt.wantErr)
+    			}
+    		})
+    	}
     }
-}
+
 ```
 
 ### Test Helpers

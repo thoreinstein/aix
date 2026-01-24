@@ -1,9 +1,10 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/cockroachdb/errors"
+	pkgerrors "github.com/cockroachdb/errors"
 )
 
 // Exit codes for CLI applications.
@@ -21,19 +22,37 @@ const (
 // Sentinel errors for common failure conditions.
 var (
 	// ErrMissingName indicates a required name field is missing.
-	ErrMissingName = errors.New("name is required")
+	ErrMissingName = pkgerrors.New("name is required")
 
 	// ErrNotFound indicates the requested resource was not found.
-	ErrNotFound = errors.New("resource not found")
+	ErrNotFound = pkgerrors.New("resource not found")
 
 	// ErrInvalidConfig indicates configuration validation failed.
-	ErrInvalidConfig = errors.New("invalid configuration")
+	ErrInvalidConfig = pkgerrors.New("invalid configuration")
 
 	// ErrInvalidToolSyntax indicates a malformed tool permission string.
-	ErrInvalidToolSyntax = errors.New("invalid tool syntax")
+	ErrInvalidToolSyntax = pkgerrors.New("invalid tool syntax")
 
 	// ErrUnknownTool indicates the tool is not in the known tool list.
-	ErrUnknownTool = errors.New("unknown tool")
+	ErrUnknownTool = pkgerrors.New("unknown tool")
+
+	// ErrPermissionDenied indicates the operation is not permitted.
+	ErrPermissionDenied = pkgerrors.New("permission denied")
+
+	// ErrNotImplemented indicates the requested feature is not yet implemented.
+	ErrNotImplemented = pkgerrors.New("not implemented")
+
+	// ErrNotSupported indicates the requested operation is not supported on the platform.
+	ErrNotSupported = pkgerrors.New("not supported")
+
+	// ErrTimeout indicates the operation timed out.
+	ErrTimeout = pkgerrors.New("operation timed out")
+
+	// ErrInternal indicates an unexpected internal error.
+	ErrInternal = pkgerrors.New("internal error")
+
+	// ErrValidation indicates a validation failure.
+	ErrValidation = pkgerrors.New("validation failed")
 )
 
 // ExitError wraps an error with an exit code and optional suggestion for CLI applications.
@@ -112,5 +131,42 @@ func (e *ExitError) Unwrap() error {
 // Newf creates a new error with a formatted message.
 // This is a passthrough to cockroachdb/errors.Newf.
 func Newf(format string, args ...interface{}) error {
-	return errors.Newf(format, args...)
+	return pkgerrors.Newf(format, args...)
+}
+
+// Wrap wraps an error with a message.
+// This is a passthrough to cockroachdb/errors.Wrap.
+func Wrap(err error, msg string) error {
+	return pkgerrors.Wrap(err, msg)
+}
+
+// Wrapf wraps an error with a formatted message.
+// This is a passthrough to cockroachdb/errors.Wrapf.
+func Wrapf(err error, format string, args ...interface{}) error {
+	return pkgerrors.Wrapf(err, format, args...)
+}
+
+// Is reports whether any error in err's chain matches target.
+// This is a passthrough to cockroachdb/errors.Is.
+func Is(err, target error) bool {
+	return pkgerrors.Is(err, target)
+}
+
+// As finds the first error in err's chain that matches target, and if so, sets
+// target to that error value and returns true.
+// This is a passthrough to cockroachdb/errors.As.
+func As(err error, target interface{}) bool {
+	return pkgerrors.As(err, target)
+}
+
+// Join returns an error that wraps the given errors.
+// Any nil error values are discarded.
+// Join returns nil if every value in errs is nil.
+// The error formats as the concatenation of the strings obtained
+// by calling the Error method of each element of errs, with a newline
+// between each element.
+//
+// This is a passthrough to standard library errors.Join.
+func Join(errs ...error) error {
+	return errors.Join(errs...)
 }
