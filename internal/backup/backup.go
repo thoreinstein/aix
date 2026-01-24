@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -55,12 +56,6 @@ func NewManager(opts ...Option) *Manager {
 	}
 	return m
 }
-
-// Backup creates a backup of the specified paths for a platform.
-// Returns the manifest describing the backup, or an error if the backup fails.
-//
-// The paths can be files or directories. Directories are backed up recursively.
-// Each file is copied with preserved permissions and verified with a SHA256 hash.
 func (m *Manager) Backup(platform string, paths []string) (*BackupManifest, error) {
 	if platform == "" {
 		return nil, errors.New("platform is required")
@@ -69,8 +64,13 @@ func (m *Manager) Backup(platform string, paths []string) (*BackupManifest, erro
 		return nil, errors.New("at least one path is required")
 	}
 
-	// Generate backup ID from current time
-	backupID := time.Now().Format("20060102T150405")
+	// Generate backup ID from current time + random suffix
+	timestamp := time.Now().Format("20060102T150405")
+	randBytes := make([]byte, 3)
+	if _, err := rand.Read(randBytes); err != nil {
+		return nil, errors.Wrap(err, "generating random suffix")
+	}
+	backupID := timestamp + "-" + hex.EncodeToString(randBytes)
 	backupPath := m.backupPath(platform, backupID)
 
 	// Create backup directory
@@ -426,6 +426,9 @@ func generateRelPath(absPath string) string {
 			clean = clean[1:]
 		}
 	}
+
+	// Remove colons (e.g. C: -> C) to avoid invalid paths on Windows
+	clean = strings.ReplaceAll(clean, ":", "")
 
 	return clean
 }

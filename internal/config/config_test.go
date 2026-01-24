@@ -121,3 +121,48 @@ func TestLoad_InvalidConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestInit_ClearsPreviousState(t *testing.T) {
+	// 1. Setup a specific config file
+	dir := t.TempDir()
+	fileA := filepath.Join(dir, "config_a.yaml")
+	if err := os.WriteFile(fileA, []byte("version: 1\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// 2. Initialize and Load specific file
+	// We manually reset here just to start clean for the test itself
+	viper.Reset()
+	Init()
+	_, err := Load(fileA)
+	if err != nil {
+		t.Fatalf("First Load failed: %v", err)
+	}
+
+	// 3. Setup a default config file in a different directory
+	dirB := t.TempDir()
+	t.Setenv("AIX_CONFIG_DIR", dirB)
+	fileB := filepath.Join(dirB, "config.yaml")
+	// Write different content to distinguish
+	if err := os.WriteFile(fileB, []byte("version: 1\ndefault_platforms: [opencode]\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// 4. Re-Initialize. This SHOULD clear the specific file from step 2.
+	Init()
+
+	// 5. Load with empty path. Should pick up fileB from AIX_CONFIG_DIR.
+	cfg, err := Load("")
+	if err != nil {
+		t.Fatalf("Second Load failed: %v", err)
+	}
+
+	// 6. Verify we got config B
+	if len(cfg.DefaultPlatforms) != 1 || cfg.DefaultPlatforms[0] != "opencode" {
+		t.Errorf("Expected config from default path (fileB), but got state from fileA or mixed. Platforms: %v", cfg.DefaultPlatforms)
+		// Check if it's still using fileA
+		if viper.ConfigFileUsed() == fileA {
+			t.Errorf("Still using fileA: %s", viper.ConfigFileUsed())
+		}
+	}
+}
