@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/config"
+	aixerrors "github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/repo"
 )
 
@@ -33,7 +34,10 @@ func runRemove(_ *cobra.Command, args []string) error {
 
 	if err := manager.Remove(name); err != nil {
 		if errors.Is(err, repo.ErrNotFound) {
-			return fmt.Errorf("repository %q not found", name)
+			return aixerrors.NewUserError(
+				errors.Newf("repository %q not found", name),
+				"Run: aix repo list to see available repositories",
+			)
 		}
 		// Cache cleanup failure is a warning, not a fatal error
 		if errors.Is(err, repo.ErrCacheCleanupFailed) {
@@ -41,7 +45,10 @@ func runRemove(_ *cobra.Command, args []string) error {
 			fmt.Printf("⚠ Warning: %v\n", err)
 			return nil
 		}
-		return fmt.Errorf("removing repository: %w", err)
+		return aixerrors.NewSystemError(
+			errors.Wrapf(err, "removing repository %q", name),
+			"Check file permissions on the cache directory",
+		)
 	}
 
 	fmt.Printf("✓ Repository %q removed\n", name)
