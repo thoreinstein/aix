@@ -3,6 +3,8 @@ package repo
 import (
 	"errors"
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -38,6 +40,11 @@ is derived from the URL unless overridden with --name.`,
 }
 
 func runAdd(_ *cobra.Command, args []string) error {
+	return runAddWithIO(args, os.Stdout)
+}
+
+// runAddWithIO allows injecting a writer for testing.
+func runAddWithIO(args []string, w io.Writer) error {
 	url := args[0]
 
 	// Get config path
@@ -59,8 +66,12 @@ func runAdd(_ *cobra.Command, args []string) error {
 	}
 
 	// Print success message
-	fmt.Printf("✓ Repository '%s' added from %s\n", repoConfig.Name, url)
-	fmt.Printf("  Cached at: %s\n", repoConfig.Path)
+	fmt.Fprintf(w, "✓ Repository '%s' added from %s\n", repoConfig.Name, url)
+	fmt.Fprintf(w, "  Cached at: %s\n", repoConfig.Path)
+
+	// Validate repository content and show warnings
+	warnings := repo.ValidateRepoContent(repoConfig.Path)
+	printValidationWarnings(w, warnings)
 
 	return nil
 }

@@ -1,7 +1,14 @@
 // Package repo provides CLI commands for managing skill repositories.
 package repo
 
-import "github.com/spf13/cobra"
+import (
+	"fmt"
+	"io"
+
+	"github.com/spf13/cobra"
+
+	"github.com/thoreinstein/aix/internal/repo"
+)
 
 // Cmd is the root repo command.
 var Cmd = &cobra.Command{
@@ -33,4 +40,27 @@ Repositories are shallow cloned to a local cache for efficient discovery and ins
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		return cmd.Help()
 	},
+}
+
+// printValidationWarnings outputs validation warnings to the writer.
+// It filters out "directory not found" warnings which are expected for repos
+// that only contain certain resource types.
+func printValidationWarnings(w io.Writer, warnings []repo.ValidationWarning) {
+	// Filter to only show actionable warnings (not missing optional directories)
+	var actionable []repo.ValidationWarning
+	for _, warn := range warnings {
+		if warn.Message != "directory not found" {
+			actionable = append(actionable, warn)
+		}
+	}
+
+	if len(actionable) == 0 {
+		return
+	}
+
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "⚠ Validation warnings:")
+	for _, warn := range actionable {
+		fmt.Fprintf(w, "  %s: %s\n", warn.Path, warn.Message)
+	}
 }
