@@ -8,6 +8,7 @@ import (
 	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/platform"
 	"github.com/thoreinstein/aix/internal/platform/claude"
+	"github.com/thoreinstein/aix/internal/platform/gemini"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 )
 
@@ -549,12 +550,192 @@ func (a *opencodeAdapter) BackupPaths() []string {
 	return a.p.BackupPaths()
 }
 
+// geminiAdapter wraps GeminiPlatform to implement the Platform interface.
+type geminiAdapter struct {
+	p *gemini.GeminiPlatform
+}
+
+func (a *geminiAdapter) Name() string {
+	return a.p.Name()
+}
+
+func (a *geminiAdapter) DisplayName() string {
+	return a.p.DisplayName()
+}
+
+func (a *geminiAdapter) IsAvailable() bool {
+	return a.p.IsAvailable()
+}
+
+func (a *geminiAdapter) InstallSkill(skill any) error {
+	s, ok := skill.(*gemini.Skill)
+	if !ok {
+		return errors.Newf("expected *gemini.Skill, got %T", skill)
+	}
+	return errors.Wrap(a.p.InstallSkill(s), "installing skill to Gemini")
+}
+
+func (a *geminiAdapter) UninstallSkill(name string) error {
+	return errors.Wrap(a.p.UninstallSkill(name), "uninstalling skill from Gemini")
+}
+
+func (a *geminiAdapter) ListSkills() ([]SkillInfo, error) {
+	skills, err := a.p.ListSkills()
+	if err != nil {
+		return nil, errors.Wrap(err, "listing Gemini skills")
+	}
+
+	infos := make([]SkillInfo, len(skills))
+	for i, s := range skills {
+		infos[i] = SkillInfo{
+			Name:        s.Name,
+			Description: s.Description,
+			Source:      "local",
+		}
+	}
+	return infos, nil
+}
+
+func (a *geminiAdapter) GetSkill(name string) (any, error) {
+	s, err := a.p.GetSkill(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting Gemini skill")
+	}
+	return s, nil
+}
+
+func (a *geminiAdapter) SkillDir() string {
+	return a.p.SkillDir()
+}
+
+func (a *geminiAdapter) CommandDir() string {
+	return a.p.CommandDir()
+}
+
+func (a *geminiAdapter) InstallCommand(cmd any) error {
+	c, ok := cmd.(*gemini.Command)
+	if !ok {
+		return errors.Newf("expected *gemini.Command, got %T", cmd)
+	}
+	return errors.Wrap(a.p.InstallCommand(c), "installing command to Gemini")
+}
+
+func (a *geminiAdapter) UninstallCommand(name string) error {
+	return errors.Wrap(a.p.UninstallCommand(name), "uninstalling command from Gemini")
+}
+
+func (a *geminiAdapter) ListCommands() ([]CommandInfo, error) {
+	commands, err := a.p.ListCommands()
+	if err != nil {
+		return nil, errors.Wrap(err, "listing Gemini commands")
+	}
+
+	infos := make([]CommandInfo, len(commands))
+	for i, c := range commands {
+		infos[i] = CommandInfo{
+			Name:        c.Name,
+			Description: c.Description,
+			Source:      "installed",
+		}
+	}
+	return infos, nil
+}
+
+func (a *geminiAdapter) GetCommand(name string) (any, error) {
+	c, err := a.p.GetCommand(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting Gemini command")
+	}
+	return c, nil
+}
+
+func (a *geminiAdapter) MCPConfigPath() string {
+	return a.p.MCPConfigPath()
+}
+
+func (a *geminiAdapter) AddMCP(server any) error {
+	s, ok := server.(*gemini.MCPServer)
+	if !ok {
+		return errors.Newf("expected *gemini.MCPServer, got %T", server)
+	}
+	return errors.Wrap(a.p.AddMCP(s), "adding MCP server to Gemini")
+}
+
+func (a *geminiAdapter) RemoveMCP(name string) error {
+	return errors.Wrap(a.p.RemoveMCP(name), "removing MCP server from Gemini")
+}
+
+func (a *geminiAdapter) ListMCP() ([]MCPInfo, error) {
+	servers, err := a.p.ListMCP()
+	if err != nil {
+		return nil, errors.Wrap(err, "listing Gemini MCP servers")
+	}
+	infos := make([]MCPInfo, len(servers))
+	for i, s := range servers {
+		transport := "stdio"
+		if s.URL != "" {
+			transport = "sse"
+		}
+		infos[i] = MCPInfo{
+			Name:      s.Name,
+			Transport: transport,
+			Command:   s.Command,
+			URL:       s.URL,
+			Disabled:  !s.Enabled,
+			Env:       s.Env,
+		}
+	}
+	return infos, nil
+}
+
+func (a *geminiAdapter) GetMCP(name string) (any, error) {
+	s, err := a.p.GetMCP(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting Gemini MCP server")
+	}
+	return s, nil
+}
+
+func (a *geminiAdapter) EnableMCP(name string) error {
+	return errors.Wrap(a.p.EnableMCP(name), "enabling Gemini MCP server")
+}
+
+func (a *geminiAdapter) DisableMCP(name string) error {
+	return errors.Wrap(a.p.DisableMCP(name), "disabling Gemini MCP server")
+}
+
+func (a *geminiAdapter) AgentDir() string {
+	return a.p.AgentDir()
+}
+
+func (a *geminiAdapter) InstallAgent(agent any) error {
+	return errors.New("agents are not supported by Gemini CLI")
+}
+
+func (a *geminiAdapter) UninstallAgent(name string) error {
+	return errors.New("agents are not supported by Gemini CLI")
+}
+
+func (a *geminiAdapter) ListAgents() ([]AgentInfo, error) {
+	return nil, errors.New("agents are not supported by Gemini CLI")
+}
+
+func (a *geminiAdapter) GetAgent(name string) (any, error) {
+	return nil, errors.New("agents are not supported by Gemini CLI")
+}
+
+func (a *geminiAdapter) BackupPaths() []string {
+	return a.p.BackupPaths()
+}
+
 func NewPlatform(name string) (Platform, error) {
 	switch name {
 	case paths.PlatformClaude:
 		return &claudeAdapter{p: claude.NewClaudePlatform()}, nil
 	case paths.PlatformOpenCode:
 		return &opencodeAdapter{p: opencode.NewOpenCodePlatform()}, nil
+	case paths.PlatformGemini:
+		return &geminiAdapter{p: gemini.NewGeminiPlatform()}, nil
 	default:
 		return nil, errors.Wrapf(ErrUnknownPlatform, "platform %q not recognized", name)
 	}

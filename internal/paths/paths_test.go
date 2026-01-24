@@ -178,9 +178,10 @@ func TestGlobalConfigDir(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		platform string
-		want     string
+		name      string
+		platform  string
+		xdgConfig string
+		want      string
 	}{
 		{
 			name:     "claude global config",
@@ -203,6 +204,12 @@ func TestGlobalConfigDir(t *testing.T) {
 			want:     filepath.Join(home, ".gemini"),
 		},
 		{
+			name:      "gemini global config with XDG_CONFIG_HOME",
+			platform:  PlatformGemini,
+			xdgConfig: "/custom/config",
+			want:      filepath.Join("/custom/config", "gemini"),
+		},
+		{
 			name:     "unknown platform returns empty",
 			platform: "unknown",
 			want:     "",
@@ -216,6 +223,12 @@ func TestGlobalConfigDir(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.xdgConfig != "" {
+				t.Setenv("XDG_CONFIG_HOME", tt.xdgConfig)
+			} else {
+				t.Setenv("XDG_CONFIG_HOME", "")
+			}
+
 			got := GlobalConfigDir(tt.platform)
 			if got != tt.want {
 				t.Errorf("GlobalConfigDir(%q) = %q, want %q", tt.platform, got, tt.want)
@@ -475,7 +488,7 @@ func TestMCPConfigPath(t *testing.T) {
 		{
 			name:     "gemini MCP config",
 			platform: PlatformGemini,
-			want:     filepath.Join(home, ".gemini", "settings.toml"),
+			want:     filepath.Join(home, ".gemini", "settings.json"),
 		},
 		{
 			name:     "unknown platform returns empty",
