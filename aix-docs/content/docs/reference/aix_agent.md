@@ -36,6 +36,7 @@ aix agent [flags]
 * [aix agent install](/docs/reference/aix_agent_install/)	 - Install an agent from a repository or local path
 * [aix agent list](/docs/reference/aix_agent_list/)	 - List installed agents
 * [aix agent remove](/docs/reference/aix_agent_remove/)	 - Remove an installed agent
+* [aix agent search](/docs/reference/aix_agent_search/)	 - Search for agents in repositories
 * [aix agent show](/docs/reference/aix_agent_show/)	 - Display detailed agent information
 * [aix agent validate](/docs/reference/aix_agent_validate/)	 - Validate an agent file
 
