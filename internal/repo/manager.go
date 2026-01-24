@@ -18,10 +18,11 @@ import (
 
 // Sentinel errors for repository operations.
 var (
-	ErrNotFound      = errors.New("repository not found")
-	ErrInvalidURL    = errors.New("invalid git URL")
-	ErrNameCollision = errors.New("repository with this name already exists")
-	ErrInvalidName   = errors.New("invalid repository name")
+	ErrNotFound           = errors.New("repository not found")
+	ErrInvalidURL         = errors.New("invalid git URL")
+	ErrNameCollision      = errors.New("repository with this name already exists")
+	ErrInvalidName        = errors.New("invalid repository name")
+	ErrCacheCleanupFailed = errors.New("cache cleanup failed")
 )
 
 // namePattern validates repository names.
@@ -153,6 +154,8 @@ func (m *Manager) List() ([]config.RepoConfig, error) {
 }
 
 // Remove unregisters a repository and deletes its cached clone.
+// The config is persisted before deleting cached data to ensure
+// consistent state if the operation fails partway through.
 func (m *Manager) Remove(name string) error {
 	cfg, err := m.loadConfig()
 	if err != nil {
@@ -168,17 +171,19 @@ func (m *Manager) Remove(name string) error {
 		return errors.WithDetailf(ErrNotFound, "repository %q not found", name)
 	}
 
-	// Remove cached directory
-	if err := os.RemoveAll(repo.Path); err != nil {
-		return errors.Wrap(err, "removing cached repository")
-	}
-
-	// Remove from config
+	// Remove from config first
 	delete(cfg.Repos, name)
 
-	// Save config
+	// Persist config before deleting data - if this fails, cached data remains intact
 	if err := m.saveConfig(cfg); err != nil {
 		return errors.Wrap(err, "saving config")
+	}
+
+	// Remove cached directory - if this fails, log warning but don't fail
+	// The config is already updated, so the repo is "removed" from aix's perspective
+	if err := os.RemoveAll(repo.Path); err != nil {
+		// Return a wrapped error that indicates partial success
+		return errors.Wrapf(ErrCacheCleanupFailed, "config updated but failed to remove cached directory %q: %v", repo.Path, err)
 	}
 
 	return nil

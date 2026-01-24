@@ -30,10 +30,12 @@ func IsURL(s string) bool {
 }
 
 // Clone clones a git repository from url to dest with the specified depth.
-// Output is streamed to os.Stdout and os.Stderr.
+// Output is streamed to os.Stdout and os.Stderr. Stdin is connected to os.Stdin
+// to support interactive authentication (e.g., SSH passphrase, credentials).
 func Clone(url, dest string, depth int) error {
 	depthArg := fmt.Sprintf("--depth=%d", depth)
 	cmd := exec.Command("git", "clone", depthArg, url, dest)
+	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -44,9 +46,11 @@ func Clone(url, dest string, depth int) error {
 }
 
 // Pull performs a fast-forward-only pull in the specified repository directory.
-// Output is streamed to os.Stdout and os.Stderr.
+// Output is streamed to os.Stdout and os.Stderr. Stdin is connected to os.Stdin
+// to support interactive authentication (e.g., SSH passphrase, credentials).
 func Pull(repoPath string) error {
 	cmd := exec.Command("git", "-C", repoPath, "pull", "--ff-only")
+	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

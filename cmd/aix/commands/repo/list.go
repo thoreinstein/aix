@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"sort"
 	"text/tabwriter"
 	"time"
@@ -14,7 +13,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/thoreinstein/aix/internal/config"
-	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/repo"
 )
 
@@ -56,7 +54,7 @@ func runList(_ *cobra.Command, _ []string) error {
 
 // runListWithWriter allows injecting a writer for testing.
 func runListWithWriter(w io.Writer) error {
-	configPath := filepath.Join(paths.ConfigHome(), config.AppName, "config.yaml")
+	configPath := config.DefaultConfigPath()
 	mgr := repo.NewManager(configPath)
 
 	repos, err := mgr.List()

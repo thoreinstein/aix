@@ -35,6 +35,12 @@ func runRemove(_ *cobra.Command, args []string) error {
 		if errors.Is(err, repo.ErrNotFound) {
 			return fmt.Errorf("repository %q not found", name)
 		}
+		// Cache cleanup failure is a warning, not a fatal error
+		if errors.Is(err, repo.ErrCacheCleanupFailed) {
+			fmt.Printf("✓ Repository %q removed\n", name)
+			fmt.Printf("⚠ Warning: %v\n", err)
+			return nil
+		}
 		return fmt.Errorf("removing repository: %w", err)
 	}
 
