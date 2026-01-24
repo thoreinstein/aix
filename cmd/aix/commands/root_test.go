@@ -179,6 +179,15 @@ func TestSetupLogging_LogFile(t *testing.T) {
 	if !strings.Contains(string(content), `"level":"INFO"`) {
 		t.Errorf("log file missing level: %s", string(content))
 	}
+
+	// Verify file permissions
+	info, err := os.Stat(logFile)
+	if err != nil {
+		t.Fatalf("failed to stat log file: %v", err)
+	}
+	if info.Mode().Perm() != 0600 {
+		t.Errorf("log file permissions = %o, want 0600", info.Mode().Perm())
+	}
 }
 
 func TestSetupLogging_LogFormat(t *testing.T) {
