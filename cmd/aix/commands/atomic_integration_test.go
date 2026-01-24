@@ -49,12 +49,12 @@ func TestAtomicWrite_InterruptedWriteLeavesOriginalIntact(t *testing.T) {
 
 	// Make the directory read-only to cause rename to fail
 	// The temp file will be created, but rename will fail
-	if err := os.Chmod(dir, 0555); err != nil {
+	if err := os.Chmod(dir, 0500); err != nil {
 		t.Fatalf("chmod directory: %v", err)
 	}
 	// Restore permissions for cleanup
 	t.Cleanup(func() {
-		_ = os.Chmod(dir, 0755) // Best effort cleanup
+		_ = os.Chmod(dir, 0700) // Best effort cleanup
 	})
 
 	// Attempt to overwrite with new content - this should fail
@@ -69,7 +69,7 @@ func TestAtomicWrite_InterruptedWriteLeavesOriginalIntact(t *testing.T) {
 	}
 
 	// Restore permissions to read the file
-	if err := os.Chmod(dir, 0755); err != nil {
+	if err := os.Chmod(dir, 0700); err != nil {
 		t.Fatalf("restoring directory permissions: %v", err)
 	}
 
@@ -185,11 +185,11 @@ func TestAtomicWrite_ClearErrorMessages(t *testing.T) {
 
 				// Create a subdirectory that's read-only
 				readOnlyDir := filepath.Join(dir, "readonly")
-				if err := os.MkdirAll(readOnlyDir, 0555); err != nil {
+				if err := os.MkdirAll(readOnlyDir, 0500); err != nil {
 					t.Fatalf("creating read-only dir: %v", err)
 				}
 				t.Cleanup(func() {
-					_ = os.Chmod(readOnlyDir, 0755) // Best effort cleanup
+					_ = os.Chmod(readOnlyDir, 0700) // Best effort cleanup
 				})
 
 				return filepath.Join(readOnlyDir, "config.json")
@@ -262,7 +262,7 @@ func TestAtomicWrite_TempFileCleanup(t *testing.T) {
 
 	// Make directory read-only to cause rename to fail
 	// (temp file will be created successfully in same dir)
-	if err := os.Chmod(dir, 0555); err != nil {
+	if err := os.Chmod(dir, 0500); err != nil {
 		t.Fatalf("chmod directory: %v", err)
 	}
 
@@ -271,7 +271,7 @@ func TestAtomicWrite_TempFileCleanup(t *testing.T) {
 	_ = fileutil.AtomicWriteJSON(configPath, newConfig) // Expected to fail
 
 	// Restore permissions to check for temp files
-	if err := os.Chmod(dir, 0755); err != nil {
+	if err := os.Chmod(dir, 0700); err != nil {
 		t.Fatalf("restoring permissions: %v", err)
 	}
 
@@ -298,7 +298,7 @@ func TestAtomicWrite_TempFileCleanupOnMultipleFailures(t *testing.T) {
 
 	// Create a subdirectory where we'll cause failures
 	writeDir := filepath.Join(dir, "writes")
-	if err := os.MkdirAll(writeDir, 0755); err != nil {
+	if err := os.MkdirAll(writeDir, 0700); err != nil {
 		t.Fatalf("creating write dir: %v", err)
 	}
 
@@ -311,11 +311,11 @@ func TestAtomicWrite_TempFileCleanupOnMultipleFailures(t *testing.T) {
 	}
 
 	// Make directory read-only
-	if err := os.Chmod(writeDir, 0555); err != nil {
+	if err := os.Chmod(writeDir, 0500); err != nil {
 		t.Fatalf("chmod directory: %v", err)
 	}
 	t.Cleanup(func() {
-		_ = os.Chmod(writeDir, 0755) // Best effort cleanup
+		_ = os.Chmod(writeDir, 0700) // Best effort cleanup
 	})
 
 	// Attempt multiple concurrent writes that will all fail
@@ -331,7 +331,7 @@ func TestAtomicWrite_TempFileCleanupOnMultipleFailures(t *testing.T) {
 	wg.Wait()
 
 	// Restore permissions and check for temp files
-	if err := os.Chmod(writeDir, 0755); err != nil {
+	if err := os.Chmod(writeDir, 0700); err != nil {
 		t.Fatalf("restoring permissions: %v", err)
 	}
 
@@ -362,9 +362,9 @@ func TestAtomicWrite_PreservesPermissions(t *testing.T) {
 		name string
 		perm os.FileMode
 	}{
-		{"standard 0644", 0644},
+		{"standard 0600", 0600},
 		{"restricted 0600", 0600},
-		{"executable 0755", 0755},
+		{"executable 0700", 0700},
 	}
 
 	for _, tt := range tests {

@@ -35,7 +35,7 @@ func TestPathPermissionCheck_checkFile(t *testing.T) {
 			name: "readable file",
 			setup: func() string {
 				path := filepath.Join(tempDir, "readable.json")
-				if err := os.WriteFile(path, []byte("{}"), 0644); err != nil {
+				if err := os.WriteFile(path, []byte("{}"), 0600); err != nil {
 					t.Fatal(err)
 				}
 				return path
@@ -75,7 +75,7 @@ func TestPathPermissionCheck_checkDirectory(t *testing.T) {
 			name: "writable directory",
 			setup: func() string {
 				dir := filepath.Join(tempDir, "writable")
-				if err := os.Mkdir(dir, 0755); err != nil {
+				if err := os.Mkdir(dir, 0700); err != nil {
 					t.Fatal(err)
 				}
 				return dir
@@ -128,10 +128,16 @@ func TestPathPermissionCheck_checkFilePermissions(t *testing.T) {
 		wantIssues int
 	}{
 		{
-			name:       "secure permissions 0644",
-			mode:       0644,
+			name:       "secure permissions 0600",
+			mode:       0600,
 			filename:   "config.json",
 			wantIssues: 0,
+		},
+		{
+			name:       "overly permissive file",
+			mode:       0644,
+			filename:   "permissive.json",
+			wantIssues: 1,
 		},
 		{
 			name:       "world-writable file",
@@ -186,9 +192,14 @@ func TestPathPermissionCheck_checkDirectoryPermissions(t *testing.T) {
 		wantIssues int
 	}{
 		{
-			name:       "secure permissions 0755",
-			mode:       0755,
+			name:       "secure permissions 0700",
+			mode:       0700,
 			wantIssues: 0,
+		},
+		{
+			name:       "overly permissive directory",
+			mode:       0755,
+			wantIssues: 0, // Currently we only warn on world-writable for directories
 		},
 		{
 			name:       "world-writable directory",
@@ -337,7 +348,7 @@ func TestPathPermissionCheck_buildResult(t *testing.T) {
 				Problem:  "fixable problem",
 				Severity: SeverityWarning,
 				Fixable:  true,
-				FixHint:  "chmod 644 /path/to/file",
+				FixHint:  "chmod 600 /path/to/file",
 			},
 		}
 		result := c.buildResult(issues, 5)

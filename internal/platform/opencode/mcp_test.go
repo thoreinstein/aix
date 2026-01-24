@@ -320,10 +320,10 @@ func TestMCPManager_loadConfig(t *testing.T) {
 
 		// Create config file with null mcp
 		configPath := paths.MCPConfigPath()
-		if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(configPath), 0o700); err != nil {
 			t.Fatalf("failed to create config dir: %v", err)
 		}
-		if err := os.WriteFile(configPath, []byte(`{"mcp": null}`), 0o644); err != nil {
+		if err := os.WriteFile(configPath, []byte(`{"mcp": null}`), 0o600); err != nil {
 			t.Fatalf("failed to write config file: %v", err)
 		}
 

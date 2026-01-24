@@ -26,7 +26,7 @@ func TestMCPManager_List_NonExistentConfig(t *testing.T) {
 func TestMCPManager_List_MultipleServers(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, ".claude", ".mcp.json")
-	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
 
@@ -46,7 +46,7 @@ func TestMCPManager_List_MultipleServers(t *testing.T) {
     }
   }
 }`
-	if err := os.WriteFile(configPath, []byte(configData), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configData), 0600); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -91,7 +91,7 @@ func TestMCPManager_List_MultipleServers(t *testing.T) {
 func TestMCPManager_Get_ExistingServer(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, ".claude", ".mcp.json")
-	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
 
@@ -104,7 +104,7 @@ func TestMCPManager_Get_ExistingServer(t *testing.T) {
     }
   }
 }`
-	if err := os.WriteFile(configPath, []byte(configData), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configData), 0600); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -132,12 +132,12 @@ func TestMCPManager_Get_ExistingServer(t *testing.T) {
 func TestMCPManager_Get_NonExistentServer(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, ".claude", ".mcp.json")
-	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
 
 	configData := `{"mcpServers": {}}`
-	if err := os.WriteFile(configPath, []byte(configData), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configData), 0600); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -190,7 +190,7 @@ func TestMCPManager_Add_NewServer(t *testing.T) {
 func TestMCPManager_Add_OverwriteExisting(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, ".claude", ".mcp.json")
-	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
 
@@ -201,7 +201,7 @@ func TestMCPManager_Add_OverwriteExisting(t *testing.T) {
     }
   }
 }`
-	if err := os.WriteFile(configPath, []byte(configData), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configData), 0600); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -263,7 +263,7 @@ func TestMCPManager_Add_InvalidServer(t *testing.T) {
 func TestMCPManager_Remove_ExistingServer(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, ".claude", ".mcp.json")
-	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
 
@@ -273,7 +273,7 @@ func TestMCPManager_Remove_ExistingServer(t *testing.T) {
     "to-keep": {"command": "cmd2"}
   }
 }`
-	if err := os.WriteFile(configPath, []byte(configData), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configData), 0600); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -311,7 +311,7 @@ func TestMCPManager_Remove_NonExistentServer(t *testing.T) {
 func TestMCPManager_Enable(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, ".claude", ".mcp.json")
-	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
 
@@ -323,7 +323,7 @@ func TestMCPManager_Enable(t *testing.T) {
     }
   }
 }`
-	if err := os.WriteFile(configPath, []byte(configData), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configData), 0600); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -346,7 +346,7 @@ func TestMCPManager_Enable(t *testing.T) {
 func TestMCPManager_Disable(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, ".claude", ".mcp.json")
-	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
 
@@ -358,7 +358,7 @@ func TestMCPManager_Disable(t *testing.T) {
     }
   }
 }`
-	if err := os.WriteFile(configPath, []byte(configData), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configData), 0600); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -403,7 +403,7 @@ func TestMCPManager_Disable_NonExistentServer(t *testing.T) {
 func TestMCPManager_PreservesUnknownFields(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, ".claude", ".mcp.json")
-	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
 
@@ -420,7 +420,7 @@ func TestMCPManager_PreservesUnknownFields(t *testing.T) {
     "value": 42
   }
 }`
-	if err := os.WriteFile(configPath, []byte(configData), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configData), 0600); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -504,13 +504,13 @@ func TestMCPManager_CreatesParentDirectory(t *testing.T) {
 func TestMCPManager_AtomicWrite(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, ".claude", ".mcp.json")
-	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
 
 	// Write initial content
 	initialData := `{"mcpServers": {"initial": {"command": "cmd"}}}`
-	if err := os.WriteFile(configPath, []byte(initialData), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialData), 0600); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 

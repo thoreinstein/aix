@@ -35,11 +35,11 @@ type FixResult struct {
 	Error error
 }
 
-// secureFilePerm is the target permission for config files (rw-r--r--).
-const secureFilePerm os.FileMode = 0644
+// secureFilePerm is the target permission for config files (rw-------).
+const secureFilePerm os.FileMode = 0600
 
-// secureDirPerm is the target permission for config directories (rwxr-xr-x).
-const secureDirPerm os.FileMode = 0755
+// secureDirPerm is the target permission for config directories (rwx------).
+const secureDirPerm os.FileMode = 0700
 
 // PermissionFixer fixes file and directory permission issues.
 // It is embedded in PathPermissionCheck to provide fix capability.

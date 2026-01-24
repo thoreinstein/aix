@@ -75,9 +75,9 @@ func AtomicWriteJSONWithPerm(path string, v any, perm os.FileMode) error {
 // Uses 2-space indentation and appends a trailing newline for POSIX compliance.
 //
 // The caller is responsible for ensuring the parent directory exists.
-// The file is created with 0644 permissions.
+// The file is created with 0600 permissions.
 func AtomicWriteJSON(path string, v any) error {
-	return AtomicWriteJSONWithPerm(path, v, 0644)
+	return AtomicWriteJSONWithPerm(path, v, 0600)
 }
 
 // AtomicWriteYAMLWithPerm writes v as YAML to path atomically with specified permissions.
@@ -109,7 +109,7 @@ func AtomicWriteYAMLWithPerm(path string, v any, perm os.FileMode) (err error) {
 // Appends a trailing newline for POSIX compliance.
 //
 // The caller is responsible for ensuring the parent directory exists.
-// The file is created with 0644 permissions.
+// The file is created with 0600 permissions.
 func AtomicWriteYAML(path string, v any) (err error) {
-	return AtomicWriteYAMLWithPerm(path, v, 0644)
+	return AtomicWriteYAMLWithPerm(path, v, 0600)
 }
