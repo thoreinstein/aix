@@ -6,6 +6,7 @@ draft: false
 weight: 1
 categories: ["Announcements"]
 tags: ["release", "cli", "ai"]
+contributors: []
 ---
 
 Today we are excited to introduce aix, a unified command-line interface designed to streamline the management of AI coding assistant configurations.
