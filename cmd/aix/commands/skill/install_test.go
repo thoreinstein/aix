@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/thoreinstein/aix/internal/git"
 )
 
 func TestIsGitURL(t *testing.T) {
@@ -29,9 +31,9 @@ func TestIsGitURL(t *testing.T) {
 			want:   true,
 		},
 		{
-			name:   "ends with .git",
+			name:   "ends with .git without scheme (invalid)",
 			source: "github.com/user/repo.git",
-			want:   true,
+			want:   false, // git.IsURL now requires scheme or scp-like
 		},
 		{
 			name:   "local relative path",
@@ -62,9 +64,9 @@ func TestIsGitURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isGitURL(tt.source)
+			got := git.IsURL(tt.source)
 			if got != tt.want {
-				t.Errorf("isGitURL(%q) = %v, want %v", tt.source, got, tt.want)
+				t.Errorf("git.IsURL(%q) = %v, want %v", tt.source, got, tt.want)
 			}
 		})
 	}
