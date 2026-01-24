@@ -111,19 +111,18 @@ changelog:
     - title: Other
       order: 999
 
-brews:
+homebrew_casks:
   - name: aix
     repository:
       owner: thoreinstein
       name: homebrew-tap
       branch: main
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    directory: Formula
+    directory: Casks
     homepage: https://github.com/thoreinstein/aix
     description: "A tool for managing, creating and sharing agent skills, commands and hooks"
     license: "MIT"
-    install: |
-      bin.install "aix"
+    binary: aix
 
 release:
   github:
