@@ -27,6 +27,9 @@ var verbosity int
 // quiet holds the value of the -q/--quiet flag.
 var quiet bool
 
+// logFile holds the path to the log file.
+var logFile string
+
 // configLoadErr holds any error that occurred during config loading.
 var configLoadErr error
 
@@ -40,6 +43,8 @@ func init() {
 		"increase verbosity level (e.g., -v, -vv)")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false,
 		"suppress non-error output")
+	rootCmd.PersistentFlags().StringVar(&logFile, "log-file", "",
+		"write logs to file in JSON format")
 
 	// Add version flag
 	rootCmd.Version = version
@@ -121,12 +126,31 @@ func setupLogging(cmd *cobra.Command) error {
 		level = logging.LevelFromVerbosity(v)
 	}
 
-	logger := logging.New(logging.Config{
-		Level:  level,
-		Format: logging.FormatText, // Default to text
-		Output: cmd.ErrOrStderr(),
-	})
-	slog.SetDefault(logger)
+	handlers := []slog.Handler{
+		logging.NewHandler(cmd.ErrOrStderr(), &slog.HandlerOptions{
+			Level: level,
+		}),
+	}
+
+	if logFile != "" {
+		f, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return errors.NewUserError(err, "failed to open log file")
+		}
+		// File output uses JSON format
+		handlers = append(handlers, slog.NewJSONHandler(f, &slog.HandlerOptions{
+			Level: level,
+		}))
+	}
+
+	var handler slog.Handler
+	if len(handlers) > 1 {
+		handler = logging.NewMultiHandler(handlers...)
+	} else {
+		handler = handlers[0]
+	}
+
+	slog.SetDefault(slog.New(handler))
 
 	return nil
 }

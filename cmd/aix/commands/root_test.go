@@ -2,6 +2,9 @@ package commands
 
 import (
 	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/thoreinstein/aix/internal/logging"
@@ -140,5 +143,40 @@ func TestSetupLogging_QuietMutualExclusion(t *testing.T) {
 
 	if err := setupLogging(rootCmd); err == nil {
 		t.Error("expected error when both quiet and verbose are set")
+	}
+}
+
+func TestSetupLogging_LogFile(t *testing.T) {
+	origLogFile := logFile
+	origVerbosity := verbosity
+	defer func() {
+		logFile = origLogFile
+		verbosity = origVerbosity
+	}()
+
+	tmpDir := t.TempDir()
+	logFile = filepath.Join(tmpDir, "test.log")
+	verbosity = 1 // Info level
+
+	if err := setupLogging(rootCmd); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	slog.Info("test message", "foo", "bar")
+
+	// Verify file content
+	content, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("failed to read log file: %v", err)
+	}
+
+	if !strings.Contains(string(content), `"msg":"test message"`) {
+		t.Errorf("log file missing message: %s", string(content))
+	}
+	if !strings.Contains(string(content), `"foo":"bar"`) {
+		t.Errorf("log file missing attribute: %s", string(content))
+	}
+	if !strings.Contains(string(content), `"level":"INFO"`) {
+		t.Errorf("log file missing level: %s", string(content))
 	}
 }
