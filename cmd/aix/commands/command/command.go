@@ -11,7 +11,7 @@ var Cmd = &cobra.Command{
 
 Slash commands extend AI assistant functionality with custom workflows,
 templates, and automated operations. Use subcommands to install, list,
-show, and remove commands across supported platforms.`,
+show, edit, and remove commands across supported platforms.`,
 	Example: `  # List all installed commands
   aix command list
 
@@ -21,10 +21,14 @@ show, and remove commands across supported platforms.`,
   # Show details for a command
   aix command show review
 
+  # Edit a command's source definition
+  aix command edit review
+
   See Also:
     aix command list     - List installed commands
     aix command install  - Install a command
     aix command show     - Show command details
+    aix command edit     - Edit a command definition
     aix command remove   - Remove a command`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		return cmd.Help()

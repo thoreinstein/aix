@@ -51,8 +51,9 @@ Exit codes:
   aix command validate ./review.md --json
 
   See Also:
-    aix command init     - Create a new command
-    aix command install  - Install a command`,
+    aix command install  - Install the command
+    aix command edit     - Edit the command definition
+    aix command show     - Show command details`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(_ *cobra.Command, args []string) error {
 		return runValidate(args[0], os.Stdout)

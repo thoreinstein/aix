@@ -34,8 +34,9 @@ aix command remove <name> [flags]
   aix command remove review --platform claude
 
   See Also:
-    aix command install  - Install a command
     aix command list     - List installed commands
+    aix command edit     - Edit a command definition
+    aix command install  - Install a new command
 ```
 
 ### Options

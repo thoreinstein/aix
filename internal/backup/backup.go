@@ -75,7 +75,7 @@ func (m *Manager) Backup(platform string, paths []string) (*BackupManifest, erro
 	backupPath := m.backupPath(platform, backupID)
 
 	// Create backup directory
-	if err := os.MkdirAll(backupPath, 0o755); err != nil {
+	if err := os.MkdirAll(backupPath, 0o700); err != nil {
 		return nil, errors.Wrap(err, "creating backup directory")
 	}
 
@@ -131,7 +131,7 @@ func (m *Manager) Backup(platform string, paths []string) (*BackupManifest, erro
 
 	// Write manifest
 	manifestPath := filepath.Join(backupPath, "manifest.json")
-	if err := fileutil.AtomicWriteJSON(manifestPath, manifest); err != nil {
+	if err := fileutil.AtomicWriteJSONWithPerm(manifestPath, manifest, 0o600); err != nil {
 		return nil, errors.Wrap(err, "writing manifest")
 	}
 
@@ -145,7 +145,7 @@ func (m *Manager) backupFile(src, backupPath string) (*BackupFile, error) {
 	dst := filepath.Join(backupPath, relPath)
 
 	// Ensure parent directory exists
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o700); err != nil {
 		return nil, errors.Wrap(err, "creating parent directory")
 	}
 
@@ -220,7 +220,7 @@ func (m *Manager) Restore(platform, backupID string) error {
 		}
 
 		// Ensure parent directory exists
-		if err := os.MkdirAll(filepath.Dir(bf.OriginalPath), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(bf.OriginalPath), 0o700); err != nil {
 			return errors.Wrapf(err, "creating directory for %s", bf.OriginalPath)
 		}
 
@@ -387,7 +387,7 @@ func copyFile(src, dst string) (hash string, mode fs.FileMode, err error) {
 	mode = srcInfo.Mode()
 
 	// Create destination file
-	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "creating destination file")
 	}

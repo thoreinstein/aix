@@ -54,12 +54,11 @@ func AtomicWriteFile(path string, data []byte, perm os.FileMode) error {
 	return nil
 }
 
-// AtomicWriteJSON writes v as indented JSON to path atomically.
+// AtomicWriteJSON writes v as indented JSON to path atomically with specified permissions.
 // Uses 2-space indentation and appends a trailing newline for POSIX compliance.
 //
 // The caller is responsible for ensuring the parent directory exists.
-// The file is created with 0644 permissions.
-func AtomicWriteJSON(path string, v any) error {
+func AtomicWriteJSONWithPerm(path string, v any, perm os.FileMode) error {
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return errors.Wrap(err, "marshaling JSON")
@@ -68,15 +67,23 @@ func AtomicWriteJSON(path string, v any) error {
 	// Add trailing newline for POSIX compliance
 	data = append(data, '\n')
 
-	return AtomicWriteFile(path, data, 0644)
+	return AtomicWriteFile(path, data, perm)
 }
 
-// AtomicWriteYAML writes v as YAML to path atomically.
-// Appends a trailing newline for POSIX compliance.
+// AtomicWriteJSON writes v as indented JSON to path atomically.
+// Uses 2-space indentation and appends a trailing newline for POSIX compliance.
 //
 // The caller is responsible for ensuring the parent directory exists.
 // The file is created with 0644 permissions.
-func AtomicWriteYAML(path string, v any) (err error) {
+func AtomicWriteJSON(path string, v any) error {
+	return AtomicWriteJSONWithPerm(path, v, 0644)
+}
+
+// AtomicWriteYAMLWithPerm writes v as YAML to path atomically with specified permissions.
+// Appends a trailing newline for POSIX compliance.
+//
+// The caller is responsible for ensuring the parent directory exists.
+func AtomicWriteYAMLWithPerm(path string, v any, perm os.FileMode) (err error) {
 	// yaml.Marshal panics on unmarshalable types; recover and return error
 	defer func() {
 		if r := recover(); r != nil {
@@ -94,5 +101,14 @@ func AtomicWriteYAML(path string, v any) (err error) {
 		data = append(data, '\n')
 	}
 
-	return AtomicWriteFile(path, data, 0644)
+	return AtomicWriteFile(path, data, perm)
+}
+
+// AtomicWriteYAML writes v as YAML to path atomically.
+// Appends a trailing newline for POSIX compliance.
+//
+// The caller is responsible for ensuring the parent directory exists.
+// The file is created with 0644 permissions.
+func AtomicWriteYAML(path string, v any) (err error) {
+	return AtomicWriteYAMLWithPerm(path, v, 0644)
 }

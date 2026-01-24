@@ -33,6 +33,7 @@ aix command list [flags]
 
   See Also:
     aix command show     - Show command details
+    aix command edit     - Edit a command definition
     aix command install  - Install a new command
 ```
 

@@ -39,6 +39,7 @@ aix command init [path] [flags]
 
   See Also:
     aix command install  - Install the created command
+    aix command edit     - Edit the command definition
     aix command validate - Validate the command file
 ```
 

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/adrg/xdg"
+	"github.com/cockroachdb/errors"
 )
 
 // Platform identifiers for supported AI coding assistants.
@@ -50,14 +51,48 @@ var platformMCPConfigs = map[string]string{
 	PlatformGemini:   "settings.toml", // MCP config is in the main settings file
 }
 
+// Sentinel errors for path resolution.
+var (
+	// ErrHomeDirNotFound indicates the user's home directory could not be determined.
+	ErrHomeDirNotFound = errors.New("home directory not found")
+
+	// ErrPermissionDenied indicates the operation was rejected due to file system permissions.
+	ErrPermissionDenied = errors.New("permission denied")
+
+	// ErrInvalidPath indicates the provided path is malformed or invalid.
+	ErrInvalidPath = errors.New("invalid path")
+)
+
+// DefaultDirPerm is the default permission for newly created directories (private).
+const DefaultDirPerm = 0o700
+
+// EnsureDir creates the directory and any necessary parents with specified permissions.
+// If perm is 0, DefaultDirPerm (0700) is used.
+// This function is idempotent; it returns nil if the directory already exists.
+func EnsureDir(path string, perm os.FileMode) error {
+	if perm == 0 {
+		perm = DefaultDirPerm
+	}
+	return os.MkdirAll(path, perm)
+}
+
 // Home returns the user's home directory.
 // This is a thin wrapper around os.UserHomeDir for consistency.
+// Note: It returns an empty string on error for backward compatibility.
+// Use ResolveHome for proper error handling.
 func Home() string {
+	h, _ := ResolveHome()
+	return h
+}
+
+// ResolveHome returns the user's home directory.
+// Returns ErrHomeDirNotFound if the directory cannot be determined.
+func ResolveHome() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return ""
+		return "", errors.Wrap(ErrHomeDirNotFound, err.Error())
 	}
-	return home
+	return home, nil
 }
 
 // ConfigHome returns the XDG config home directory.
