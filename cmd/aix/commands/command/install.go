@@ -74,7 +74,7 @@ is installed, and the temporary directory is cleaned up.`,
   aix command install review --force
 
   # Install to a specific platform
-  aix command install review --platform claude`,
+  aix command install review --platform claude
 
   See Also:
     aix command remove   - Remove an installed command

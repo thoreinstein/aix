@@ -45,7 +45,7 @@ func New(cfg Config) *slog.Logger {
 	case FormatJSON:
 		handler = slog.NewJSONHandler(output, opts)
 	default:
-		handler = slog.NewTextHandler(output, opts)
+		handler = NewHandler(output, opts)
 	}
 
 	return slog.New(handler)
