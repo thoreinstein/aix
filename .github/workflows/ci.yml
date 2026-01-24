@@ -27,13 +27,13 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Build golangci-lint from source
-        run: |
-          git clone --branch ${{ env.GOLANGCI_LINT_VERSION }} --single-branch --depth 1 -c advice.detachedHead=false -q https://github.com/golangci/golangci-lint.git
-          cd golangci-lint
-          go build -trimpath -ldflags "-X main.version=${{ env.GOLANGCI_LINT_VERSION }} -X main.date=$(date -u +%Y-%m-%d_%H:%M:%S)" -o golangci-lint ./cmd/golangci-lint
-          sudo mv golangci-lint /usr/local/bin/
-          golangci-lint --version
+      # - name: Build golangci-lint from source
+      #   run: |
+      #     git clone --branch ${{ env.GOLANGCI_LINT_VERSION }} --single-branch --depth 1 -c advice.detachedHead=false -q https://github.com/golangci/golangci-lint.git
+      #     cd golangci-lint
+      #     go build -trimpath -ldflags "-X main.version=${{ env.GOLANGCI_LINT_VERSION }} -X main.date=$(date -u +%Y-%m-%d_%H:%M:%S)" -o golangci-lint ./cmd/golangci-lint
+      #     sudo mv golangci-lint /usr/local/bin/
+      #     golangci-lint --version
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
@@ -41,7 +41,7 @@ jobs:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           install-mode: none
           skip-cache: true
-          args: --timeout=5m
+          args: --timeout=5m --path-mode=abs
 
   test:
     name: Test (${{ matrix.os }})

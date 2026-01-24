@@ -40,7 +40,7 @@ func NewScannerWithLogger(logger *slog.Logger) *Scanner {
 // It looks for skills, commands, agents, and MCP servers in their
 // respective directories.
 func (s *Scanner) ScanRepo(repoPath, repoName, repoURL string) ([]Resource, error) {
-	var resources []Resource
+	resources := []Resource{}
 
 	// Scan skills directory
 	skillResources, err := s.scanSkills(repoPath, repoName, repoURL)
