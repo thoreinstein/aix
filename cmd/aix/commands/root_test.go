@@ -180,3 +180,58 @@ func TestSetupLogging_LogFile(t *testing.T) {
 		t.Errorf("log file missing level: %s", string(content))
 	}
 }
+
+func TestSetupLogging_LogFormat(t *testing.T) {
+	origLogFormat := logFormat
+	origVerbosity := verbosity
+	defer func() {
+		logFormat = origLogFormat
+		verbosity = origVerbosity
+	}()
+
+	tests := []struct {
+		format string
+		want   string // partial content to check
+	}{
+		{"text", "INFO  test message foo=bar"},
+		{"json", `"level":"INFO","msg":"test message","foo":"bar"`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.format, func(t *testing.T) {
+			logFormat = tt.format
+			verbosity = 1 // Info
+
+			var buf strings.Builder
+			rootCmd.SetErr(&buf)
+			defer rootCmd.SetErr(os.Stderr)
+
+			if err := setupLogging(rootCmd); err != nil {
+				t.Fatalf("setupLogging failed: %v", err)
+			}
+
+			slog.Info("test message", "foo", "bar")
+
+			output := buf.String()
+			if !strings.Contains(output, tt.want) {
+				t.Errorf("expected output to contain %q, got %q", tt.want, output)
+			}
+		})
+	}
+}
+
+func TestSetupLogging_ContextInjection(t *testing.T) {
+	if err := setupLogging(rootCmd); err != nil {
+		t.Fatalf("setupLogging failed: %v", err)
+	}
+
+	ctx := rootCmd.Context()
+	logger := logging.FromContext(ctx)
+	if logger == nil {
+		t.Fatal("logger not found in context")
+	}
+
+	// We can't strictly compare slog.Logger directly as it's a struct with pointers,
+	// but we can check if it works.
+	logger.Info("context logging works")
+}

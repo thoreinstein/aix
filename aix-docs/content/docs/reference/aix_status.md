@@ -58,8 +58,9 @@ See Also: aix doctor, aix config
 ### Options inherited from parent commands
 
 ```
-      --log-file string    write logs to file in JSON format
-  -p, --platform strings   target platform(s): claude, opencode (default: all detected)
+      --log-file string     write logs to file in JSON format
+      --log-format string   log format: text, json (default "text")
+  -p, --platform strings    target platform(s): claude, opencode (default: all detected)
 ```
 
 ### SEE ALSO

@@ -2,6 +2,7 @@
 package commands
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"strings"
@@ -27,6 +28,9 @@ var verbosity int
 // quiet holds the value of the -q/--quiet flag.
 var quiet bool
 
+// logFormat holds the value of the --log-format flag.
+var logFormat string
+
 // logFile holds the path to the log file.
 var logFile string
 
@@ -43,6 +47,8 @@ func init() {
 		"increase verbosity level (e.g., -v, -vv)")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false,
 		"suppress non-error output")
+	rootCmd.PersistentFlags().StringVar(&logFormat, "log-format", "text",
+		"log format: text, json")
 	rootCmd.PersistentFlags().StringVar(&logFile, "log-file", "",
 		"write logs to file in JSON format")
 
@@ -126,11 +132,19 @@ func setupLogging(cmd *cobra.Command) error {
 		level = logging.LevelFromVerbosity(v)
 	}
 
-	handlers := []slog.Handler{
-		logging.NewHandler(cmd.ErrOrStderr(), &slog.HandlerOptions{
-			Level: level,
-		}),
+	opts := &slog.HandlerOptions{
+		Level: level,
 	}
+
+	var primaryHandler slog.Handler
+	switch logging.Format(logFormat) {
+	case logging.FormatJSON:
+		primaryHandler = slog.NewJSONHandler(cmd.ErrOrStderr(), opts)
+	default:
+		primaryHandler = logging.NewHandler(cmd.ErrOrStderr(), opts)
+	}
+
+	handlers := []slog.Handler{primaryHandler}
 
 	if logFile != "" {
 		f, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
@@ -150,7 +164,14 @@ func setupLogging(cmd *cobra.Command) error {
 		handler = handlers[0]
 	}
 
-	slog.SetDefault(slog.New(handler))
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	cmd.SetContext(logging.NewContext(ctx, logger))
 
 	return nil
 }

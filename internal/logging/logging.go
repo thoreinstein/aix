@@ -1,11 +1,27 @@
 package logging
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"os"
 	"testing"
 )
+
+type contextKey struct{}
+
+// FromContext returns the logger stored in the context, or the default logger if none is set.
+func FromContext(ctx context.Context) *slog.Logger {
+	if l, ok := ctx.Value(contextKey{}).(*slog.Logger); ok {
+		return l
+	}
+	return slog.Default()
+}
+
+// NewContext returns a new context with the given logger attached.
+func NewContext(ctx context.Context, l *slog.Logger) context.Context {
+	return context.WithValue(ctx, contextKey{}, l)
+}
 
 // Format specifies the output format for log messages.
 type Format string
