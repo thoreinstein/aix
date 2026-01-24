@@ -30,6 +30,13 @@ func CopyToTemp(res *Resource) (string, error) {
 
 // CopyToTempFromCache copies a resource from the specified cache directory to a
 // temporary directory. This variant allows overriding the cache directory for testing.
+//
+// For directory-based resources (skills, directory commands, directory agents),
+// the original directory name is preserved within the temp directory. This ensures
+// that validators can verify the resource name matches its directory name.
+// For example, copying "skills/implement" creates "/tmp/aix-install-xyz/implement/".
+//
+// For flat files, the file is copied directly to the temp directory root.
 func CopyToTempFromCache(res *Resource, cacheDir string) (string, error) {
 	srcPath := filepath.Join(cacheDir, res.RepoName, res.Path)
 
@@ -50,12 +57,22 @@ func CopyToTempFromCache(res *Resource, cacheDir string) (string, error) {
 
 	// Copy based on resource type and source structure
 	var copyErr error
+	var resultPath string
+
 	if info.IsDir() {
 		// Directory-based resource (skill directory, command directory, agent directory)
-		copyErr = copyDir(srcPath, tempDir)
+		// Preserve the original directory name for validation (e.g., skill name must match dir name)
+		resourceDir := filepath.Join(tempDir, res.Name)
+		if err := os.MkdirAll(resourceDir, 0o755); err != nil {
+			_ = os.RemoveAll(tempDir)
+			return "", fmt.Errorf("creating resource directory: %w", err)
+		}
+		copyErr = copyDir(srcPath, resourceDir)
+		resultPath = resourceDir
 	} else {
 		// Flat file (command.md or agent.md directly in the type directory)
 		copyErr = copyFile(srcPath, filepath.Join(tempDir, filepath.Base(srcPath)))
+		resultPath = tempDir
 	}
 
 	if copyErr != nil {
@@ -64,7 +81,7 @@ func CopyToTempFromCache(res *Resource, cacheDir string) (string, error) {
 		return "", fmt.Errorf("copying resource: %w", copyErr)
 	}
 
-	return tempDir, nil
+	return resultPath, nil
 }
 
 // copyDir recursively copies a directory from src to dst.

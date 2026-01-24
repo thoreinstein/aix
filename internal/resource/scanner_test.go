@@ -23,7 +23,7 @@ func createTestRepo(t *testing.T, skills, commands, agents, mcpServers map[strin
 		if err := os.MkdirAll(skillDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(skillDir, "skill.md"), []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -66,7 +66,7 @@ func createTestRepo(t *testing.T, skills, commands, agents, mcpServers map[strin
 	return dir
 }
 
-// validSkillFrontmatter returns valid skill.md content.
+// validSkillFrontmatter returns valid SKILL.md content.
 func validSkillFrontmatter(name, description string) string {
 	return "---\nname: " + name + "\ndescription: " + description + "\n---\n\nSkill content here."
 }
@@ -334,7 +334,7 @@ func TestScanner_ScanRepo_MalformedFrontmatter(t *testing.T) {
 				if err := os.MkdirAll(skillDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(skillDir, "skill.md"), []byte(tt.skillContent), 0o644); err != nil {
+				if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(tt.skillContent), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -396,7 +396,7 @@ func TestScanner_ScanRepo_MixedValidAndMalformed(t *testing.T) {
 	if err := os.MkdirAll(validSkillDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(validSkillDir, "skill.md"),
+	if err := os.WriteFile(filepath.Join(validSkillDir, "SKILL.md"),
 		[]byte(validSkillFrontmatter("valid-skill", "A valid skill")), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -406,7 +406,7 @@ func TestScanner_ScanRepo_MixedValidAndMalformed(t *testing.T) {
 	if err := os.MkdirAll(malformedSkillDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(malformedSkillDir, "skill.md"),
+	if err := os.WriteFile(filepath.Join(malformedSkillDir, "SKILL.md"),
 		[]byte("---\nname: [broken yaml\n---"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -597,7 +597,7 @@ func TestScanner_NameFallback(t *testing.T) {
 		}
 		// Frontmatter without name field
 		content := "---\ndescription: A skill without a name field\n---\n\nContent"
-		if err := os.WriteFile(filepath.Join(skillDir, "skill.md"), []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -840,12 +840,12 @@ func TestScanner_IgnoresNonResourceFiles(t *testing.T) {
 	if err := os.MkdirAll(validSkillDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(validSkillDir, "skill.md"),
+	if err := os.WriteFile(filepath.Join(validSkillDir, "SKILL.md"),
 		[]byte(validSkillFrontmatter("valid", "Valid skill")), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	// Create skills directory without skill.md (should be ignored)
+	// Create skills directory without SKILL.md (should be ignored)
 	emptySkillDir := filepath.Join(skillsDir, "empty-skill")
 	if err := os.MkdirAll(emptySkillDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -902,7 +902,7 @@ func TestScanner_PathGeneration(t *testing.T) {
 	if err := os.MkdirAll(skillDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(skillDir, "skill.md"),
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"),
 		[]byte(validSkillFrontmatter("my-skill", "Desc")), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -1011,7 +1011,7 @@ func createBenchmarkRepo(b *testing.B, numSkills, numCommands, numAgents, numMCP
 				b.Fatal(err)
 			}
 			content := fmt.Sprintf("---\nname: skill-%d\ndescription: Benchmark skill %d\n---\n\nSkill content here.", i, i)
-			if err := os.WriteFile(filepath.Join(skillDir, "skill.md"), []byte(content), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(content), 0o644); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -1228,7 +1228,7 @@ func TestScanner_ScanRepo_PermissionDenied(t *testing.T) {
 	if err := os.MkdirAll(validSkillDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(validSkillDir, "skill.md"),
+	if err := os.WriteFile(filepath.Join(validSkillDir, "SKILL.md"),
 		[]byte(validSkillFrontmatter("valid", "Valid skill")), 0o644); err != nil {
 		t.Fatal(err)
 	}
