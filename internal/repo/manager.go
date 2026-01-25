@@ -46,12 +46,30 @@ func WithName(name string) Option {
 // Manager manages skill repositories.
 type Manager struct {
 	configPath string // Path to config file for persistence
+	cacheDir   string // Directory for caching cloned repositories
 }
 
 // NewManager creates a new repository manager.
 // The configPath specifies where the config file is stored.
-func NewManager(configPath string) *Manager {
-	return &Manager{configPath: configPath}
+func NewManager(configPath string, opts ...ManagerOption) *Manager {
+	m := &Manager{
+		configPath: configPath,
+		cacheDir:   paths.ReposCacheDir(),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// ManagerOption configures a Manager instance.
+type ManagerOption func(*Manager)
+
+// WithCacheDir overrides the default repository cache directory.
+func WithCacheDir(dir string) ManagerOption {
+	return func(m *Manager) {
+		m.cacheDir = dir
+	}
 }
 
 // Add clones a repository and registers it in the config.
@@ -95,13 +113,12 @@ func (m *Manager) Add(url string, opts ...Option) (*config.RepoConfig, error) {
 	}
 
 	// Create cache directory
-	cacheDir := paths.ReposCacheDir()
-	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
+	if err := os.MkdirAll(m.cacheDir, 0o755); err != nil {
 		return nil, errors.Wrap(err, "creating cache directory")
 	}
 
 	// Build destination path
-	destPath := filepath.Join(cacheDir, name)
+	destPath := filepath.Join(m.cacheDir, name)
 
 	// Clone repository - clean up partial clone on failure
 	if err := git.Clone(url, destPath, 1); err != nil {

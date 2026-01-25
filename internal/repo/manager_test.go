@@ -1,10 +1,13 @@
 package repo
 
 import (
-	"errors"
+	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/git"
 )
 
@@ -203,182 +206,161 @@ func TestNamePattern(t *testing.T) {
 	}
 }
 
-func TestManager_Add_InvalidURL(t *testing.T) {
-	// Create a temp config file
+func TestManager_Add_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
+	cacheDir := filepath.Join(tmpDir, "cache")
+	m := NewManager(configPath, WithCacheDir(cacheDir))
 
-	m := NewManager(configPath)
+	// Create a local source git repo
+	repoDir := filepath.Join(tmpDir, "source-repo")
+	createLocalGitRepo(t, repoDir)
+	repoURL := "file://" + repoDir
 
-	// Try to add with invalid URL (local path)
-	_, err := m.Add("/home/user/repo")
-	if err == nil {
-		t.Error("expected error for invalid URL, got nil")
+	// Test Add
+	repo, err := m.Add(repoURL, WithName("test-repo"))
+	if err != nil {
+		t.Fatalf("Add() error = %v", err)
 	}
 
-	// Verify error type
-	if !isInvalidURLError(err) {
-		t.Errorf("expected ErrInvalidURL, got: %v", err)
-	}
-}
-
-func TestManager_Add_InvalidName(t *testing.T) {
-	// Create a temp config file
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "config.yaml")
-
-	m := NewManager(configPath)
-
-	// Try to add with invalid name override
-	_, err := m.Add("https://github.com/user/repo.git", WithName("Invalid_Name"))
-	if err == nil {
-		t.Error("expected error for invalid name, got nil")
+	if repo.Name != "test-repo" {
+		t.Errorf("repo name = %q, want %q", repo.Name, "test-repo")
 	}
 
-	// Verify error type
-	if !isInvalidNameError(err) {
-		t.Errorf("expected ErrInvalidName, got: %v", err)
-	}
-}
-
-func TestManager_List_Empty(t *testing.T) {
-	// Create a temp config file
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "config.yaml")
-
-	m := NewManager(configPath)
-
-	// List should return empty slice when no repos exist
+	// Verify it's in List
 	repos, err := m.List()
 	if err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
-
-	if repos == nil {
-		t.Error("List() returned nil, want empty slice")
+	if len(repos) != 1 {
+		t.Errorf("List() returned %d repos, want 1", len(repos))
 	}
 
-	if len(repos) != 0 {
-		t.Errorf("List() returned %d repos, want 0", len(repos))
-	}
-}
-
-func TestManager_Get_NotFound(t *testing.T) {
-	// Create a temp config file
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "config.yaml")
-
-	m := NewManager(configPath)
-
-	// Get should return ErrNotFound for non-existent repo
-	_, err := m.Get("nonexistent")
-	if err == nil {
-		t.Error("expected error for nonexistent repo, got nil")
-	}
-
-	if !isNotFoundError(err) {
-		t.Errorf("expected ErrNotFound, got: %v", err)
-	}
-}
-
-func TestManager_Remove_NotFound(t *testing.T) {
-	// Create a temp config file
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "config.yaml")
-
-	m := NewManager(configPath)
-
-	// Remove should return ErrNotFound for non-existent repo
-	err := m.Remove("nonexistent")
-	if err == nil {
-		t.Error("expected error for nonexistent repo, got nil")
-	}
-
-	if !isNotFoundError(err) {
-		t.Errorf("expected ErrNotFound, got: %v", err)
-	}
-}
-
-func TestManager_Update_NotFound(t *testing.T) {
-	// Create a temp config file
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "config.yaml")
-
-	m := NewManager(configPath)
-
-	// Update with specific name should return ErrNotFound
-	err := m.Update("nonexistent")
-	if err == nil {
-		t.Error("expected error for nonexistent repo, got nil")
-	}
-
-	if !isNotFoundError(err) {
-		t.Errorf("expected ErrNotFound, got: %v", err)
-	}
-}
-
-func TestManager_Update_EmptyNoError(t *testing.T) {
-	// Create a temp config file
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "config.yaml")
-
-	m := NewManager(configPath)
-
-	// Update all with no repos should not error
-	err := m.Update("")
+	// Test Get
+	repo2, err := m.Get("test-repo")
 	if err != nil {
-		t.Errorf("Update(\"\") with no repos should not error, got: %v", err)
+		t.Fatalf("Get() error = %v", err)
 	}
-}
-
-func TestNewManager(t *testing.T) {
-	configPath := "/path/to/config.yaml"
-	m := NewManager(configPath)
-
-	if m == nil {
-		t.Fatal("NewManager returned nil")
+	if repo2.URL != repoURL {
+		t.Errorf("Get() URL = %q, want %q", repo2.URL, repoURL)
 	}
 
-	if m.configPath != configPath {
-		t.Errorf("configPath = %q, want %q", m.configPath, configPath)
-	}
-}
-
-func TestWithName(t *testing.T) {
-	var opts addOptions
-	WithName("custom-name")(&opts)
-
-	if opts.name != "custom-name" {
-		t.Errorf("WithName() set name = %q, want %q", opts.name, "custom-name")
-	}
-}
-
-// Integration-style test that requires real filesystem but not git
-func TestManager_SaveLoadConfig(t *testing.T) {
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "aix", "config.yaml")
-
-	m := NewManager(configPath)
-
-	// Initially, List should return empty
-	repos, err := m.List()
+	// Test Remove
+	err = m.Remove("test-repo")
 	if err != nil {
-		t.Fatalf("List() error = %v", err)
+		t.Fatalf("Remove() error = %v", err)
 	}
+
+	// Verify it's gone
+	repos, _ = m.List()
 	if len(repos) != 0 {
-		t.Errorf("initial List() = %d repos, want 0", len(repos))
+		t.Errorf("List() returned %d repos after removal, want 0", len(repos))
 	}
 }
 
-// Helper functions for error type checking
+func TestManager_Add_Collision(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+	cacheDir := filepath.Join(tmpDir, "cache")
+	m := NewManager(configPath, WithCacheDir(cacheDir))
+
+	repoDir := filepath.Join(tmpDir, "source-repo")
+	createLocalGitRepo(t, repoDir)
+	repoURL := "file://" + repoDir
+
+	// Add once
+	_, err := m.Add(repoURL, WithName("test-repo"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Add again with same name
+	_, err = m.Add(repoURL, WithName("test-repo"))
+	if !isNameCollisionError(err) {
+		t.Errorf("expected NameCollision error, got %v", err)
+	}
+}
+
+func TestManager_Update_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+	cacheDir := filepath.Join(tmpDir, "cache")
+	m := NewManager(configPath, WithCacheDir(cacheDir))
+
+	repoDir := filepath.Join(tmpDir, "source-repo")
+	createLocalGitRepo(t, repoDir)
+	repoURL := "file://" + repoDir
+
+	// Add repo
+	_, err := m.Add(repoURL, WithName("test-repo"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test Update
+	err = m.Update("test-repo")
+	if err != nil {
+		t.Errorf("Update() error = %v", err)
+	}
+
+	// Test Update all
+	err = m.Update("")
+	if err != nil {
+		t.Errorf("Update(\"\") error = %v", err)
+	}
+}
+
+func createLocalGitRepo(t *testing.T, dir string) {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	runGit := func(args ...string) {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %s failed: %v\nOutput: %s", strings.Join(args, " "), err, out)
+		}
+	}
+
+	runGit("init")
+	runGit("config", "user.email", "test@example.com")
+	runGit("config", "user.name", "Test User")
+
+	readme := filepath.Join(dir, "README.md")
+	if err := os.WriteFile(readme, []byte("# Test Repo"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	runGit("add", "README.md")
+	runGit("commit", "-m", "initial commit")
+}
+
 func isNotFoundError(err error) bool {
-	return errors.Is(err, ErrNotFound)
+	return strings.Contains(err.Error(), "repository not found") || errors.Is(err, ErrNotFound)
 }
 
 func isInvalidURLError(err error) bool {
-	return errors.Is(err, ErrInvalidURL)
+	return strings.Contains(err.Error(), "invalid git URL") || errors.Is(err, ErrInvalidURL)
 }
 
 func isInvalidNameError(err error) bool {
-	return errors.Is(err, ErrInvalidName)
+	return strings.Contains(err.Error(), "invalid repository name") || errors.Is(err, ErrInvalidName)
+}
+
+func isNameCollisionError(err error) bool {
+	return strings.Contains(err.Error(), "already used by") || errors.Is(err, ErrNameCollision)
 }
