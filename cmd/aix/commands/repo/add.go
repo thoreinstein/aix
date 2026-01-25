@@ -40,15 +40,12 @@ is derived from the URL unless overridden with --name.`,
 }
 
 func runAdd(_ *cobra.Command, args []string) error {
-	return runAddWithIO(args, os.Stdout)
+	return runAddWithIO(args, config.DefaultConfigPath(), os.Stdout)
 }
 
-// runAddWithIO allows injecting a writer for testing.
-func runAddWithIO(args []string, w io.Writer) error {
+// runAddWithIO allows injecting a writer and config path for testing.
+func runAddWithIO(args []string, configPath string, w io.Writer) error {
 	url := args[0]
-
-	// Get config path
-	configPath := config.DefaultConfigPath()
 
 	// Create manager
 	manager := repo.NewManager(configPath)
