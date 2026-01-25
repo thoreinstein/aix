@@ -8,9 +8,8 @@
 // # XDG Base Directory Compliance
 //
 // The package wraps github.com/adrg/xdg for cross-platform XDG Base Directory
-// Specification compliance. On Linux, paths follow XDG conventions (~/.config,
-// ~/.local/share, ~/.cache). On macOS, paths use Apple conventions
-// (~/Library/Application Support, ~/Library/Caches).
+// Specification compliance. On Linux and macOS, paths follow XDG conventions
+// (~/.config, ~/.local/share, ~/.cache).
 //
 // # Platform Constants
 //

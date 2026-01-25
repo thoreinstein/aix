@@ -3,6 +3,7 @@ package paths
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/adrg/xdg"
 
@@ -99,28 +100,52 @@ func ResolveHome() (string, error) {
 // ConfigHome returns the XDG config home directory.
 // It respects the AIX_CONFIG_DIR environment variable if set.
 // On Linux: ~/.config
-// On macOS: ~/Library/Application Support
+// On macOS: ~/.config (overrides Library/Application Support)
 // On Windows: %LOCALAPPDATA%
 func ConfigHome() string {
 	if envDir := os.Getenv("AIX_CONFIG_DIR"); envDir != "" {
 		return envDir
+	}
+	if xdgEnv := os.Getenv("XDG_CONFIG_HOME"); xdgEnv != "" {
+		return xdgEnv
+	}
+	if runtime.GOOS == "darwin" {
+		if home, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(home, ".config")
+		}
 	}
 	return xdg.ConfigHome
 }
 
 // DataHome returns the XDG data home directory.
 // On Linux: ~/.local/share
-// On macOS: ~/Library/Application Support
+// On macOS: ~/.local/share (overrides Library/Application Support)
 // On Windows: %LOCALAPPDATA%
 func DataHome() string {
+	if xdgEnv := os.Getenv("XDG_DATA_HOME"); xdgEnv != "" {
+		return xdgEnv
+	}
+	if runtime.GOOS == "darwin" {
+		if home, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(home, ".local", "share")
+		}
+	}
 	return xdg.DataHome
 }
 
 // CacheHome returns the XDG cache home directory.
 // On Linux: ~/.cache
-// On macOS: ~/Library/Caches
+// On macOS: ~/.cache (overrides Library/Caches)
 // On Windows: %LOCALAPPDATA%\cache
 func CacheHome() string {
+	if xdgEnv := os.Getenv("XDG_CACHE_HOME"); xdgEnv != "" {
+		return xdgEnv
+	}
+	if runtime.GOOS == "darwin" {
+		if home, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(home, ".cache")
+		}
+	}
 	return xdg.CacheHome
 }
 
