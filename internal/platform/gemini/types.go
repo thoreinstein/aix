@@ -71,13 +71,13 @@ type Skill struct {
 // Command represents a Gemini CLI slash command definition.
 type Command struct {
 	// Name is the command's identifier.
-	Name string `yaml:"name" json:"name" toml:"name"`
+	Name string `yaml:"name" json:"name" toml:"-"`
 
 	// Description explains what the command does.
 	Description string `yaml:"description,omitempty" json:"description,omitempty" toml:"description,omitempty"`
 
 	// Instructions contains the command's markdown body content.
-	Instructions string `yaml:"-" json:"-" toml:"instructions"`
+	Instructions string `yaml:"-" json:"-" toml:"prompt"`
 }
 
 // GetName returns the command's name.
@@ -104,7 +104,7 @@ type Agent struct {
 	Description string `yaml:"description,omitempty" json:"description,omitempty" toml:"description,omitempty"`
 
 	// Instructions contains the agent's markdown body content.
-	Instructions string `yaml:"-" json:"-" toml:"instructions"`
+	Instructions string `yaml:"-" json:"-" toml:"instructions,multiline"`
 }
 
 // MCPServer represents an MCP server configuration for Gemini CLI.
