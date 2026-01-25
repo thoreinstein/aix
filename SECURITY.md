@@ -2,9 +2,9 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.x.x   | :white_check_mark: |
+| Version | Supported |
+| ------- | --------- |
+| 0.x.x   | Yes       |
 
 As `aix` is currently in pre-1.0 development, security updates are provided for the latest release only. Once we reach 1.0, we will maintain security support for the current major version and the previous major version.
 
@@ -74,39 +74,21 @@ We will:
 
 ## Security Best Practices for Users
 
-### Protecting MCP Configurations
+### Protecting Configuration Files
 
-`aix` manages MCP server configurations that may contain sensitive data such as API tokens, authentication headers, and server URLs.
+`aix` and the AI assistants it manages store sensitive information (API keys, MCP tokens) in configuration files.
 
-**Recommendations:**
+- **Restrict File Permissions**: Ensure configuration files like `~/.config/aix/config.yaml` and `~/.claude.json` have restricted permissions. Run `chmod 600 <file>` to ensure only your user can read/write them.
+- **Environment Variables**: Prefer referencing environment variables (e.g., `"${GITHUB_TOKEN}"`) in your MCP configurations instead of hardcoding tokens.
+- **Never Commit Secrets**: Be careful not to commit your global or project-level AI configuration files to public repositories.
 
-- **Use environment variables** for sensitive values instead of hardcoding tokens in configuration files
-- **Restrict file permissions** on configuration files containing credentials (`chmod 600`)
-- **Never commit secrets** to version control; use `.gitignore` for local configuration files
-- **Rotate credentials** regularly, especially if you suspect exposure
-- **Review MCP server configurations** before sharing or publishing them
+### Repository Safety
 
-### Environment Variables
+When using `aix repo add`, you are downloading and caching instructions and configurations from remote sources.
 
-When configuring MCP servers, prefer environment variable references:
-
-```json
-{
-  "env": {
-    "API_TOKEN": "${MY_SERVICE_TOKEN}"
-  }
-}
-```
-
-Rather than hardcoded values:
-
-```json
-{
-  "env": {
-    "API_TOKEN": "sk-abc123..."
-  }
-}
-```
+- **Trust but Verify**: Only add repositories from sources you trust.
+- **Audit Skills**: Before installing a skill from a community repository, review its `SKILL.md` to ensure it doesn't contain malicious instructions or request excessive tool permissions.
+- **Private Repositories**: Use SSH URLs for private repositories to leverage your existing git authentication.
 
 ## Security Scanning
 
@@ -119,4 +101,4 @@ Security scan results are reviewed by maintainers. Critical findings block merge
 
 ## Questions
 
-For general security questions (not vulnerability reports), open a [GitHub Discussion](https://github.com/thoreinstein/aix/discussions) or issue.
+For general security questions (not vulnerability reports), open a [GitHub issue](https://github.com/thoreinstein/aix/issues).
