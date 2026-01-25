@@ -226,6 +226,7 @@ func TestGlobalConfigDir(t *testing.T) {
 			if tt.xdgConfig != "" {
 				t.Setenv("XDG_CONFIG_HOME", tt.xdgConfig)
 			} else {
+				// Ensure it's cleared so it uses our new default (~/.config)
 				t.Setenv("XDG_CONFIG_HOME", "")
 			}
 
