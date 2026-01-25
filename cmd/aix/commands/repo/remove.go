@@ -28,7 +28,7 @@ This removes both the configuration entry and the cached clone.`,
 func runRemove(_ *cobra.Command, args []string) error {
 	name := args[0]
 
-	configPath := config.DefaultConfigPath()
+	configPath := config.ActiveConfigPath()
 	manager := repo.NewManager(configPath)
 
 	if err := manager.Remove(name); err != nil {

@@ -40,7 +40,7 @@ is derived from the URL unless overridden with --name.`,
 }
 
 func runAdd(_ *cobra.Command, args []string) error {
-	return runAddWithIO(args, config.DefaultConfigPath(), os.Stdout)
+	return runAddWithIO(args, config.ActiveConfigPath(), os.Stdout)
 }
 
 // runAddWithIO allows injecting a writer and config path for testing.

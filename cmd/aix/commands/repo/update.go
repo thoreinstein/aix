@@ -45,7 +45,7 @@ func runUpdateWithIO(args []string, w io.Writer) error {
 	}
 
 	// Get config path
-	configPath := config.DefaultConfigPath()
+	configPath := config.ActiveConfigPath()
 
 	// Create manager
 	manager := repo.NewManager(configPath)

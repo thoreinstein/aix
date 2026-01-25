@@ -81,7 +81,17 @@ func Init() {
 	if envDir := os.Getenv("AIX_CONFIG_DIR"); envDir != "" {
 		viper.AddConfigPath(envDir)
 	} else {
-		viper.AddConfigPath(filepath.Join(paths.ConfigHome(), AppName))
+		configHome := paths.ConfigHome()
+		viper.AddConfigPath(filepath.Join(configHome, AppName))
+
+		// On macOS, fallback to standard Application Support if XDG_CONFIG_HOME is set
+		// but no config is found there.
+		if os.Getenv("XDG_CONFIG_HOME") != "" {
+			// Get the standard macOS home without XDG override
+			if home, err := os.UserHomeDir(); err == nil {
+				viper.AddConfigPath(filepath.Join(home, "Library", "Application Support", AppName))
+			}
+		}
 	}
 
 	// Environment variable support
@@ -91,6 +101,15 @@ func Init() {
 	// Defaults
 	viper.SetDefault("version", 1)
 	viper.SetDefault("default_platforms", paths.Platforms())
+}
+
+// ActiveConfigPath returns the path to the configuration file currently in use.
+// If no config file has been loaded, it returns DefaultConfigPath().
+func ActiveConfigPath() string {
+	if path := viper.ConfigFileUsed(); path != "" {
+		return path
+	}
+	return DefaultConfigPath()
 }
 
 // DefaultConfigPath returns the default path for the config file.
