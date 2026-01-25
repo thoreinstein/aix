@@ -157,18 +157,19 @@ func TestScanner_ScanRepo_HappyPath(t *testing.T) {
 	}
 	if codeReviewSkill == nil {
 		t.Fatal("expected to find code-review skill")
-	}
-	if codeReviewSkill.Description != "Reviews code for quality" {
-		t.Errorf("unexpected description: %s", codeReviewSkill.Description)
-	}
-	if codeReviewSkill.RepoName != "test-repo" {
-		t.Errorf("unexpected repo name: %s", codeReviewSkill.RepoName)
-	}
-	if codeReviewSkill.RepoURL != "https://github.com/test/repo" {
-		t.Errorf("unexpected repo URL: %s", codeReviewSkill.RepoURL)
-	}
-	if codeReviewSkill.Path != "skills/code-review" {
-		t.Errorf("unexpected path: %s", codeReviewSkill.Path)
+	} else {
+		if codeReviewSkill.Description != "Reviews code for quality" {
+			t.Errorf("unexpected description: %s", codeReviewSkill.Description)
+		}
+		if codeReviewSkill.RepoName != "test-repo" {
+			t.Errorf("unexpected repo name: %s", codeReviewSkill.RepoName)
+		}
+		if codeReviewSkill.RepoURL != "https://github.com/test/repo" {
+			t.Errorf("unexpected repo URL: %s", codeReviewSkill.RepoURL)
+		}
+		if codeReviewSkill.Path != "skills/code-review" {
+			t.Errorf("unexpected path: %s", codeReviewSkill.Path)
+		}
 	}
 }
 
@@ -979,8 +980,7 @@ func TestNewScanner(t *testing.T) {
 	scanner := NewScanner()
 	if scanner == nil {
 		t.Fatal("NewScanner() returned nil")
-	}
-	if scanner.logger == nil {
+	} else if scanner.logger == nil {
 		t.Error("NewScanner() logger is nil")
 	}
 }

@@ -209,21 +209,17 @@ func TestIssue_Error(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	t.Run("creates non-strict validator", func(t *testing.T) {
-		v := New(false)
-		if v == nil {
+		if v := New(false); v == nil {
 			t.Fatal("New(false) returned nil")
-		}
-		if v.strict {
+		} else if v.strict {
 			t.Error("New(false) created strict validator")
 		}
 	})
 
 	t.Run("creates strict validator", func(t *testing.T) {
-		v := New(true)
-		if v == nil {
+		if v := New(true); v == nil {
 			t.Fatal("New(true) returned nil")
-		}
-		if !v.strict {
+		} else if !v.strict {
 			t.Error("New(true) created non-strict validator")
 		}
 	})

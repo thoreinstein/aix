@@ -653,19 +653,15 @@ func TestFindDifferences_Deterministic(t *testing.T) {
 func TestShowSecretsFlags(t *testing.T) {
 	// Test that the flag variables exist and have correct defaults
 	// We need to check the command's flags, not the package variables
-	jsonFlag := showCmd.Flags().Lookup("json")
-	if jsonFlag == nil {
+	if jsonFlag := showCmd.Flags().Lookup("json"); jsonFlag == nil {
 		t.Fatal("--json flag not found")
-	}
-	if jsonFlag.DefValue != "false" {
+	} else if jsonFlag.DefValue != "false" {
 		t.Errorf("--json default = %q, want %q", jsonFlag.DefValue, "false")
 	}
 
-	showSecretsFlag := showCmd.Flags().Lookup("show-secrets")
-	if showSecretsFlag == nil {
+	if showSecretsFlag := showCmd.Flags().Lookup("show-secrets"); showSecretsFlag == nil {
 		t.Fatal("--show-secrets flag not found")
-	}
-	if showSecretsFlag.DefValue != "false" {
+	} else if showSecretsFlag.DefValue != "false" {
 		t.Errorf("--show-secrets default = %q, want %q", showSecretsFlag.DefValue, "false")
 	}
 }

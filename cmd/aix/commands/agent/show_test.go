@@ -338,19 +338,15 @@ func TestShowDetailJSONTags(t *testing.T) {
 
 func TestShowFlags(t *testing.T) {
 	// Test that the flag variables exist and have correct defaults
-	jsonFlag := showCmd.Flags().Lookup("json")
-	if jsonFlag == nil {
+	if jsonFlag := showCmd.Flags().Lookup("json"); jsonFlag == nil {
 		t.Fatal("--json flag not found")
-	}
-	if jsonFlag.DefValue != "false" {
+	} else if jsonFlag.DefValue != "false" {
 		t.Errorf("--json default = %q, want %q", jsonFlag.DefValue, "false")
 	}
 
-	fullFlag := showCmd.Flags().Lookup("full")
-	if fullFlag == nil {
+	if fullFlag := showCmd.Flags().Lookup("full"); fullFlag == nil {
 		t.Fatal("--full flag not found")
-	}
-	if fullFlag.DefValue != "false" {
+	} else if fullFlag.DefValue != "false" {
 		t.Errorf("--full default = %q, want %q", fullFlag.DefValue, "false")
 	}
 }
