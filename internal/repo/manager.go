@@ -2,6 +2,7 @@
 package repo
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -297,18 +298,20 @@ func deriveNameFromURL(url string) string {
 // loadConfig loads the configuration from the manager's config path.
 // If the config file doesn't exist, it returns a default config.
 func (m *Manager) loadConfig() (*config.Config, error) {
-	// If the config file doesn't exist, return a default config.
-	// This is common in tests or on first run.
-	if _, err := os.Stat(m.configPath); os.IsNotExist(err) {
-		return &config.Config{
-			Version:          1,
-			DefaultPlatforms: paths.Platforms(),
-			Repos:            make(map[string]config.RepoConfig),
-		}, nil
-	}
-
 	cfg, err := config.Load(m.configPath)
 	if err != nil {
+		// If the error is that the config file was not found, we can
+		// safely ignore it and return a default config. This is expected
+		// on first run or in test environments.
+		var pErr *fs.PathError
+		if errors.As(err, &pErr) && os.IsNotExist(pErr) {
+			return &config.Config{
+				Version:          1,
+				DefaultPlatforms: paths.Platforms(),
+				Repos:            make(map[string]config.RepoConfig),
+			}, nil
+		}
+		// For any other error (e.g., malformed file), return it.
 		return nil, errors.Wrap(err, "loading repo configuration")
 	}
 

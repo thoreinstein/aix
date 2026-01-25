@@ -12,7 +12,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/paths"
 	"github.com/thoreinstein/aix/internal/repo"
@@ -558,8 +557,8 @@ func TestIntegration_CLIOutput(t *testing.T) {
 	nameFlag = "cli-output-test"
 	defer func() { nameFlag = oldNameFlag }()
 
-	// Use default config path and clean up any leftover from previous runs
-	configPath := config.DefaultConfigPath()
+	configPath := setupTestConfig(t)
+
 	manager := repo.NewManager(configPath)
 	_ = manager.Remove("cli-output-test")
 	_ = os.RemoveAll(filepath.Join(paths.ReposCacheDir(), "cli-output-test"))
@@ -570,7 +569,7 @@ func TestIntegration_CLIOutput(t *testing.T) {
 
 	t.Run("add command output", func(t *testing.T) {
 		var buf bytes.Buffer
-		err := runAddWithIO([]string{repoURL}, &buf)
+		err := runAddWithIO([]string{repoURL}, configPath, &buf)
 		if err != nil {
 			t.Fatalf("runAddWithIO() failed: %v", err)
 		}
@@ -589,7 +588,7 @@ func TestIntegration_CLIOutput(t *testing.T) {
 
 	t.Run("list command output", func(t *testing.T) {
 		var buf bytes.Buffer
-		err := runListWithWriter(&buf)
+		err := runListWithWriter(&buf, configPath)
 		if err != nil {
 			t.Fatalf("runListWithWriter() failed: %v", err)
 		}
@@ -801,8 +800,8 @@ func TestIntegration_ListJSON(t *testing.T) {
 		nil, nil, nil,
 	)
 
-	// Use default config path since runListWithWriter reads from there
-	configPath := config.DefaultConfigPath()
+	configPath := setupTestConfig(t)
+
 	manager := repo.NewManager(configPath)
 
 	// Clean up any leftover from previous runs (config entry and directory)
@@ -823,7 +822,7 @@ func TestIntegration_ListJSON(t *testing.T) {
 	defer func() { listJSON = false }()
 
 	var buf bytes.Buffer
-	err = runListWithWriter(&buf)
+	err = runListWithWriter(&buf, configPath)
 	if err != nil {
 		t.Fatalf("runListWithWriter() failed: %v", err)
 	}
@@ -918,8 +917,10 @@ func TestIntegration_RepoAddWithValidationWarnings(t *testing.T) {
 	nameFlag = "warning-test"
 	defer func() { nameFlag = "" }()
 
+	configPath := setupTestConfig(t)
+
 	var buf bytes.Buffer
-	err := runAddWithIO([]string{repoURL}, &buf)
+	err := runAddWithIO([]string{repoURL}, configPath, &buf)
 	if err != nil {
 		t.Fatalf("runAddWithIO() failed: %v", err)
 	}
@@ -936,7 +937,6 @@ func TestIntegration_RepoAddWithValidationWarnings(t *testing.T) {
 	}
 
 	// Cleanup
-	configPath := config.DefaultConfigPath()
 	manager := repo.NewManager(configPath)
 	_ = manager.Remove("warning-test")
 }
