@@ -1,3 +1,19 @@
+# Release v0.5.0
+
+## Summary
+
+This release introduces an interactive search experience for discovering resources. Users can now launch an fzf-style fuzzy finder directly from the CLI to browse and filter skills, commands, agents, and MCP servers across all repositories.
+
+## New Features
+
+- **Interactive Fuzzy Search**: Running `aix search` without arguments now launches an interactive, fzf-style fuzzy finder. This interface allows users to filter results in real-time and preview resource details (description, type, repo) before selecting an item. Standard text search (`aix search <query>`) and filters (`--type`, `--repo`) remain fully supported.
+
+## Operations
+
+- No breaking changes. Existing search workflows remain compatible.
+
+---
+
 # Release v0.4.0
 
 ## Summary
@@ -89,3 +105,43 @@ This release adds support for Gemini CLI as a target platform, completing the in
 
 - Release workflow now runs on `macos-latest` with code signing secrets configured for proper macOS binary distribution.
 - Documentation cleaned of emojis and non-ASCII characters for consistent, portable output across all terminals.
+
+### CI/CD
+- 67b93c3 ci: run release on macos-latest with signing secrets
+
+## [0.1.0] - 2024-01-24
+
+### Added
+
+- Initial release of `aix` - unified CLI for AI coding assistant configurations
+- Core skill management (init, validate, install, list)
+- Core command management (init, validate, install, list)
+- Core agent management (init, validate, install, list)
+- MCP server configuration support
+- Multi-platform support for Claude Code and OpenCode
+- Repository management for shareable resources
+- Cross-platform translation layer for configuration formats
+- Comprehensive validation for skills, commands, and agents
+
+### Changed
+
+- Nothing yet.
+
+### Deprecated
+
+- Nothing yet.
+
+### Removed
+
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
+
+### Security
+
+- Nothing yet.
+
+[Unreleased]: https://github.com/thoreinstein/aix/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/thoreinstein/aix/releases/tag/v0.1.0

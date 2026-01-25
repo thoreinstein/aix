@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.5.0] - 2026-01-25
+
+- `e0a82ff` feat(search): add interactive fuzzy search
+
 ## [v0.4.0] - 2026-01-25
 
 - `ae57518` Update repository documentation with XDG paths
