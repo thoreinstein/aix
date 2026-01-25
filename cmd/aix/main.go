@@ -8,10 +8,12 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/thoreinstein/aix/cmd/aix/commands"
+	"github.com/thoreinstein/aix/internal/config"
 	aixerrors "github.com/thoreinstein/aix/internal/errors"
 )
 
 func main() {
+	config.Init()
 	if err := commands.Execute(); err != nil {
 		handleError(err)
 	}

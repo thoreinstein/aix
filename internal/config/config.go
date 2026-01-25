@@ -81,7 +81,6 @@ func Init() {
 	if envDir := os.Getenv("AIX_CONFIG_DIR"); envDir != "" {
 		viper.AddConfigPath(envDir)
 	} else {
-		viper.AddConfigPath(".") // Current directory
 		viper.AddConfigPath(filepath.Join(paths.ConfigHome(), AppName))
 	}
 
