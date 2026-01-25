@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.2.0] - 2026-01-24
+
+### Added
+- Add Gemini CLI platform support to `command install` and `skill install` commands (7bcd53f)
+- Add YAML/TOML bidirectional translation utilities (3134aa9)
+- Add integration tests for repo, git, backup, and editor packages (e306b7e)
+- Add security review checklist to contribution guide (8659913)
+
+### Fixed
+- Fix Gemini argument variable translation (`$ARGUMENTS` → `{{argument}}`) (312494a)
+
+### Changed
+- ci: use file-based p12 certificate for release workflow reliability (00910f7)
+
+### Removed
+- Remove unused test helper functions from repo manager tests (cd84483)
+
 ## [v0.1.0] - 2026-01-24
 
 ### Features
