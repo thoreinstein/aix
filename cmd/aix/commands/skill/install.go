@@ -15,6 +15,7 @@ import (
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/git"
 	"github.com/thoreinstein/aix/internal/platform/claude"
+	"github.com/thoreinstein/aix/internal/platform/gemini"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 	"github.com/thoreinstein/aix/internal/resource"
 	"github.com/thoreinstein/aix/internal/skill/parser"
@@ -315,9 +316,25 @@ func convertSkillForPlatform(skill *claude.Skill, platformName string) any {
 	case "opencode":
 		// Convert to OpenCode skill format
 		return convertToOpenCodeSkill(skill)
+	case "gemini":
+		// Convert to Gemini skill format
+		return convertToGeminiSkill(skill)
 	default:
 		// Unknown platform, return as-is and let the adapter handle it
 		return skill
+	}
+}
+
+// convertToGeminiSkill converts a Claude skill to a Gemini skill.
+func convertToGeminiSkill(s *claude.Skill) *gemini.Skill {
+	return &gemini.Skill{
+		Name:          s.Name,
+		Description:   s.Description,
+		License:       s.License,
+		Compatibility: s.Compatibility,
+		Metadata:      s.Metadata,
+		AllowedTools:  gemini.ToolList(s.AllowedTools),
+		Instructions:  s.Instructions,
 	}
 }
 

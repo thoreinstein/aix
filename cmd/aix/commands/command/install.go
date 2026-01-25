@@ -17,6 +17,7 @@ import (
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/git"
 	"github.com/thoreinstein/aix/internal/platform/claude"
+	"github.com/thoreinstein/aix/internal/platform/gemini"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 	"github.com/thoreinstein/aix/internal/resource"
 )
@@ -345,9 +346,21 @@ func convertForPlatform(cmd *claude.Command, platformName string) any {
 	case "opencode":
 		// Convert to OpenCode command format
 		return convertToOpenCode(cmd)
+	case "gemini":
+		// Convert to Gemini command format
+		return convertToGemini(cmd)
 	default:
 		// Unknown platform, return as-is and let the adapter handle it
 		return cmd
+	}
+}
+
+// convertToGemini converts a Claude command to a Gemini command.
+func convertToGemini(c *claude.Command) *gemini.Command {
+	return &gemini.Command{
+		Name:         c.Name,
+		Description:  c.Description,
+		Instructions: c.Instructions,
 	}
 }
 
