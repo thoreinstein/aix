@@ -107,6 +107,13 @@ func runSearchWithWriter(w io.Writer, args []string) error {
 		RepoName: repoFilter,
 	}
 
+	// Interactive mode: no query and not JSON
+	if query == "" && !jsonOutput {
+		// Apply filters even in interactive mode
+		filtered := resource.Search(resources, "", opts)
+		return runInteractiveSearch(w, filtered)
+	}
+
 	// Search
 	results := resource.Search(resources, query, opts)
 
