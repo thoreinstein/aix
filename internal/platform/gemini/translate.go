@@ -10,20 +10,17 @@ import (
 // Variables supported by Gemini CLI.
 const (
 	VarArguments = "$ARGUMENTS"
-	VarSelection = "$SELECTION"
 )
 
 // platformVars maps canonical variables to Gemini CLI format.
 var platformVars = map[string]string{
 	VarArguments: "{{argument}}",
-	VarSelection: "{{selection}}",
 }
 
 // canonicalVars maps Gemini CLI variables back to canonical format.
 var canonicalVars = map[string]string{
-	"{{argument}}":  VarArguments,
-	"{{args}}":      VarArguments, // Support both for compatibility
-	"{{selection}}": VarSelection,
+	"{{argument}}": VarArguments,
+	"{{args}}":     VarArguments, // Support both for compatibility
 }
 
 // varPattern matches variable syntax: $ followed by 2+ uppercase letters/underscores.
@@ -33,8 +30,7 @@ var varPattern = regexp.MustCompile(`\$[A-Z][A-Z_]+\b`)
 var ErrUnsupportedVariable = errors.New("unsupported variable")
 
 // TranslateVariables converts canonical variable syntax to Gemini CLI format.
-// $ARGUMENTS -> {{args}}
-// $SELECTION -> {{selection}}
+// $ARGUMENTS -> {{argument}}
 func TranslateVariables(content string) string {
 	result := content
 	for can, plat := range platformVars {
@@ -46,7 +42,6 @@ func TranslateVariables(content string) string {
 // TranslateToCanonical converts Gemini CLI variable syntax to canonical format.
 // {{args}} -> $ARGUMENTS
 // {{argument}} -> $ARGUMENTS
-// {{selection}} -> $SELECTION
 func TranslateToCanonical(content string) string {
 	result := content
 	for plat, can := range canonicalVars {

@@ -104,21 +104,17 @@ Files:
 
 ### Gemini CLI
 
-```
-Config Locations:
-  Global:  ~/.gemini/
-  Project: .gemini/
-
-Files:
-  Instructions:  GEMINI.md (project root) or ~/.gemini/GEMINI.md
-  Commands:      .gemini/commands/<name>.toml
-  MCP Config:    ~/.gemini/settings.json
-  Settings:      ~/.gemini/settings.json
-
-Variables:
-  {{argument}}   - Different from $ARGUMENTS!
-  {{selection}}  - Selected code
-```
+- **Format:** TOML/JSON
+- **Paths:**
+  - Global:  `~/.gemini/`
+  - Project: `.gemini/`
+  - Instructions:  `GEMINI.md` (project root) or `~/.gemini/GEMINI.md`
+  - Commands:      `.gemini/commands/<name>.toml`
+  - MCP Config:    `~/.gemini/settings.json`
+  - Settings:      `~/.gemini/settings.json`
+- **Translation:**
+  - `{{argument}}` -> `{{argument}}` (Native support)
+  - `{{selection}}` -> (Not supported)
 
 ## Managed Resources
 
