@@ -183,19 +183,15 @@ func TestInitCommand_CommandMetadata(t *testing.T) {
 	}
 
 	// Verify flags are registered
-	descFlag := initCmd.Flags().Lookup("description")
-	if descFlag == nil {
+	if descFlag := initCmd.Flags().Lookup("description"); descFlag == nil {
 		t.Fatal("--description flag not registered")
-	}
-	if descFlag.Shorthand != "d" {
+	} else if descFlag.Shorthand != "d" {
 		t.Errorf("--description shorthand = %q, want %q", descFlag.Shorthand, "d")
 	}
 
-	forceFlag := initCmd.Flags().Lookup("force")
-	if forceFlag == nil {
+	if forceFlag := initCmd.Flags().Lookup("force"); forceFlag == nil {
 		t.Fatal("--force flag not registered")
-	}
-	if forceFlag.Shorthand != "f" {
+	} else if forceFlag.Shorthand != "f" {
 		t.Errorf("--force shorthand = %q, want %q", forceFlag.Shorthand, "f")
 	}
 }

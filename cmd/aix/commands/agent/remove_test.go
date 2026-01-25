@@ -279,14 +279,11 @@ func TestRemoveCommand_Metadata(t *testing.T) {
 }
 
 func TestRemoveCommand_ForceFlag(t *testing.T) {
-	flag := removeCmd.Flags().Lookup("force")
-	if flag == nil {
+	if flag := removeCmd.Flags().Lookup("force"); flag == nil {
 		t.Fatal("--force flag should be defined")
-	}
-	if flag.Shorthand != "" {
+	} else if flag.Shorthand != "" {
 		t.Error("--force should not have a shorthand") // Consistent with skill_remove
-	}
-	if flag.DefValue != "false" {
+	} else if flag.DefValue != "false" {
 		t.Errorf("--force default value = %q, want %q", flag.DefValue, "false")
 	}
 }

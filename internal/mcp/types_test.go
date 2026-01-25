@@ -563,16 +563,16 @@ func TestNewConfig(t *testing.T) {
 
 	if config == nil {
 		t.Fatal("NewConfig() returned nil")
-	}
+	} else {
+		if config.Servers == nil {
+			t.Error("NewConfig().Servers is nil, want initialized map")
+		}
 
-	if config.Servers == nil {
-		t.Error("NewConfig().Servers is nil, want initialized map")
-	}
-
-	// Verify the map is usable
-	config.Servers["test"] = &Server{Name: "test"}
-	if len(config.Servers) != 1 {
-		t.Errorf("Servers count = %d, want 1", len(config.Servers))
+		// Verify the map is usable
+		config.Servers["test"] = &Server{Name: "test"}
+		if len(config.Servers) != 1 {
+			t.Errorf("Servers count = %d, want 1", len(config.Servers))
+		}
 	}
 }
 

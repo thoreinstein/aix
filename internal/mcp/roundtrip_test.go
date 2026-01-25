@@ -285,33 +285,35 @@ func TestRoundTrip_Claude_OpenCode_CrossPlatform(t *testing.T) {
 	github := canonical2.Servers["github"]
 	if github == nil {
 		t.Fatal("github server not found")
-	}
-	if github.Command != "npx" {
-		t.Errorf("github.Command = %q, want %q", github.Command, "npx")
-	}
-	if len(github.Args) != 2 || github.Args[0] != "-y" {
-		t.Errorf("github.Args = %v, want [-y @modelcontextprotocol/server-github]", github.Args)
-	}
-	if github.Transport != mcp.TransportStdio {
-		t.Errorf("github.Transport = %q, want %q", github.Transport, mcp.TransportStdio)
-	}
-	if github.Env["GITHUB_TOKEN"] != "token123" {
-		t.Errorf("github.Env[GITHUB_TOKEN] = %q, want %q", github.Env["GITHUB_TOKEN"], "token123")
+	} else {
+		if github.Command != "npx" {
+			t.Errorf("github.Command = %q, want %q", github.Command, "npx")
+		}
+		if len(github.Args) != 2 || github.Args[0] != "-y" {
+			t.Errorf("github.Args = %v, want [-y @modelcontextprotocol/server-github]", github.Args)
+		}
+		if github.Transport != mcp.TransportStdio {
+			t.Errorf("github.Transport = %q, want %q", github.Transport, mcp.TransportStdio)
+		}
+		if github.Env["GITHUB_TOKEN"] != "token123" {
+			t.Errorf("github.Env[GITHUB_TOKEN] = %q, want %q", github.Env["GITHUB_TOKEN"], "token123")
+		}
 	}
 
 	// Verify remote-api server
 	remoteAPI := canonical2.Servers["remote-api"]
 	if remoteAPI == nil {
 		t.Fatal("remote-api server not found")
-	}
-	if remoteAPI.URL != "https://api.example.com/mcp" {
-		t.Errorf("remote-api.URL = %q, want %q", remoteAPI.URL, "https://api.example.com/mcp")
-	}
-	if remoteAPI.Transport != mcp.TransportSSE {
-		t.Errorf("remote-api.Transport = %q, want %q", remoteAPI.Transport, mcp.TransportSSE)
-	}
-	if remoteAPI.Headers["Authorization"] != "Bearer secret" {
-		t.Errorf("remote-api.Headers[Authorization] = %q, want %q", remoteAPI.Headers["Authorization"], "Bearer secret")
+	} else {
+		if remoteAPI.URL != "https://api.example.com/mcp" {
+			t.Errorf("remote-api.URL = %q, want %q", remoteAPI.URL, "https://api.example.com/mcp")
+		}
+		if remoteAPI.Transport != mcp.TransportSSE {
+			t.Errorf("remote-api.Transport = %q, want %q", remoteAPI.Transport, mcp.TransportSSE)
+		}
+		if remoteAPI.Headers["Authorization"] != "Bearer secret" {
+			t.Errorf("remote-api.Headers[Authorization] = %q, want %q", remoteAPI.Headers["Authorization"], "Bearer secret")
+		}
 	}
 }
 
@@ -364,33 +366,35 @@ func TestRoundTrip_OpenCode_Claude_CrossPlatform(t *testing.T) {
 	fs := canonical2.Servers["filesystem"]
 	if fs == nil {
 		t.Fatal("filesystem server not found")
-	}
-	if fs.Command != "npx" {
-		t.Errorf("filesystem.Command = %q, want %q", fs.Command, "npx")
-	}
-	if len(fs.Args) != 3 {
-		t.Errorf("filesystem.len(Args) = %d, want 3", len(fs.Args))
-	}
-	if fs.Transport != mcp.TransportStdio {
-		t.Errorf("filesystem.Transport = %q, want %q", fs.Transport, mcp.TransportStdio)
-	}
-	if fs.Env["HOME"] != "/home/user" {
-		t.Errorf("filesystem.Env[HOME] = %q, want %q", fs.Env["HOME"], "/home/user")
+	} else {
+		if fs.Command != "npx" {
+			t.Errorf("filesystem.Command = %q, want %q", fs.Command, "npx")
+		}
+		if len(fs.Args) != 3 {
+			t.Errorf("filesystem.len(Args) = %d, want 3", len(fs.Args))
+		}
+		if fs.Transport != mcp.TransportStdio {
+			t.Errorf("filesystem.Transport = %q, want %q", fs.Transport, mcp.TransportStdio)
+		}
+		if fs.Env["HOME"] != "/home/user" {
+			t.Errorf("filesystem.Env[HOME] = %q, want %q", fs.Env["HOME"], "/home/user")
+		}
 	}
 
 	// Verify web-search server
 	webSearch := canonical2.Servers["web-search"]
 	if webSearch == nil {
 		t.Fatal("web-search server not found")
-	}
-	if webSearch.URL != "https://search.example.com/mcp" {
-		t.Errorf("web-search.URL = %q, want %q", webSearch.URL, "https://search.example.com/mcp")
-	}
-	if webSearch.Transport != mcp.TransportSSE {
-		t.Errorf("web-search.Transport = %q, want %q", webSearch.Transport, mcp.TransportSSE)
-	}
-	if webSearch.Headers["API-Key"] != "key123" {
-		t.Errorf("web-search.Headers[API-Key] = %q, want %q", webSearch.Headers["API-Key"], "key123")
+	} else {
+		if webSearch.URL != "https://search.example.com/mcp" {
+			t.Errorf("web-search.URL = %q, want %q", webSearch.URL, "https://search.example.com/mcp")
+		}
+		if webSearch.Transport != mcp.TransportSSE {
+			t.Errorf("web-search.Transport = %q, want %q", webSearch.Transport, mcp.TransportSSE)
+		}
+		if webSearch.Headers["API-Key"] != "key123" {
+			t.Errorf("web-search.Headers[API-Key] = %q, want %q", webSearch.Headers["API-Key"], "key123")
+		}
 	}
 }
 
