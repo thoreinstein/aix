@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.4.0] - 2026-01-25
+
+- `ae57518` Update repository documentation with XDG paths
+- `ca05bb0` Remove unsupported selection variable from Gemini adapter
+- `a31b787` Standardize on XDG paths for macOS
+- `c71f641` Fix repository tracking resilience and path handling
+
 ## [v0.3.0] - 2026-01-24
 
 - `490c007` refactor(repo): Improve config loading and testability
