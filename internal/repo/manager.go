@@ -297,9 +297,9 @@ func deriveNameFromURL(url string) string {
 // loadConfig loads the configuration from the manager's config path.
 // If the config file doesn't exist, it returns a default config.
 func (m *Manager) loadConfig() (*config.Config, error) {
-	// Check if config file exists
+	// If the config file doesn't exist, return a default config.
+	// This is common in tests or on first run.
 	if _, err := os.Stat(m.configPath); os.IsNotExist(err) {
-		// Return default config
 		return &config.Config{
 			Version:          1,
 			DefaultPlatforms: paths.Platforms(),
@@ -307,14 +307,17 @@ func (m *Manager) loadConfig() (*config.Config, error) {
 		}, nil
 	}
 
-	// Initialize viper with defaults
-	config.Init()
-
-	// Load from the specified path
 	cfg, err := config.Load(m.configPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "loading repo configuration")
 	}
+
+	// If no repos are loaded, ensure the map is initialized to prevent
+	// panics on access.
+	if cfg.Repos == nil {
+		cfg.Repos = make(map[string]config.RepoConfig)
+	}
+
 	return cfg, nil
 }
 
