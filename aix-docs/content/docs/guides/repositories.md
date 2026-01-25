@@ -18,7 +18,7 @@ Instead of manually downloading and managing individual files, you can add a rep
 
 ## How it Works
 
-`aix` repositories are standard Git repositories that follow a simple directory structure. When you add a repository, `aix` performs a **shallow clone** into a local cache directory (`~/.aix/cache/repos`).
+`aix` repositories are standard Git repositories that follow a simple directory structure. When you add a repository, `aix` performs a **shallow clone** into a local cache directory (`~/.cache/aix/repos`).
 
 The CLI then scans the repository for resources in the following subdirectories:
 *   `skills/`: Reusable agent skills (`SKILL.md`).
