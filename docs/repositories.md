@@ -69,13 +69,13 @@ Repositories are tracked in the aix configuration file. Each registered reposito
     {
       "name": "company-tools",
       "url": "https://github.com/acme/aix-resources.git",
-      "path": "/Users/dev/.aix/repos/company-tools",
+      "path": "/Users/dev/.cache/aix/repos/company-tools",
       "added_at": "2024-01-15T10:30:00Z"
     },
     {
       "name": "personal",
       "url": "git@github.com:user/my-aix-tools.git",
-      "path": "/Users/dev/.aix/repos/personal",
+      "path": "/Users/dev/.cache/aix/repos/personal",
       "added_at": "2024-02-20T14:45:00Z"
     }
   ]
@@ -123,8 +123,8 @@ Displays all registered repositories with their URLs and local paths.
 
 ```
 NAME            URL                                         PATH
-company-tools   https://github.com/acme/aix-resources.git   ~/.aix/repos/company-tools
-personal        git@github.com:user/my-aix-tools.git        ~/.aix/repos/personal
+company-tools   https://github.com/acme/aix-resources.git   ~/.cache/aix/repos/company-tools
+personal        git@github.com:user/my-aix-tools.git        ~/.cache/aix/repos/personal
 ```
 
 ### Update Repositories
@@ -277,7 +277,7 @@ Error: invalid name: must be lowercase alphanumeric with hyphens (e.g., 'my-repo
 
 ### Clone Location
 
-Repositories are cloned to `~/.aix/repos/<name>/` by default. This location can be overridden via the `AIX_REPOS_DIR` environment variable.
+Repositories are cloned to `~/.cache/aix/repos/<name>/` (Linux/macOS) or `%LOCALAPPDATA%\aix\cache\repos\<name>\` (Windows) by default. This location relies on the XDG Cache Home.
 
 ### Resource Resolution
 
@@ -316,7 +316,7 @@ When adding or updating a repository, aix validates the repository content and d
 ```bash
 $ aix repo add https://github.com/example/skills.git
 [OK] Repository 'skills' added from https://github.com/example/skills.git
-  Cached at: ~/.aix/repos/skills
+  Cached at: ~/.cache/aix/repos/skills
 
 [WARN] Validation warnings:
   skills/broken/SKILL.md: invalid frontmatter: yaml: line 3: did not find expected '-' indicator
