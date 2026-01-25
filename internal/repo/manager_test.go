@@ -349,18 +349,6 @@ func createLocalGitRepo(t *testing.T, dir string) {
 	runGit("commit", "-m", "initial commit")
 }
 
-func isNotFoundError(err error) bool {
-	return strings.Contains(err.Error(), "repository not found") || errors.Is(err, ErrNotFound)
-}
-
-func isInvalidURLError(err error) bool {
-	return strings.Contains(err.Error(), "invalid git URL") || errors.Is(err, ErrInvalidURL)
-}
-
-func isInvalidNameError(err error) bool {
-	return strings.Contains(err.Error(), "invalid repository name") || errors.Is(err, ErrInvalidName)
-}
-
 func isNameCollisionError(err error) bool {
 	return strings.Contains(err.Error(), "already used by") || errors.Is(err, ErrNameCollision)
 }
