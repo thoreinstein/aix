@@ -35,8 +35,12 @@ func TestCommandManager(t *testing.T) {
 			t.Errorf("Command content not translated: %s", string(data))
 		}
 
-		if !strings.Contains(string(data), "instructions =") {
-			t.Errorf("Command not in TOML format: %s", string(data))
+		if !strings.Contains(string(data), "prompt =") {
+			t.Errorf("Command not in TOML format (missing 'prompt ='): %s", string(data))
+		}
+
+		if strings.Contains(string(data), "name =") {
+			t.Errorf("Command TOML should not contain 'name =': %s", string(data))
 		}
 	})
 
@@ -84,4 +88,53 @@ func TestCommandManager(t *testing.T) {
 			t.Errorf("Command file still exists after Uninstall")
 		}
 	})
+}
+
+func TestCommandManager_Multiline(t *testing.T) {
+	tmpDir := t.TempDir()
+	paths := NewGeminiPaths(ScopeProject, tmpDir)
+	mgr := NewCommandManager(paths)
+
+	cmd := &Command{
+		Name:        "multiline-cmd",
+		Description: "A command with multiline instructions.",
+		Instructions: `This is the first line.
+This is the second line.
+This is the third line.`,
+	}
+
+	// Test Install with multiline
+	if err := mgr.Install(cmd); err != nil {
+		t.Fatalf("Install failed: %v", err)
+	}
+
+	// Verify file exists and contains multiline TOML
+	cmdPath := paths.CommandPath(cmd.Name)
+	data, err := os.ReadFile(cmdPath)
+	if err != nil {
+		t.Fatalf("Failed to read command file: %v", err)
+	}
+	content := string(data)
+
+	// Check for TOML multiline syntax
+	if !strings.Contains(content, `prompt = """`) {
+		t.Errorf("Expected multiline TOML syntax ('\"\"\"'), but not found in:\n%s", content)
+	}
+
+	// Check if newlines are preserved
+	expectedLines := strings.Split(cmd.Instructions, "\n")
+	actualLines := strings.Split(strings.Trim(content, "\n"), "\n")
+
+	// Quick and dirty check, assumes 'instructions' is the last field
+	lastThreeLines := actualLines[len(actualLines)-3:]
+	for i, line := range expectedLines {
+		if !strings.Contains(strings.Join(lastThreeLines, "\n"), line) {
+			t.Errorf("Expected line %d (%q) not found in the output TOML", i+1, line)
+		}
+	}
+
+	// Clean up
+	if err := mgr.Uninstall(cmd.Name); err != nil {
+		t.Fatalf("Uninstall failed: %v", err)
+	}
 }

@@ -143,6 +143,24 @@ func (m *CommandManager) Install(c *Command) error {
 		return errors.Wrap(err, "marshaling command to TOML")
 	}
 
+	// HACK: go-toml/v2 v2.2.4 doesn't seem to respect the 'multiline' tag in this context.
+	// As a workaround, we marshal the struct and then manually replace the
+	// instructions field if it contains newlines.
+	if strings.Contains(cmdToInstall.Instructions, "\n") {
+		// This is brittle. It assumes `toml.Marshal` produces a specific format.
+		// First, create what the marshaler *should* have produced for just the string.
+		singleLineInstructions, _ := toml.Marshal(cmdToInstall.Instructions)
+
+		// Construct the field assignment for a single-line string.
+		singleLineField := "prompt = " + string(singleLineInstructions)
+
+		// Construct the field assignment for a multi-line string.
+		multiLineField := "prompt = \"\"\"\n" + cmdToInstall.Instructions + "\"\"\""
+
+		// Replace the single-line version with the multi-line version.
+		data = []byte(strings.Replace(string(data), singleLineField, multiLineField, 1))
+	}
+
 	cmdPath := m.paths.CommandPath(c.Name)
 	if err := fileutil.AtomicWriteFile(cmdPath, data, 0o644); err != nil {
 		return errors.Wrap(err, "writing command file")
