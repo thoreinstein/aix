@@ -31,7 +31,7 @@ func TestCommandManager(t *testing.T) {
 			t.Fatalf("Failed to read command file: %v", err)
 		}
 
-		if !strings.Contains(string(data), "{{args}}") {
+		if !strings.Contains(string(data), "{{argument}}") {
 			t.Errorf("Command content not translated: %s", string(data))
 		}
 

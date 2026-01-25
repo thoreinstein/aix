@@ -15,14 +15,14 @@ const (
 
 // platformVars maps canonical variables to Gemini CLI format.
 var platformVars = map[string]string{
-	VarArguments: "{{args}}",
+	VarArguments: "{{argument}}",
 	VarSelection: "{{selection}}",
 }
 
 // canonicalVars maps Gemini CLI variables back to canonical format.
 var canonicalVars = map[string]string{
-	"{{args}}":      VarArguments,
-	"{{argument}}":  VarArguments, // Support both for compatibility
+	"{{argument}}":  VarArguments,
+	"{{args}}":      VarArguments, // Support both for compatibility
 	"{{selection}}": VarSelection,
 }
 

@@ -15,7 +15,7 @@ func TestTranslateVariables(t *testing.T) {
 		{
 			name:    "translate $ARGUMENTS",
 			content: "Run with $ARGUMENTS",
-			want:    "Run with {{args}}",
+			want:    "Run with {{argument}}",
 		},
 		{
 			name:    "translate $SELECTION",
@@ -25,7 +25,7 @@ func TestTranslateVariables(t *testing.T) {
 		{
 			name:    "translate both",
 			content: "$ARGUMENTS and $SELECTION",
-			want:    "{{args}} and {{selection}}",
+			want:    "{{argument}} and {{selection}}",
 		},
 		{
 			name:    "no variables",
@@ -108,7 +108,7 @@ func TestSkillManager(t *testing.T) {
 			t.Fatalf("Failed to read skill file: %v", err)
 		}
 
-		if !contains(string(data), "{{args}}") {
+		if !contains(string(data), "{{argument}}") {
 			t.Errorf("Skill content not translated: %s", string(data))
 		}
 	})
