@@ -1,3 +1,25 @@
+# Release v0.3.0
+
+## Summary
+
+This release focuses on hardening the configuration loading and repository management logic, making `aix` more robust and predictable. It also includes a key bug fix for Gemini users and several internal refactorings to improve testability and code quality.
+
+## New Features
+
+- **Hardened Configuration Loading**: The tool's configuration handling has been made more secure and stable. `aix` now initializes its configuration earlier in the startup process and no longer searches for `config.yaml` in the current working directory, preventing unexpected behavior during development.
+- **Robust Repository Management**: The repository manager is now more resilient to missing configuration files and ensures key data structures are always initialized, preventing potential panics.
+
+## Bug Fixes
+
+- **Gemini Platform**: A bug has been fixed where multiline instructions in skill prompts were incorrectly serialized into single-line strings in the generated TOML command files, breaking their execution.
+
+## Internal Improvements
+
+- **Refactoring**: Several parts of the codebase, including repository command handling and table-driven tests, have been refactored to improve testability, readability, and maintainability.
+- **Documentation**: The `AGENTS.md` guide has been updated with a mandatory workflow for completing work sessions to ensure no work is left behind.
+
+---
+
 # v0.2.0
 
 **Released:** 2026-01-24
