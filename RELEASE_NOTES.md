@@ -1,3 +1,24 @@
+# Release v0.4.0
+
+## Summary
+
+This release standardizes configuration paths on macOS to follow XDG conventions (`~/.config/aix`, `~/.cache/aix`), aligning the developer experience across Linux and macOS. It also improves the resilience of repository tracking and updates the Gemini CLI adapter to match upstream capabilities.
+
+## New Features
+
+- **Standardized macOS Paths**: `aix` now defaults to XDG-style paths (`~/.config`, `~/.cache`, `~/.local/share`) on macOS, matching Linux behavior. Legacy paths (`~/Library/Application Support`) are still supported as a fallback for existing installations.
+
+## Bug Fixes
+
+- **Repository Tracking**: Fixed an issue where `aix repo add` could fail if the cache directory existed but wasn't tracked, improving robustness against manual filesystem changes.
+- **Gemini CLI Adapter**: Removed support for the `{{selection}}` variable in the Gemini adapter as it is not supported by the upstream Gemini CLI tool.
+
+## Operations
+
+- **Configuration**: macOS users setting up `aix` for the first time will now see config files in `~/.config/aix` instead of `~/Library/Application Support/aix`.
+
+---
+
 # Release v0.3.0
 
 ## Summary
