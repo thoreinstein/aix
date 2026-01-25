@@ -121,6 +121,13 @@ func (m *Manager) Add(url string, opts ...Option) (*config.RepoConfig, error) {
 	// Build destination path
 	destPath := filepath.Join(m.cacheDir, name)
 
+	// If directory exists but is not in config, it's an orphan - remove it for a clean clone
+	if _, err := os.Stat(destPath); err == nil {
+		if err := os.RemoveAll(destPath); err != nil {
+			return nil, errors.Wrapf(err, "cleaning up orphan repository directory %q", destPath)
+		}
+	}
+
 	// Clone repository - clean up partial clone on failure
 	if err := git.Clone(url, destPath, 1); err != nil {
 		// Remove any partially-created directory

@@ -49,7 +49,7 @@ type repoJSON struct {
 }
 
 func runList(_ *cobra.Command, _ []string) error {
-	return runListWithWriter(os.Stdout, config.DefaultConfigPath())
+	return runListWithWriter(os.Stdout, config.ActiveConfigPath())
 }
 
 // runListWithWriter allows injecting a writer for testing.
