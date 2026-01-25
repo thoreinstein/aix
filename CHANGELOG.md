@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.3.0] - 2026-01-24
+
+- `490c007` refactor(repo): Improve config loading and testability
+- `ec06963` docs: Add mandatory session completion workflow
+- `adebc9b` feat(config): Harden configuration and repo loading
+- `503b8fe` fix(gemini): Correctly serialize multiline TOML strings
+- `d991a56` refactor(testing): Use if/else chains in table tests
+
 ## [v0.2.0] - 2026-01-24
 
 ### Added
