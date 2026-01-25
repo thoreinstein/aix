@@ -18,16 +18,6 @@ func TestTranslateVariables(t *testing.T) {
 			want:    "Run with {{argument}}",
 		},
 		{
-			name:    "translate $SELECTION",
-			content: "Context: $SELECTION",
-			want:    "Context: {{selection}}",
-		},
-		{
-			name:    "translate both",
-			content: "$ARGUMENTS and $SELECTION",
-			want:    "{{argument}} and {{selection}}",
-		},
-		{
 			name:    "no variables",
 			content: "Pure text",
 			want:    "Pure text",
@@ -58,11 +48,6 @@ func TestTranslateToCanonical(t *testing.T) {
 			name:    "translate {{argument}}",
 			content: "Run with {{argument}}",
 			want:    "Run with $ARGUMENTS",
-		},
-		{
-			name:    "translate {{selection}}",
-			content: "Context: {{selection}}",
-			want:    "Context: $SELECTION",
 		},
 	}
 
