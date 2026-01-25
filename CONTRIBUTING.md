@@ -354,6 +354,11 @@ git commit -S -m "Add new feature"
 - CI must pass (lint, test, build)
 - Coverage must meet thresholds
 - Commits should be well-organized
+- **Security Review**: Every PR must be reviewed for security implications. Contributors should perform a self-review using the following checklist:
+  - Does this change introduce any hardcoded secrets?
+  - Does it handle user input or external data safely (e.g., prevent injection)?
+  - Are file permissions appropriate for any new files created?
+  - If adding dependencies, are they well-maintained and trusted?
 
 ### What to Expect
 
