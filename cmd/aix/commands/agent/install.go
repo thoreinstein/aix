@@ -2,7 +2,6 @@ package agent
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,8 +13,11 @@ import (
 	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
 	cliprompt "github.com/thoreinstein/aix/internal/cli/prompt"
+	"github.com/thoreinstein/aix/internal/config"
+	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
+	"github.com/thoreinstein/aix/internal/repo"
 	"github.com/thoreinstein/aix/internal/resource"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
@@ -34,11 +36,16 @@ var installForce bool
 // installFile forces treating the argument as a file path instead of searching repos.
 var installFile bool
 
+// installAllFromRepo installs all agents from a specific repository.
+var installAllFromRepo string
+
 func init() {
 	installCmd.Flags().BoolVar(&installForce, "force", false,
 		"overwrite existing agent without confirmation")
 	installCmd.Flags().BoolVarP(&installFile, "file", "f", false,
 		"treat argument as a file path instead of searching repos")
+	installCmd.Flags().StringVar(&installAllFromRepo, "all-from-repo", "",
+		"install all agents from a specific repository")
 	Cmd.AddCommand(installCmd)
 }
 
@@ -80,12 +87,30 @@ Example AGENT.md:
   aix agent install code-reviewer --platform claude
 
   # Force overwrite existing agent
-  aix agent install code-reviewer --force`,
-	Args: cobra.ExactArgs(1),
+  aix agent install code-reviewer --force
+
+  # Install all agents from a specific repo
+  aix agent install --all-from-repo official`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if installAllFromRepo != "" {
+			if len(args) > 0 {
+				return errors.New("cannot specify both --all-from-repo and a source argument")
+			}
+			return nil
+		}
+		if len(args) != 1 {
+			return errors.New("requires exactly one argument (source)")
+		}
+		return nil
+	},
 	RunE: runInstall,
 }
 
 func runInstall(_ *cobra.Command, args []string) error {
+	if installAllFromRepo != "" {
+		return runInstallAllFromRepo(installAllFromRepo)
+	}
+
 	source := args[0]
 
 	// If --file flag is set, treat argument as file path (old behavior)
@@ -104,7 +129,7 @@ func runInstall(_ *cobra.Command, args []string) error {
 		if errors.Is(err, resource.ErrNoReposConfigured) {
 			return errors.New("no repositories configured. Run 'aix repo add <url>' to add one")
 		}
-		return fmt.Errorf("searching repositories: %w", err)
+		return errors.Wrap(err, "searching repositories")
 	}
 
 	if len(matches) > 0 {
@@ -114,7 +139,7 @@ func runInstall(_ *cobra.Command, args []string) error {
 	// No matches in repos - check if input might be a forgotten path
 	if mightBePath(source) {
 		if _, statErr := os.Stat(source); statErr == nil {
-			return fmt.Errorf("agent %q not found in repositories, but a local file exists at that path.\nDid you mean: aix agent install --file %s", source, source)
+			return errors.Newf("agent %q not found in repositories, but a local file exists at that path.\nDid you mean: aix agent install --file %s", source, source)
 		}
 	}
 
@@ -123,7 +148,61 @@ func runInstall(_ *cobra.Command, args []string) error {
 		return installFromLocal(source)
 	}
 
-	return fmt.Errorf("agent %q not found in any configured repository", source)
+	return errors.Newf("agent %q not found in any configured repository", source)
+}
+
+func runInstallAllFromRepo(repoName string) error {
+	// 1. Get repo config
+	configPath := config.DefaultConfigPath()
+	mgr := repo.NewManager(configPath)
+
+	rConfig, err := mgr.Get(repoName)
+	if err != nil {
+		return errors.Wrapf(err, "getting repository %q", repoName)
+	}
+
+	// 2. Scan repo for agents
+	scanner := resource.NewScanner()
+	resources, err := scanner.ScanRepo(rConfig.Path, rConfig.Name, rConfig.URL)
+	if err != nil {
+		return errors.Wrapf(err, "scanning repository %q", repoName)
+	}
+
+	// 3. Filter for agents
+	var agents []resource.Resource
+	for _, res := range resources {
+		if res.Type == resource.TypeAgent {
+			agents = append(agents, res)
+		}
+	}
+
+	if len(agents) == 0 {
+		fmt.Printf("No agents found in repository %q\n", repoName)
+		return nil
+	}
+
+	fmt.Printf("Found %d agents in repository %q. Installing...\n", len(agents), repoName)
+
+	// 4. Install each agent
+	successCount := 0
+	for _, a := range agents {
+		fmt.Printf("\nInstalling %s...\n", a.Name)
+
+		matches := []resource.Resource{a}
+		if err := installFromRepo(a.Name, matches); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to install %s: %v\n", a.Name, err)
+		} else {
+			successCount++
+		}
+	}
+
+	fmt.Printf("\nSuccessfully installed %d/%d agents from %q.\n", successCount, len(agents), repoName)
+
+	if successCount < len(agents) {
+		return errors.New("some agents failed to install")
+	}
+
+	return nil
 }
 
 // looksLikePath returns true if the source appears to be a file path.
@@ -168,7 +247,7 @@ func installFromRepo(name string, matches []resource.Resource) error {
 		// Multiple matches - prompt user to select
 		choice, err := cliprompt.SelectResourceDefault(name, matches)
 		if err != nil {
-			return fmt.Errorf("selecting resource: %w", err)
+			return errors.Wrap(err, "selecting resource")
 		}
 		selected = choice
 	}
@@ -176,7 +255,7 @@ func installFromRepo(name string, matches []resource.Resource) error {
 	// Copy from cache to temp directory
 	tempDir, err := resource.CopyToTemp(selected)
 	if err != nil {
-		return fmt.Errorf("copying from repository cache: %w", err)
+		return errors.Wrap(err, "copying from repository cache")
 	}
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
@@ -192,7 +271,7 @@ func installFromRepo(name string, matches []resource.Resource) error {
 func installFromLocal(source string) error {
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
-		return fmt.Errorf("resolving platforms: %w", err)
+		return errors.Wrap(err, "resolving platforms")
 	}
 
 	// Resolve AGENT.md path
@@ -204,7 +283,7 @@ func installFromLocal(source string) error {
 	// Read and parse the AGENT.md file
 	content, err := os.ReadFile(agentPath)
 	if err != nil {
-		return fmt.Errorf("reading agent file: %w", err)
+		return errors.Wrap(err, "reading agent file")
 	}
 
 	// Track the agent name once successfully parsed (same for all platforms)
@@ -224,7 +303,7 @@ func installFromLocal(source string) error {
 	for _, p := range platforms {
 		// Ensure backup exists before modifying
 		if err := backup.EnsureBackedUp(p.Name(), p.BackupPaths()); err != nil {
-			return fmt.Errorf("backing up %s before install: %w", p.DisplayName(), err)
+			return errors.Wrapf(err, "backing up %s before install", p.DisplayName())
 		}
 
 		result := installResult{platform: p.Name()}
@@ -336,14 +415,14 @@ func installFromLocal(source string) error {
 func resolveAgentPath(source string) (string, error) {
 	info, err := os.Stat(source)
 	if err != nil {
-		return "", fmt.Errorf("accessing source: %w", err)
+		return "", errors.Wrap(err, "accessing source")
 	}
 
 	if info.IsDir() {
 		// Look for AGENT.md in directory
 		agentPath := filepath.Join(source, "AGENT.md")
 		if _, err := os.Stat(agentPath); err != nil {
-			return "", fmt.Errorf("no AGENT.md found in %s", source)
+			return "", errors.Newf("no AGENT.md found in %s", source)
 		}
 		return agentPath, nil
 	}
@@ -362,7 +441,7 @@ func parseAgentForPlatform(platform string, content []byte) (any, error) {
 		}
 		body, err := frontmatter.Parse(bytes.NewReader(content), &meta)
 		if err != nil {
-			return nil, fmt.Errorf("parsing frontmatter: %w", err)
+			return nil, errors.Wrap(err, "parsing frontmatter")
 		}
 		if meta.Name == "" {
 			return nil, errAgentNameRequired
@@ -382,7 +461,7 @@ func parseAgentForPlatform(platform string, content []byte) (any, error) {
 		}
 		body, err := frontmatter.Parse(bytes.NewReader(content), &meta)
 		if err != nil {
-			return nil, fmt.Errorf("parsing frontmatter: %w", err)
+			return nil, errors.Wrap(err, "parsing frontmatter")
 		}
 		if meta.Name == "" {
 			return nil, errAgentNameRequired
@@ -396,7 +475,7 @@ func parseAgentForPlatform(platform string, content []byte) (any, error) {
 		}, nil
 
 	default:
-		return nil, fmt.Errorf("unsupported platform: %s", platform)
+		return nil, errors.Newf("unsupported platform: %s", platform)
 	}
 }
 
