@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.6.0] - 2026-01-27
+
+- `a05918c` Feat: Add --all-from-repo flag to install commands
+
 ## [v0.5.0] - 2026-01-25
 
 - `e0a82ff` feat(search): add interactive fuzzy search
