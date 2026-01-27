@@ -1,3 +1,19 @@
+# Release v0.6.0
+
+## Summary
+
+This release introduces bulk installation capabilities for all resource types. Users can now install all agents, commands, skills, or MCP servers from a specific repository in a single operation, significantly streamlining the setup process for new environments.
+
+## New Features
+
+- **Bulk Installation**: Added the `--all-from-repo <repo-name>` flag to `aix agent install`, `aix command install`, `aix skill install`, and `aix mcp install`. This allows users to install every resource of a given type from a configured repository at once (e.g., `aix skill install --all-from-repo official`).
+
+## Operations
+
+- No breaking changes. Existing installation workflows remain unaffected.
+
+---
+
 # Release v0.5.0
 
 ## Summary
