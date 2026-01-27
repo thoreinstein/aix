@@ -14,11 +14,13 @@ import (
 	cliprompt "github.com/thoreinstein/aix/internal/cli/prompt"
 	"github.com/thoreinstein/aix/internal/command/parser"
 	"github.com/thoreinstein/aix/internal/command/validator"
+	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/git"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/gemini"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
+	"github.com/thoreinstein/aix/internal/repo"
 	"github.com/thoreinstein/aix/internal/resource"
 )
 
@@ -28,6 +30,9 @@ var installForce bool
 // installFile forces treating the argument as a file path instead of searching repos.
 var installFile bool
 
+// installAllFromRepo installs all commands from a specific repository.
+var installAllFromRepo string
+
 // Sentinel errors for command install operations.
 var errInstallFailed = errors.New("command installation failed")
 
@@ -36,6 +41,8 @@ func init() {
 		"overwrite existing command without confirmation")
 	installCmd.Flags().BoolVarP(&installFile, "file", "f", false,
 		"treat argument as a file path instead of searching repos")
+	installCmd.Flags().StringVar(&installAllFromRepo, "all-from-repo", "",
+		"install all commands from a specific repository")
 	Cmd.AddCommand(installCmd)
 }
 
@@ -76,15 +83,33 @@ is installed, and the temporary directory is cleaned up.`,
   # Install to a specific platform
   aix command install review --platform claude
 
+  # Install all commands from a specific repo
+  aix command install --all-from-repo official
+
   See Also:
     aix command remove   - Remove an installed command
     aix command edit     - Edit a command definition
     aix command init     - Create a new command`,
-	Args: cobra.ExactArgs(1),
+	Args: func(cmd *cobra.Command, args []string) error {
+		if installAllFromRepo != "" {
+			if len(args) > 0 {
+				return errors.New("cannot specify both --all-from-repo and a source argument")
+			}
+			return nil
+		}
+		if len(args) != 1 {
+			return errors.New("requires exactly one argument (source)")
+		}
+		return nil
+	},
 	RunE: runInstall,
 }
 
 func runInstall(_ *cobra.Command, args []string) error {
+	if installAllFromRepo != "" {
+		return runInstallAllFromRepo(installAllFromRepo)
+	}
+
 	source := args[0]
 
 	// If --file flag is set, treat argument as file path or URL (old behavior)
@@ -128,6 +153,60 @@ func runInstall(_ *cobra.Command, args []string) error {
 	}
 
 	return errors.Newf("command %q not found in any configured repository", source)
+}
+
+func runInstallAllFromRepo(repoName string) error {
+	// 1. Get repo config
+	configPath := config.DefaultConfigPath()
+	mgr := repo.NewManager(configPath)
+
+	rConfig, err := mgr.Get(repoName)
+	if err != nil {
+		return errors.Wrapf(err, "getting repository %q", repoName)
+	}
+
+	// 2. Scan repo for commands
+	scanner := resource.NewScanner()
+	resources, err := scanner.ScanRepo(rConfig.Path, rConfig.Name, rConfig.URL)
+	if err != nil {
+		return errors.Wrapf(err, "scanning repository %q", repoName)
+	}
+
+	// 3. Filter for commands
+	var commands []resource.Resource
+	for _, res := range resources {
+		if res.Type == resource.TypeCommand {
+			commands = append(commands, res)
+		}
+	}
+
+	if len(commands) == 0 {
+		fmt.Printf("No commands found in repository %q\n", repoName)
+		return nil
+	}
+
+	fmt.Printf("Found %d commands in repository %q. Installing...\n", len(commands), repoName)
+
+	// 4. Install each command
+	successCount := 0
+	for _, c := range commands {
+		fmt.Printf("\nInstalling %s...\n", c.Name)
+
+		matches := []resource.Resource{c}
+		if err := installFromRepo(c.Name, matches); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to install %s: %v\n", c.Name, err)
+		} else {
+			successCount++
+		}
+	}
+
+	fmt.Printf("\nSuccessfully installed %d/%d commands from %q.\n", successCount, len(commands), repoName)
+
+	if successCount < len(commands) {
+		return errors.New("some commands failed to install")
+	}
+
+	return nil
 }
 
 // looksLikePath returns true if the source appears to be a file path.
