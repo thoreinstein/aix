@@ -1,3 +1,21 @@
+# Release v0.6.1
+
+## Summary
+
+This patch release addresses critical path resolution issues affecting repository resource installation and configuration loading on macOS.
+
+## Bug Fixes
+
+- **Resource Installation**: Fixed an issue where `aix agent install` (and other resource installers) would fail with "no AGENT.md found" by incorrectly looking in temporary directories. Installation now correctly reads directly from the persistent repository cache.
+- **Agent Naming**: Improved robustness of agent parsing; if an agent file lacks a `name` field in its frontmatter, `aix` now falls back to using the filename.
+- **Config Loading**: Fixed configuration discovery on macOS to prioritize `~/.config/aix/config.yaml` if it exists, ensuring consistency for users who prefer standard XDG paths over the system default `~/Library/Application Support`.
+
+## Operations
+
+- No breaking changes or migration steps required.
+
+---
+
 # Release v0.6.0
 
 ## Summary

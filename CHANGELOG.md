@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.6.1] - 2026-01-28
+
+- `7065195` FIX repo path resolution and agent naming
+- `eb8a2c9` FIX config path resolution priority
+- `264d2ab` Update blog post
+- `ea78760` ci: bump the actions group with 5 updates
+
 ## [v0.6.0] - 2026-01-27
 
 - `a05918c` Feat: Add --all-from-repo flag to install commands
