@@ -43,6 +43,7 @@ func init() {
 		"treat argument as a file path instead of searching repos")
 	installCmd.Flags().StringVar(&installAllFromRepo, "all-from-repo", "",
 		"install all commands from a specific repository")
+	flags.AddScopeFlag(installCmd)
 	Cmd.AddCommand(installCmd)
 }
 
@@ -62,7 +63,7 @@ If the command exists in multiple repositories, you will be prompted to select o
 Use --file to skip repo search and treat the argument as a file path.
 
 For git URLs, the repository is cloned to a temporary directory, the command
-is installed, and the temporary directory is cleaned up.`,
+ is installed, and the temporary directory is cleaned up.`,
 	Example: `  # Install by name from configured repos
   aix command install review
 
@@ -112,20 +113,26 @@ func runInstall(_ *cobra.Command, args []string) error {
 
 	source := args[0]
 
+	// Determine configuration scope
+	scope, err := cli.DetermineScope(flags.GetScopeFlag())
+	if err != nil {
+		return fmt.Errorf("determining configuration scope: %w", err)
+	}
+
 	// If --file flag is set, treat argument as file path or URL (old behavior)
 	if installFile {
 		if git.IsURL(source) {
-			return installFromGit(source)
+			return installFromGit(source, scope)
 		}
-		return installFromLocal(source)
+		return installFromLocal(source, scope)
 	}
 
 	// If source is clearly a path or URL, use direct install
 	if git.IsURL(source) || looksLikePath(source) {
 		if git.IsURL(source) {
-			return installFromGit(source)
+			return installFromGit(source, scope)
 		}
-		return installFromLocal(source)
+		return installFromLocal(source, scope)
 	}
 
 	// Try repo lookup first
@@ -137,7 +144,7 @@ func runInstall(_ *cobra.Command, args []string) error {
 		return errors.Wrap(err, "searching repositories")
 	}
 	if len(matches) > 0 {
-		return installFromRepo(source, matches)
+		return installFromRepo(source, matches, scope)
 	}
 
 	// No matches in repos - check if input might be a forgotten path
@@ -149,7 +156,7 @@ func runInstall(_ *cobra.Command, args []string) error {
 
 	// Check if it's a local path that exists
 	if _, err := os.Stat(source); err == nil {
-		return installFromLocal(source)
+		return installFromLocal(source, scope)
 	}
 
 	return errors.Newf("command %q not found in any configured repository", source)
@@ -163,6 +170,12 @@ func runInstallAllFromRepo(repoName string) error {
 	rConfig, err := mgr.Get(repoName)
 	if err != nil {
 		return errors.Wrapf(err, "getting repository %q", repoName)
+	}
+
+	// Determine configuration scope
+	scope, err := cli.DetermineScope(flags.GetScopeFlag())
+	if err != nil {
+		return fmt.Errorf("determining configuration scope: %w", err)
 	}
 
 	// 2. Scan repo for commands
@@ -193,7 +206,7 @@ func runInstallAllFromRepo(repoName string) error {
 		fmt.Printf("\nInstalling %s...\n", c.Name)
 
 		matches := []resource.Resource{c}
-		if err := installFromRepo(c.Name, matches); err != nil {
+		if err := installFromRepo(c.Name, matches, scope); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to install %s: %v\n", c.Name, err)
 		} else {
 			successCount++
@@ -242,7 +255,7 @@ func mightBePath(s string) bool {
 }
 
 // installFromRepo installs a command from a configured repository.
-func installFromRepo(name string, matches []resource.Resource) error {
+func installFromRepo(name string, matches []resource.Resource, scope cli.Scope) error {
 	var selected *resource.Resource
 
 	if len(matches) == 1 {
@@ -257,11 +270,11 @@ func installFromRepo(name string, matches []resource.Resource) error {
 	}
 
 	fmt.Printf("Installing from repository: %s\n", selected.RepoName)
-	return installFromLocal(selected.SourcePath())
+	return installFromLocal(selected.SourcePath(), scope)
 }
 
 // installFromGit clones a git repository and installs the command from it.
-func installFromGit(url string) error {
+func installFromGit(url string, scope cli.Scope) error {
 	fmt.Println("Cloning repository...")
 
 	// Create temp directory for clone
@@ -280,11 +293,11 @@ func installFromGit(url string) error {
 		return errors.Wrap(err, "cloning repository")
 	}
 
-	return installFromLocal(tempDir)
+	return installFromLocal(tempDir, scope)
 }
 
 // installFromLocal installs a command from a local file or directory.
-func installFromLocal(source string) error {
+func installFromLocal(source string, scope cli.Scope) error {
 	// Resolve to absolute path for consistent error messages
 	absPath, err := filepath.Abs(source)
 	if err != nil {
@@ -365,7 +378,7 @@ func installFromLocal(source string) error {
 	// Check for existing commands (unless --force)
 	if !installForce {
 		for _, plat := range platforms {
-			if _, err := plat.GetCommand((*cmd).Name); err == nil {
+			if _, err := plat.GetCommand((*cmd).Name, cli.ScopeDefault); err == nil {
 				return errors.Newf("command %q already exists on %s (use --force to overwrite)",
 					(*cmd).Name, plat.DisplayName())
 			}
@@ -385,7 +398,7 @@ func installFromLocal(source string) error {
 		// Convert command to platform-specific type
 		platformCmd := convertForPlatform(*cmd, plat.Name())
 
-		if err := plat.InstallCommand(platformCmd); err != nil {
+		if err := plat.InstallCommand(platformCmd, scope); err != nil {
 			fmt.Println("failed")
 			return errors.Wrapf(err, "failed to install to %s", plat.DisplayName())
 		}

@@ -46,6 +46,7 @@ func init() {
 		"treat argument as a file path instead of searching repos")
 	installCmd.Flags().StringVar(&installAllFromRepo, "all-from-repo", "",
 		"install all agents from a specific repository")
+	flags.AddScopeFlag(installCmd)
 	Cmd.AddCommand(installCmd)
 }
 
@@ -113,14 +114,20 @@ func runInstall(_ *cobra.Command, args []string) error {
 
 	source := args[0]
 
+	// Determine configuration scope
+	scope, err := cli.DetermineScope(flags.GetScopeFlag())
+	if err != nil {
+		return fmt.Errorf("determining configuration scope: %w", err)
+	}
+
 	// If --file flag is set, treat argument as file path (old behavior)
 	if installFile {
-		return installFromLocal(source)
+		return installFromLocal(source, scope)
 	}
 
 	// If source is clearly a path, use direct install
 	if looksLikePath(source) {
-		return installFromLocal(source)
+		return installFromLocal(source, scope)
 	}
 
 	// Try repo lookup first
@@ -129,26 +136,26 @@ func runInstall(_ *cobra.Command, args []string) error {
 		if errors.Is(err, resource.ErrNoReposConfigured) {
 			return errors.New("no repositories configured. Run 'aix repo add <url>' to add one")
 		}
-		return errors.Wrap(err, "searching repositories")
+		return fmt.Errorf("searching repositories: %w", err)
 	}
 
 	if len(matches) > 0 {
-		return installFromRepo(source, matches)
+		return installFromRepo(source, matches, scope)
 	}
 
 	// No matches in repos - check if input might be a forgotten path
 	if mightBePath(source) {
 		if _, statErr := os.Stat(source); statErr == nil {
-			return errors.Newf("agent %q not found in repositories, but a local file exists at that path.\nDid you mean: aix agent install --file %s", source, source)
+			return fmt.Errorf("agent %q not found in repositories, but a local file exists at that path.\nDid you mean: aix agent install --file %s", source, source)
 		}
 	}
 
 	// Check if it's a local path that exists
 	if _, err := os.Stat(source); err == nil {
-		return installFromLocal(source)
+		return installFromLocal(source, scope)
 	}
 
-	return errors.Newf("agent %q not found in any configured repository", source)
+	return fmt.Errorf("agent %q not found in any configured repository", source)
 }
 
 func runInstallAllFromRepo(repoName string) error {
@@ -159,6 +166,12 @@ func runInstallAllFromRepo(repoName string) error {
 	rConfig, err := mgr.Get(repoName)
 	if err != nil {
 		return errors.Wrapf(err, "getting repository %q", repoName)
+	}
+
+	// Determine configuration scope
+	scope, err := cli.DetermineScope(flags.GetScopeFlag())
+	if err != nil {
+		return fmt.Errorf("determining configuration scope: %w", err)
 	}
 
 	// 2. Scan repo for agents
@@ -189,7 +202,7 @@ func runInstallAllFromRepo(repoName string) error {
 		fmt.Printf("\nInstalling %s...\n", a.Name)
 
 		matches := []resource.Resource{a}
-		if err := installFromRepo(a.Name, matches); err != nil {
+		if err := installFromRepo(a.Name, matches, scope); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to install %s: %v\n", a.Name, err)
 		} else {
 			successCount++
@@ -238,7 +251,7 @@ func mightBePath(s string) bool {
 }
 
 // installFromRepo installs an agent from a configured repository.
-func installFromRepo(name string, matches []resource.Resource) error {
+func installFromRepo(name string, matches []resource.Resource, scope cli.Scope) error {
 	var selected *resource.Resource
 
 	if len(matches) == 1 {
@@ -247,20 +260,20 @@ func installFromRepo(name string, matches []resource.Resource) error {
 		// Multiple matches - prompt user to select
 		choice, err := cliprompt.SelectResourceDefault(name, matches)
 		if err != nil {
-			return errors.Wrap(err, "selecting resource")
+			return fmt.Errorf("selecting resource: %w", err)
 		}
 		selected = choice
 	}
 
 	fmt.Printf("Installing from repository: %s\n", selected.RepoName)
-	return installFromLocal(selected.SourcePath())
+	return installFromLocal(selected.SourcePath(), scope)
 }
 
 // installFromLocal installs an agent from a local file or directory.
-func installFromLocal(source string) error {
+func installFromLocal(source string, scope cli.Scope) error {
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
-		return errors.Wrap(err, "resolving platforms")
+		return fmt.Errorf("resolving platforms: %w", err)
 	}
 
 	// Resolve AGENT.md path
@@ -278,7 +291,7 @@ func installFromLocal(source string) error {
 	// Read and parse the AGENT.md file
 	content, err := os.ReadFile(agentPath)
 	if err != nil {
-		return errors.Wrap(err, "reading agent file")
+		return fmt.Errorf("reading agent file: %w", err)
 	}
 
 	// Track the agent name once successfully parsed (same for all platforms)
@@ -298,7 +311,7 @@ func installFromLocal(source string) error {
 	for _, p := range platforms {
 		// Ensure backup exists before modifying
 		if err := backup.EnsureBackedUp(p.Name(), p.BackupPaths()); err != nil {
-			return errors.Wrapf(err, "backing up %s before install", p.DisplayName())
+			return fmt.Errorf("backing up %s before install: %w", p.DisplayName(), err)
 		}
 
 		result := installResult{platform: p.Name()}
@@ -326,7 +339,7 @@ func installFromLocal(source string) error {
 		result.targetPath = filepath.Join(p.AgentDir(), parsedName+".md")
 
 		// Check for collision unless --force is set
-		existingAgent, getErr := p.GetAgent(parsedName)
+		existingAgent, getErr := p.GetAgent(parsedName, cli.ScopeDefault)
 		if getErr == nil && existingAgent != nil {
 			// Agent exists - check for idempotency
 			if agentsAreIdentical(agent, existingAgent) {
@@ -348,7 +361,7 @@ func installFromLocal(source string) error {
 		}
 
 		// Perform installation
-		if installErr := p.InstallAgent(agent); installErr != nil {
+		if installErr := p.InstallAgent(agent, scope); installErr != nil {
 			result.errMsg = fmt.Sprintf("could not install agent: %v", installErr)
 			results = append(results, result)
 			continue
@@ -410,14 +423,14 @@ func installFromLocal(source string) error {
 func resolveAgentPath(source string) (string, error) {
 	info, err := os.Stat(source)
 	if err != nil {
-		return "", errors.Wrap(err, "accessing source")
+		return "", fmt.Errorf("accessing source: %w", err)
 	}
 
 	if info.IsDir() {
 		// Look for AGENT.md in directory
 		agentPath := filepath.Join(source, "AGENT.md")
 		if _, err := os.Stat(agentPath); err != nil {
-			return "", errors.Newf("no AGENT.md found in %s", source)
+			return "", fmt.Errorf("no AGENT.md found in %s", source)
 		}
 		return agentPath, nil
 	}
@@ -436,7 +449,7 @@ func parseAgentForPlatform(platform string, content []byte, defaultName string) 
 		}
 		body, err := frontmatter.Parse(bytes.NewReader(content), &meta)
 		if err != nil {
-			return nil, errors.Wrap(err, "parsing frontmatter")
+			return nil, fmt.Errorf("parsing frontmatter: %w", err)
 		}
 		if meta.Name == "" {
 			meta.Name = defaultName
@@ -445,10 +458,11 @@ func parseAgentForPlatform(platform string, content []byte, defaultName string) 
 			return nil, errAgentNameRequired
 		}
 		return &claude.Agent{
-			Name:         meta.Name,
-			Description:  meta.Description,
-			Instructions: string(body),
-		}, nil
+				Name:         meta.Name,
+				Description:  meta.Description,
+				Instructions: string(body),
+			},
+			nil
 
 	case "opencode":
 		var meta struct {
@@ -459,7 +473,7 @@ func parseAgentForPlatform(platform string, content []byte, defaultName string) 
 		}
 		body, err := frontmatter.Parse(bytes.NewReader(content), &meta)
 		if err != nil {
-			return nil, errors.Wrap(err, "parsing frontmatter")
+			return nil, fmt.Errorf("parsing frontmatter: %w", err)
 		}
 		if meta.Name == "" {
 			meta.Name = defaultName
@@ -468,15 +482,16 @@ func parseAgentForPlatform(platform string, content []byte, defaultName string) 
 			return nil, errAgentNameRequired
 		}
 		return &opencode.Agent{
-			Name:         meta.Name,
-			Description:  meta.Description,
-			Mode:         meta.Mode,
-			Temperature:  meta.Temperature,
-			Instructions: string(body),
-		}, nil
+				Name:         meta.Name,
+				Description:  meta.Description,
+				Mode:         meta.Mode,
+				Temperature:  meta.Temperature,
+				Instructions: string(body),
+			},
+			nil
 
 	default:
-		return nil, errors.Newf("unsupported platform: %s", platform)
+		return nil, fmt.Errorf("unsupported platform: %s", platform)
 	}
 }
 
@@ -495,26 +510,26 @@ func getAgentName(agent any) string {
 // agentsAreIdentical compares two agents for content equality.
 // Returns true if the agents have identical content (enabling idempotent installs).
 func agentsAreIdentical(newAgent, existingAgent any) bool {
-	switch new := newAgent.(type) {
+	switch n := newAgent.(type) {
 	case *claude.Agent:
 		existing, ok := existingAgent.(*claude.Agent)
 		if !ok {
 			return false
 		}
-		return new.Name == existing.Name &&
-			new.Description == existing.Description &&
-			normalizeInstructions(new.Instructions) == normalizeInstructions(existing.Instructions)
+		return n.Name == existing.Name &&
+			n.Description == existing.Description &&
+			normalizeInstructions(n.Instructions) == normalizeInstructions(existing.Instructions)
 
 	case *opencode.Agent:
 		existing, ok := existingAgent.(*opencode.Agent)
 		if !ok {
 			return false
 		}
-		return new.Name == existing.Name &&
-			new.Description == existing.Description &&
-			new.Mode == existing.Mode &&
-			new.Temperature == existing.Temperature &&
-			normalizeInstructions(new.Instructions) == normalizeInstructions(existing.Instructions)
+		return n.Name == existing.Name &&
+			n.Description == existing.Description &&
+			n.Mode == existing.Mode &&
+			n.Temperature == existing.Temperature &&
+			normalizeInstructions(n.Instructions) == normalizeInstructions(existing.Instructions)
 
 	default:
 		return false

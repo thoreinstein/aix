@@ -2,7 +2,13 @@
 package cli
 
 import (
+	"bufio"
+	"fmt"
+	"os"
+	"os/exec"
 	"strings"
+
+	"golang.org/x/term"
 
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/paths"
@@ -64,6 +70,56 @@ type AgentInfo struct {
 	Source      string // "local" or future: git URL
 }
 
+// Scope defines the configuration layer target (User, Project, Local, Managed).
+type Scope int
+
+const (
+	// ScopeDefault indicates that the platform should use its default behavior
+	// (usually merged view for listing, or precedence-based for getting).
+	ScopeDefault Scope = iota
+	// ScopeUser targets the user's global home directory configuration.
+	ScopeUser
+	// ScopeProject targets the project/repository configuration (typically committed).
+	ScopeProject
+	// ScopeLocal targets local overrides within a project (typically gitignored).
+	ScopeLocal
+	// ScopeManaged targets system-level managed configuration.
+	ScopeManaged
+)
+
+func (s Scope) String() string {
+	switch s {
+	case ScopeDefault:
+		return "default"
+	case ScopeUser:
+		return "user"
+	case ScopeProject:
+		return "project"
+	case ScopeLocal:
+		return "local"
+	case ScopeManaged:
+		return "managed"
+	default:
+		return "default"
+	}
+}
+
+// ParseScope converts a string to a Scope. Returns ScopeDefault if empty or invalid.
+func ParseScope(s string) Scope {
+	switch strings.ToLower(s) {
+	case "user":
+		return ScopeUser
+	case "project":
+		return ScopeProject
+	case "local":
+		return ScopeLocal
+	case "managed":
+		return ScopeManaged
+	default:
+		return ScopeDefault
+	}
+}
+
 // Platform defines the interface that platform adapters must implement
 // for CLI operations. This is the consumer interface used by CLI commands.
 type Platform interface {
@@ -81,50 +137,50 @@ type Platform interface {
 
 	// InstallSkill installs a skill to the platform.
 	// The skill parameter is platform-specific.
-	InstallSkill(skill any) error
+	InstallSkill(skill any, scope Scope) error
 
 	// UninstallSkill removes a skill by name.
-	UninstallSkill(name string) error
+	UninstallSkill(name string, scope Scope) error
 
 	// ListSkills returns information about all installed skills.
-	ListSkills() ([]SkillInfo, error)
+	ListSkills(scope Scope) ([]SkillInfo, error)
 
 	// GetSkill retrieves a skill by name.
 	// Returns the platform-specific skill type.
-	GetSkill(name string) (any, error)
+	GetSkill(name string, scope Scope) (any, error)
 
 	// CommandDir returns the commands directory for the platform.
 	CommandDir() string
 
 	// InstallCommand installs a slash command to the platform.
 	// The cmd parameter is platform-specific.
-	InstallCommand(cmd any) error
+	InstallCommand(cmd any, scope Scope) error
 
 	// UninstallCommand removes a command by name.
-	UninstallCommand(name string) error
+	UninstallCommand(name string, scope Scope) error
 
 	// ListCommands returns information about all installed commands.
-	ListCommands() ([]CommandInfo, error)
+	ListCommands(scope Scope) ([]CommandInfo, error)
 
 	// GetCommand retrieves a command by name.
 	// Returns the platform-specific command type.
-	GetCommand(name string) (any, error)
+	GetCommand(name string, scope Scope) (any, error)
 
 	// MCP configuration
 	MCPConfigPath() string
-	AddMCP(server any) error
-	RemoveMCP(name string) error
-	ListMCP() ([]MCPInfo, error)
-	GetMCP(name string) (any, error)
+	AddMCP(server any, scope Scope) error
+	RemoveMCP(name string, scope Scope) error
+	ListMCP(scope Scope) ([]MCPInfo, error)
+	GetMCP(name string, scope Scope) (any, error)
 	EnableMCP(name string) error
 	DisableMCP(name string) error
 
 	// Agent configuration
 	AgentDir() string
-	InstallAgent(agent any) error
-	UninstallAgent(name string) error
-	ListAgents() ([]AgentInfo, error)
-	GetAgent(name string) (any, error)
+	InstallAgent(agent any, scope Scope) error
+	UninstallAgent(name string, scope Scope) error
+	ListAgents(scope Scope) ([]AgentInfo, error)
+	GetAgent(name string, scope Scope) (any, error)
 
 	// Backup configuration
 	// BackupPaths returns all config files/directories that should be backed up.
@@ -149,7 +205,7 @@ func (a *claudeAdapter) IsAvailable() bool {
 	return a.p.IsAvailable()
 }
 
-func (a *claudeAdapter) InstallSkill(skill any) error {
+func (a *claudeAdapter) InstallSkill(skill any, scope Scope) error {
 	s, ok := skill.(*claude.Skill)
 	if !ok {
 		return errors.Newf("expected *claude.Skill, got %T", skill)
@@ -157,11 +213,11 @@ func (a *claudeAdapter) InstallSkill(skill any) error {
 	return errors.Wrap(a.p.InstallSkill(s), "installing skill to Claude")
 }
 
-func (a *claudeAdapter) UninstallSkill(name string) error {
+func (a *claudeAdapter) UninstallSkill(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallSkill(name), "uninstalling skill from Claude")
 }
 
-func (a *claudeAdapter) ListSkills() ([]SkillInfo, error) {
+func (a *claudeAdapter) ListSkills(scope Scope) ([]SkillInfo, error) {
 	skills, err := a.p.ListSkills()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Claude skills")
@@ -178,7 +234,7 @@ func (a *claudeAdapter) ListSkills() ([]SkillInfo, error) {
 	return infos, nil
 }
 
-func (a *claudeAdapter) GetSkill(name string) (any, error) {
+func (a *claudeAdapter) GetSkill(name string, scope Scope) (any, error) {
 	s, err := a.p.GetSkill(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Claude skill")
@@ -194,7 +250,7 @@ func (a *claudeAdapter) CommandDir() string {
 	return a.p.CommandDir()
 }
 
-func (a *claudeAdapter) InstallCommand(cmd any) error {
+func (a *claudeAdapter) InstallCommand(cmd any, scope Scope) error {
 	c, ok := cmd.(*claude.Command)
 	if !ok {
 		return errors.Newf("expected *claude.Command, got %T", cmd)
@@ -202,11 +258,11 @@ func (a *claudeAdapter) InstallCommand(cmd any) error {
 	return errors.Wrap(a.p.InstallCommand(c), "installing command to Claude")
 }
 
-func (a *claudeAdapter) UninstallCommand(name string) error {
+func (a *claudeAdapter) UninstallCommand(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallCommand(name), "uninstalling command from Claude")
 }
 
-func (a *claudeAdapter) ListCommands() ([]CommandInfo, error) {
+func (a *claudeAdapter) ListCommands(scope Scope) ([]CommandInfo, error) {
 	commands, err := a.p.ListCommands()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Claude commands")
@@ -223,7 +279,7 @@ func (a *claudeAdapter) ListCommands() ([]CommandInfo, error) {
 	return infos, nil
 }
 
-func (a *claudeAdapter) GetCommand(name string) (any, error) {
+func (a *claudeAdapter) GetCommand(name string, scope Scope) (any, error) {
 	c, err := a.p.GetCommand(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Claude command")
@@ -235,7 +291,7 @@ func (a *claudeAdapter) MCPConfigPath() string {
 	return a.p.MCPConfigPath()
 }
 
-func (a *claudeAdapter) AddMCP(server any) error {
+func (a *claudeAdapter) AddMCP(server any, scope Scope) error {
 	s, ok := server.(*claude.MCPServer)
 	if !ok {
 		return errors.Newf("expected *claude.MCPServer, got %T", server)
@@ -243,11 +299,11 @@ func (a *claudeAdapter) AddMCP(server any) error {
 	return errors.Wrap(a.p.AddMCP(s), "adding MCP server to Claude")
 }
 
-func (a *claudeAdapter) RemoveMCP(name string) error {
+func (a *claudeAdapter) RemoveMCP(name string, scope Scope) error {
 	return errors.Wrap(a.p.RemoveMCP(name), "removing MCP server from Claude")
 }
 
-func (a *claudeAdapter) ListMCP() ([]MCPInfo, error) {
+func (a *claudeAdapter) ListMCP(scope Scope) ([]MCPInfo, error) {
 	servers, err := a.p.ListMCP()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Claude MCP servers")
@@ -281,7 +337,7 @@ func (a *claudeAdapter) ListMCP() ([]MCPInfo, error) {
 	return infos, nil
 }
 
-func (a *claudeAdapter) GetMCP(name string) (any, error) {
+func (a *claudeAdapter) GetMCP(name string, scope Scope) (any, error) {
 	s, err := a.p.GetMCP(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Claude MCP server")
@@ -301,7 +357,7 @@ func (a *claudeAdapter) AgentDir() string {
 	return a.p.AgentDir()
 }
 
-func (a *claudeAdapter) InstallAgent(agent any) error {
+func (a *claudeAdapter) InstallAgent(agent any, scope Scope) error {
 	ag, ok := agent.(*claude.Agent)
 	if !ok {
 		return errors.Newf("expected *claude.Agent, got %T", agent)
@@ -309,11 +365,11 @@ func (a *claudeAdapter) InstallAgent(agent any) error {
 	return errors.Wrap(a.p.InstallAgent(ag), "installing agent to Claude")
 }
 
-func (a *claudeAdapter) UninstallAgent(name string) error {
+func (a *claudeAdapter) UninstallAgent(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallAgent(name), "uninstalling agent from Claude")
 }
 
-func (a *claudeAdapter) ListAgents() ([]AgentInfo, error) {
+func (a *claudeAdapter) ListAgents(scope Scope) ([]AgentInfo, error) {
 	agents, err := a.p.ListAgents()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Claude agents")
@@ -330,7 +386,7 @@ func (a *claudeAdapter) ListAgents() ([]AgentInfo, error) {
 	return infos, nil
 }
 
-func (a *claudeAdapter) GetAgent(name string) (any, error) {
+func (a *claudeAdapter) GetAgent(name string, scope Scope) (any, error) {
 	ag, err := a.p.GetAgent(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Claude agent")
@@ -359,7 +415,7 @@ func (a *opencodeAdapter) IsAvailable() bool {
 	return a.p.IsAvailable()
 }
 
-func (a *opencodeAdapter) InstallSkill(skill any) error {
+func (a *opencodeAdapter) InstallSkill(skill any, scope Scope) error {
 	s, ok := skill.(*opencode.Skill)
 	if !ok {
 		return errors.Newf("expected *opencode.Skill, got %T", skill)
@@ -367,11 +423,11 @@ func (a *opencodeAdapter) InstallSkill(skill any) error {
 	return errors.Wrap(a.p.InstallSkill(s), "installing skill to OpenCode")
 }
 
-func (a *opencodeAdapter) UninstallSkill(name string) error {
+func (a *opencodeAdapter) UninstallSkill(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallSkill(name), "uninstalling skill from OpenCode")
 }
 
-func (a *opencodeAdapter) ListSkills() ([]SkillInfo, error) {
+func (a *opencodeAdapter) ListSkills(scope Scope) ([]SkillInfo, error) {
 	skills, err := a.p.ListSkills()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing OpenCode skills")
@@ -388,7 +444,7 @@ func (a *opencodeAdapter) ListSkills() ([]SkillInfo, error) {
 	return infos, nil
 }
 
-func (a *opencodeAdapter) GetSkill(name string) (any, error) {
+func (a *opencodeAdapter) GetSkill(name string, scope Scope) (any, error) {
 	s, err := a.p.GetSkill(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting OpenCode skill")
@@ -404,7 +460,7 @@ func (a *opencodeAdapter) CommandDir() string {
 	return a.p.CommandDir()
 }
 
-func (a *opencodeAdapter) InstallCommand(cmd any) error {
+func (a *opencodeAdapter) InstallCommand(cmd any, scope Scope) error {
 	c, ok := cmd.(*opencode.Command)
 	if !ok {
 		return errors.Newf("expected *opencode.Command, got %T", cmd)
@@ -412,11 +468,11 @@ func (a *opencodeAdapter) InstallCommand(cmd any) error {
 	return errors.Wrap(a.p.InstallCommand(c), "installing command to OpenCode")
 }
 
-func (a *opencodeAdapter) UninstallCommand(name string) error {
+func (a *opencodeAdapter) UninstallCommand(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallCommand(name), "uninstalling command from OpenCode")
 }
 
-func (a *opencodeAdapter) ListCommands() ([]CommandInfo, error) {
+func (a *opencodeAdapter) ListCommands(scope Scope) ([]CommandInfo, error) {
 	commands, err := a.p.ListCommands()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing OpenCode commands")
@@ -433,7 +489,7 @@ func (a *opencodeAdapter) ListCommands() ([]CommandInfo, error) {
 	return infos, nil
 }
 
-func (a *opencodeAdapter) GetCommand(name string) (any, error) {
+func (a *opencodeAdapter) GetCommand(name string, scope Scope) (any, error) {
 	c, err := a.p.GetCommand(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting OpenCode command")
@@ -445,7 +501,7 @@ func (a *opencodeAdapter) MCPConfigPath() string {
 	return a.p.MCPConfigPath()
 }
 
-func (a *opencodeAdapter) AddMCP(server any) error {
+func (a *opencodeAdapter) AddMCP(server any, scope Scope) error {
 	s, ok := server.(*opencode.MCPServer)
 	if !ok {
 		return errors.Newf("expected *opencode.MCPServer, got %T", server)
@@ -453,11 +509,11 @@ func (a *opencodeAdapter) AddMCP(server any) error {
 	return errors.Wrap(a.p.AddMCP(s), "adding MCP server to OpenCode")
 }
 
-func (a *opencodeAdapter) RemoveMCP(name string) error {
+func (a *opencodeAdapter) RemoveMCP(name string, scope Scope) error {
 	return errors.Wrap(a.p.RemoveMCP(name), "removing MCP server from OpenCode")
 }
 
-func (a *opencodeAdapter) ListMCP() ([]MCPInfo, error) {
+func (a *opencodeAdapter) ListMCP(scope Scope) ([]MCPInfo, error) {
 	servers, err := a.p.ListMCP()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing OpenCode MCP servers")
@@ -489,7 +545,7 @@ func (a *opencodeAdapter) ListMCP() ([]MCPInfo, error) {
 	return infos, nil
 }
 
-func (a *opencodeAdapter) GetMCP(name string) (any, error) {
+func (a *opencodeAdapter) GetMCP(name string, scope Scope) (any, error) {
 	s, err := a.p.GetMCP(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting OpenCode MCP server")
@@ -509,7 +565,7 @@ func (a *opencodeAdapter) AgentDir() string {
 	return a.p.AgentDir()
 }
 
-func (a *opencodeAdapter) InstallAgent(agent any) error {
+func (a *opencodeAdapter) InstallAgent(agent any, scope Scope) error {
 	ag, ok := agent.(*opencode.Agent)
 	if !ok {
 		return errors.Newf("expected *opencode.Agent, got %T", agent)
@@ -517,11 +573,11 @@ func (a *opencodeAdapter) InstallAgent(agent any) error {
 	return errors.Wrap(a.p.InstallAgent(ag), "installing agent to OpenCode")
 }
 
-func (a *opencodeAdapter) UninstallAgent(name string) error {
+func (a *opencodeAdapter) UninstallAgent(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallAgent(name), "uninstalling agent from OpenCode")
 }
 
-func (a *opencodeAdapter) ListAgents() ([]AgentInfo, error) {
+func (a *opencodeAdapter) ListAgents(scope Scope) ([]AgentInfo, error) {
 	agents, err := a.p.ListAgents()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing OpenCode agents")
@@ -538,7 +594,7 @@ func (a *opencodeAdapter) ListAgents() ([]AgentInfo, error) {
 	return infos, nil
 }
 
-func (a *opencodeAdapter) GetAgent(name string) (any, error) {
+func (a *opencodeAdapter) GetAgent(name string, scope Scope) (any, error) {
 	ag, err := a.p.GetAgent(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting OpenCode agent")
@@ -567,7 +623,7 @@ func (a *geminiAdapter) IsAvailable() bool {
 	return a.p.IsAvailable()
 }
 
-func (a *geminiAdapter) InstallSkill(skill any) error {
+func (a *geminiAdapter) InstallSkill(skill any, scope Scope) error {
 	s, ok := skill.(*gemini.Skill)
 	if !ok {
 		return errors.Newf("expected *gemini.Skill, got %T", skill)
@@ -575,11 +631,11 @@ func (a *geminiAdapter) InstallSkill(skill any) error {
 	return errors.Wrap(a.p.InstallSkill(s), "installing skill to Gemini")
 }
 
-func (a *geminiAdapter) UninstallSkill(name string) error {
+func (a *geminiAdapter) UninstallSkill(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallSkill(name), "uninstalling skill from Gemini")
 }
 
-func (a *geminiAdapter) ListSkills() ([]SkillInfo, error) {
+func (a *geminiAdapter) ListSkills(scope Scope) ([]SkillInfo, error) {
 	skills, err := a.p.ListSkills()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Gemini skills")
@@ -596,7 +652,7 @@ func (a *geminiAdapter) ListSkills() ([]SkillInfo, error) {
 	return infos, nil
 }
 
-func (a *geminiAdapter) GetSkill(name string) (any, error) {
+func (a *geminiAdapter) GetSkill(name string, scope Scope) (any, error) {
 	s, err := a.p.GetSkill(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Gemini skill")
@@ -612,7 +668,7 @@ func (a *geminiAdapter) CommandDir() string {
 	return a.p.CommandDir()
 }
 
-func (a *geminiAdapter) InstallCommand(cmd any) error {
+func (a *geminiAdapter) InstallCommand(cmd any, scope Scope) error {
 	c, ok := cmd.(*gemini.Command)
 	if !ok {
 		return errors.Newf("expected *gemini.Command, got %T", cmd)
@@ -620,11 +676,11 @@ func (a *geminiAdapter) InstallCommand(cmd any) error {
 	return errors.Wrap(a.p.InstallCommand(c), "installing command to Gemini")
 }
 
-func (a *geminiAdapter) UninstallCommand(name string) error {
+func (a *geminiAdapter) UninstallCommand(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallCommand(name), "uninstalling command from Gemini")
 }
 
-func (a *geminiAdapter) ListCommands() ([]CommandInfo, error) {
+func (a *geminiAdapter) ListCommands(scope Scope) ([]CommandInfo, error) {
 	commands, err := a.p.ListCommands()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Gemini commands")
@@ -641,7 +697,7 @@ func (a *geminiAdapter) ListCommands() ([]CommandInfo, error) {
 	return infos, nil
 }
 
-func (a *geminiAdapter) GetCommand(name string) (any, error) {
+func (a *geminiAdapter) GetCommand(name string, scope Scope) (any, error) {
 	c, err := a.p.GetCommand(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Gemini command")
@@ -653,7 +709,7 @@ func (a *geminiAdapter) MCPConfigPath() string {
 	return a.p.MCPConfigPath()
 }
 
-func (a *geminiAdapter) AddMCP(server any) error {
+func (a *geminiAdapter) AddMCP(server any, scope Scope) error {
 	s, ok := server.(*gemini.MCPServer)
 	if !ok {
 		return errors.Newf("expected *gemini.MCPServer, got %T", server)
@@ -661,11 +717,11 @@ func (a *geminiAdapter) AddMCP(server any) error {
 	return errors.Wrap(a.p.AddMCP(s), "adding MCP server to Gemini")
 }
 
-func (a *geminiAdapter) RemoveMCP(name string) error {
+func (a *geminiAdapter) RemoveMCP(name string, scope Scope) error {
 	return errors.Wrap(a.p.RemoveMCP(name), "removing MCP server from Gemini")
 }
 
-func (a *geminiAdapter) ListMCP() ([]MCPInfo, error) {
+func (a *geminiAdapter) ListMCP(scope Scope) ([]MCPInfo, error) {
 	servers, err := a.p.ListMCP()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Gemini MCP servers")
@@ -688,7 +744,7 @@ func (a *geminiAdapter) ListMCP() ([]MCPInfo, error) {
 	return infos, nil
 }
 
-func (a *geminiAdapter) GetMCP(name string) (any, error) {
+func (a *geminiAdapter) GetMCP(name string, scope Scope) (any, error) {
 	s, err := a.p.GetMCP(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Gemini MCP server")
@@ -708,20 +764,41 @@ func (a *geminiAdapter) AgentDir() string {
 	return a.p.AgentDir()
 }
 
-func (a *geminiAdapter) InstallAgent(agent any) error {
-	return errors.New("agents are not supported by Gemini CLI")
+func (a *geminiAdapter) InstallAgent(agent any, scope Scope) error {
+	ag, ok := agent.(*gemini.Agent)
+	if !ok {
+		return errors.Newf("expected *gemini.Agent, got %T", agent)
+	}
+	return errors.Wrap(a.p.InstallAgent(ag), "installing agent to Gemini")
 }
 
-func (a *geminiAdapter) UninstallAgent(name string) error {
-	return errors.New("agents are not supported by Gemini CLI")
+func (a *geminiAdapter) UninstallAgent(name string, scope Scope) error {
+	return errors.Wrap(a.p.UninstallAgent(name), "uninstalling agent from Gemini")
 }
 
-func (a *geminiAdapter) ListAgents() ([]AgentInfo, error) {
-	return nil, errors.New("agents are not supported by Gemini CLI")
+func (a *geminiAdapter) ListAgents(scope Scope) ([]AgentInfo, error) {
+	agents, err := a.p.ListAgents()
+	if err != nil {
+		return nil, errors.Wrap(err, "listing Gemini agents")
+	}
+
+	infos := make([]AgentInfo, len(agents))
+	for i, ag := range agents {
+		infos[i] = AgentInfo{
+			Name:        ag.Name,
+			Description: ag.Description,
+			Source:      "local",
+		}
+	}
+	return infos, nil
 }
 
-func (a *geminiAdapter) GetAgent(name string) (any, error) {
-	return nil, errors.New("agents are not supported by Gemini CLI")
+func (a *geminiAdapter) GetAgent(name string, scope Scope) (any, error) {
+	ag, err := a.p.GetAgent(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting Gemini agent")
+	}
+	return ag, nil
 }
 
 func (a *geminiAdapter) BackupPaths() []string {
@@ -793,4 +870,75 @@ func ResolvePlatforms(names []string) ([]Platform, error) {
 	}
 
 	return platforms, nil
+}
+
+// DetermineScope resolves the configuration scope based on user request,
+// environment context (Git), and interactivity.
+//
+// Precedence:
+// 1. Explicit request via flag (--scope)
+// 2. Interactive prompt (if in repo and TTY available)
+// 3. Project scope default (if in repo but no TTY)
+// 4. User scope default (if not in repo)
+func DetermineScope(requested string) (Scope, error) {
+	if requested != "" {
+		return ParseScope(requested), nil
+	}
+
+	// Default context detection
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ScopeUser, fmt.Errorf("getting cwd: %w", err) // Fallback to safe default
+	}
+
+	inRepo := IsRepo(cwd)
+
+	// If not in a repository, always default to User scope
+	if !inRepo {
+		return ScopeUser, nil
+	}
+
+	// If in a repository, check for interactivity
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		// CI/Non-interactive: default to Project scope inside a repo
+		return ScopeProject, nil
+	}
+
+	// Interactive: Prompt user to select scope
+	return promptForScope()
+}
+
+func promptForScope() (Scope, error) {
+	fmt.Println("\nTarget configuration scope?")
+	fmt.Println("  [1] Project (Shared, committed to Git)")
+	fmt.Println("  [2] User    (Personal, global)")
+	fmt.Println("  [3] Local   (Personal, this project only, gitignored)")
+	fmt.Print("Selection [1]: ")
+
+	reader := bufio.NewReader(os.Stdin)
+	choice, err := reader.ReadString('\n')
+	if err != nil {
+		return ScopeUser, fmt.Errorf("reading input: %w", err)
+	}
+
+	choice = strings.TrimSpace(choice)
+	switch choice {
+	case "1", "project", "":
+		return ScopeProject, nil
+	case "2", "user":
+		return ScopeUser, nil
+	case "3", "local":
+		return ScopeLocal, nil
+	default:
+		fmt.Printf("Invalid selection %q, defaulting to Project scope.\n", choice)
+		return ScopeProject, nil
+	}
+}
+
+// IsRepo returns true if the given path is within a git repository.
+func IsRepo(path string) bool {
+	// We use git command directly to avoid duplicating logic.
+	// This helper is used by DetermineScope.
+	cmd := exec.Command("git", "-C", path, "rev-parse", "--is-inside-work-tree")
+	return cmd.Run() == nil
 }

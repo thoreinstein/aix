@@ -76,7 +76,7 @@ func TestRunEditWithPlatforms(t *testing.T) {
 				return nil
 			}
 
-			err := runEditWithPlatforms(tt.commandName, tt.platforms, mockOpener)
+			err := runEditWithPlatforms(tt.commandName, tt.platforms, cli.ScopeUser, mockOpener)
 
 			if tt.wantErr != "" {
 				if err == nil {

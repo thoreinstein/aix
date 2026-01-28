@@ -54,14 +54,19 @@ aix agent install <source> [flags]
 
   # Force overwrite existing agent
   aix agent install code-reviewer --force
+
+  # Install all agents from a specific repo
+  aix agent install --all-from-repo official
 ```
 
 ### Options
 
 ```
-  -f, --file    treat argument as a file path instead of searching repos
-      --force   overwrite existing agent without confirmation
-  -h, --help    help for install
+      --all-from-repo string   install all agents from a specific repository
+  -f, --file                   treat argument as a file path instead of searching repos
+      --force                  overwrite existing agent without confirmation
+  -h, --help                   help for install
+      --scope string           configuration scope (user, project, local)
 ```
 
 ### Options inherited from parent commands

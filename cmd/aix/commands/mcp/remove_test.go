@@ -17,7 +17,7 @@ type removeMockPlatform struct {
 	removeCalled bool
 }
 
-func (m *removeMockPlatform) GetMCP(name string) (any, error) {
+func (m *removeMockPlatform) GetMCP(name string, _ cli.Scope) (any, error) {
 	server, ok := m.mcpServers[name]
 	if !ok {
 		return nil, errors.New("MCP server not found")
@@ -25,7 +25,7 @@ func (m *removeMockPlatform) GetMCP(name string) (any, error) {
 	return server, nil
 }
 
-func (m *removeMockPlatform) RemoveMCP(_ string) error {
+func (m *removeMockPlatform) RemoveMCP(_ string, _ cli.Scope) error {
 	m.removeCalled = true
 	return m.removeErr
 }

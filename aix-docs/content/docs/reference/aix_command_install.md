@@ -23,7 +23,7 @@ If the command exists in multiple repositories, you will be prompted to select o
 Use --file to skip repo search and treat the argument as a file path.
 
 For git URLs, the repository is cloned to a temporary directory, the command
-is installed, and the temporary directory is cleaned up.
+ is installed, and the temporary directory is cleaned up.
 
 ```
 aix command install <source> [flags]
@@ -52,6 +52,9 @@ aix command install <source> [flags]
   # Install to a specific platform
   aix command install review --platform claude
 
+  # Install all commands from a specific repo
+  aix command install --all-from-repo official
+
   See Also:
     aix command remove   - Remove an installed command
     aix command edit     - Edit a command definition
@@ -61,9 +64,11 @@ aix command install <source> [flags]
 ### Options
 
 ```
-  -f, --file    treat argument as a file path instead of searching repos
-      --force   overwrite existing command without confirmation
-  -h, --help    help for install
+      --all-from-repo string   install all commands from a specific repository
+  -f, --file                   treat argument as a file path instead of searching repos
+      --force                  overwrite existing command without confirmation
+  -h, --help                   help for install
+      --scope string           configuration scope (user, project, local)
 ```
 
 ### Options inherited from parent commands

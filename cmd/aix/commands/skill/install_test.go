@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/git"
 )
 
@@ -76,7 +77,7 @@ func TestInstallFromLocal_MissingSKILLMD(t *testing.T) {
 	// Create a temp directory without SKILL.md
 	tempDir := t.TempDir()
 
-	err := installFromLocal(tempDir)
+	err := installFromLocal(tempDir, cli.ScopeUser)
 	if err == nil {
 		t.Error("expected error for missing SKILL.md, got nil")
 	}
@@ -103,7 +104,7 @@ Some instructions.
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(tempDir)
+	err := installFromLocal(tempDir, cli.ScopeUser)
 	if err == nil {
 		t.Error("expected error for invalid skill, got nil")
 	}

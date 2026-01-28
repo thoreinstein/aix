@@ -22,7 +22,7 @@ If the skill exists in multiple repositories, you will be prompted to select one
 Use --file to skip repo search and treat the argument as a file path.
 
 For git URLs, the repository is cloned to a temporary directory, the skill
-is installed, and the temporary directory is cleaned up.
+ is installed, and the temporary directory is cleaned up.
 
 ```
 aix skill install <source> [flags]
@@ -49,14 +49,19 @@ aix skill install <source> [flags]
 
   # Force overwrite existing skill
   aix skill install code-review --force
+
+  # Install all skills from a specific repo
+  aix skill install --all-from-repo official
 ```
 
 ### Options
 
 ```
-  -f, --file    treat argument as a file path instead of searching repos
-      --force   overwrite existing skill without confirmation
-  -h, --help    help for install
+      --all-from-repo string   install all skills from a specific repository
+  -f, --file                   treat argument as a file path instead of searching repos
+      --force                  overwrite existing skill without confirmation
+  -h, --help                   help for install
+      --scope string           configuration scope (user, project, local)
 ```
 
 ### Options inherited from parent commands
