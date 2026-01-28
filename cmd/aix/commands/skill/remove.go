@@ -84,7 +84,7 @@ func runRemoveWithIO(args []string, w io.Writer, r io.Reader) error {
 		}
 
 		fmt.Fprintf(w, "Removing from %s... ", p.DisplayName())
-		if err := p.UninstallSkill(name); err != nil {
+		if err := p.UninstallSkill(name, cli.ScopeUser); err != nil {
 			fmt.Fprintln(w, "failed")
 			failed = append(failed, fmt.Sprintf("%s: %v", p.DisplayName(), err))
 			continue

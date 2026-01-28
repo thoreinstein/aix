@@ -92,7 +92,7 @@ func runRemoveWithIO(args []string, w io.Writer, r io.Reader) error {
 			continue
 		}
 
-		if err := p.RemoveMCP(name); err != nil {
+		if err := p.RemoveMCP(name, cli.ScopeUser); err != nil {
 			fmt.Fprintf(w, "  %s: failed\n", p.Name())
 			failed = append(failed, fmt.Sprintf("%s: %v", p.DisplayName(), err))
 			continue

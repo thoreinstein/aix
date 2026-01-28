@@ -19,9 +19,9 @@ func (m *mockPlatform) DisplayName() string { return m.displayName }
 func (m *mockPlatform) IsAvailable() bool   { return true }
 func (m *mockPlatform) SkillDir() string    { return "/mock/skills" }
 
-func (m *mockPlatform) InstallSkill(_ any) error { return nil }
+func (m *mockPlatform) InstallSkill(_ any, _ cli.Scope) error { return nil }
 
-func (m *mockPlatform) UninstallSkill(name string) error {
+func (m *mockPlatform) UninstallSkill(name string, _ cli.Scope) error {
 	if m.uninstallErr != nil {
 		return m.uninstallErr
 	}
@@ -47,9 +47,9 @@ func (m *mockPlatform) GetSkill(name string) (any, error) {
 
 func (m *mockPlatform) CommandDir() string { return "/mock/commands" }
 
-func (m *mockPlatform) InstallCommand(_ any) error { return nil }
+func (m *mockPlatform) InstallCommand(_ any, _ cli.Scope) error { return nil }
 
-func (m *mockPlatform) UninstallCommand(name string) error {
+func (m *mockPlatform) UninstallCommand(name string, _ cli.Scope) error {
 	delete(m.commands, name)
 	return nil
 }
@@ -72,8 +72,8 @@ func (m *mockPlatform) GetCommand(name string) (any, error) {
 
 // MCP methods for cli.Platform interface.
 func (m *mockPlatform) MCPConfigPath() string           { return "/mock/mcp.json" }
-func (m *mockPlatform) AddMCP(_ any) error              { return nil }
-func (m *mockPlatform) RemoveMCP(_ string) error        { return nil }
+func (m *mockPlatform) AddMCP(_ any, _ cli.Scope) error              { return nil }
+func (m *mockPlatform) RemoveMCP(_ string, _ cli.Scope) error        { return nil }
 func (m *mockPlatform) ListMCP() ([]cli.MCPInfo, error) { return nil, nil }
 func (m *mockPlatform) GetMCP(_ string) (any, error)    { return nil, errors.New("not found") }
 func (m *mockPlatform) EnableMCP(_ string) error        { return nil }
@@ -81,8 +81,8 @@ func (m *mockPlatform) DisableMCP(_ string) error       { return nil }
 
 // Agent methods for cli.Platform interface.
 func (m *mockPlatform) AgentDir() string                     { return "/mock/agents" }
-func (m *mockPlatform) InstallAgent(_ any) error             { return nil }
-func (m *mockPlatform) UninstallAgent(_ string) error        { return nil }
+func (m *mockPlatform) InstallAgent(_ any, _ cli.Scope) error             { return nil }
+func (m *mockPlatform) UninstallAgent(_ string, _ cli.Scope) error        { return nil }
 func (m *mockPlatform) ListAgents() ([]cli.AgentInfo, error) { return nil, nil }
 func (m *mockPlatform) GetAgent(_ string) (any, error)       { return nil, errors.New("not found") }
 

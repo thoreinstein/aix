@@ -251,7 +251,7 @@ func installFromLocal(source string) error {
 		}
 
 		// Perform installation
-		if installErr := p.InstallAgent(agent); installErr != nil {
+		if installErr := p.InstallAgent(agent, cli.ScopeUser); installErr != nil {
 			result.errMsg = fmt.Sprintf("could not install agent: %v", installErr)
 			results = append(results, result)
 			continue

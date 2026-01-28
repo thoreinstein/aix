@@ -226,7 +226,7 @@ func installFromLocal(skillPath string) error {
 		// Convert skill to platform-specific type
 		platformSkill := convertSkillForPlatform(skill, plat.Name())
 
-		if err := plat.InstallSkill(platformSkill); err != nil {
+		if err := plat.InstallSkill(platformSkill, cli.ScopeUser); err != nil {
 			fmt.Println("failed")
 			return errors.Wrapf(err, "failed to install to %s", plat.DisplayName())
 		}
