@@ -86,11 +86,13 @@ func runShow(_ *cobra.Command, args []string) error {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
+	scope := cli.ParseScope(flags.GetScopeFlag())
+
 	// Collect server info from all platforms where it exists
 	details := make(map[string]*serverDetail)
 
 	for _, p := range platforms {
-		serverAny, err := p.GetMCP(name)
+		serverAny, err := p.GetMCP(name, scope)
 		if err != nil {
 			// Server not found on this platform, continue to next
 			continue

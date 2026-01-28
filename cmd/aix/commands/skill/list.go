@@ -63,18 +63,20 @@ func runListWithWriter(w io.Writer) error {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
+	scope := cli.ParseScope(flags.GetScopeFlag())
+
 	if listJSON {
-		return outputListJSON(w, platforms)
+		return outputListJSON(w, platforms, scope)
 	}
-	return outputListTabular(w, platforms)
+	return outputListTabular(w, platforms, scope)
 }
 
 // outputListJSON outputs skills in JSON format.
-func outputListJSON(w io.Writer, platforms []cli.Platform) error {
+func outputListJSON(w io.Writer, platforms []cli.Platform, scope cli.Scope) error {
 	output := make(listOutput)
 
 	for _, p := range platforms {
-		skills, err := p.ListSkills()
+		skills, err := p.ListSkills(scope)
 		if err != nil {
 			return errors.Wrapf(err, "listing skills for %s", p.Name())
 		}
@@ -104,11 +106,11 @@ const (
 )
 
 // outputListTabular outputs skills in tabular format grouped by platform.
-func outputListTabular(w io.Writer, platforms []cli.Platform) error {
+func outputListTabular(w io.Writer, platforms []cli.Platform, scope cli.Scope) error {
 	hasSkills := false
 
 	for i, p := range platforms {
-		skills, err := p.ListSkills()
+		skills, err := p.ListSkills(scope)
 		if err != nil {
 			return errors.Wrapf(err, "listing skills for %s", p.Name())
 		}

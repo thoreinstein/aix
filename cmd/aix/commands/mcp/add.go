@@ -48,6 +48,7 @@ func init() {
 		"restrict server to specific platform(s): darwin, linux, windows (repeatable)")
 	addCmd.Flags().BoolVarP(&mcpAddForce, "force", "f", false,
 		"overwrite if server already exists")
+	flags.AddScopeFlag(addCmd)
 	Cmd.AddCommand(addCmd)
 }
 
@@ -158,15 +159,22 @@ func runMCPAddCore(args []string) error {
 	}
 
 	// Get target platforms
+
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
+	// Determine configuration scope
+	scope, err := cli.DetermineScope(flags.GetScopeFlag())
+	if err != nil {
+		return fmt.Errorf("determining configuration scope: %w", err)
+	}
+
 	// Check for existing servers (unless --force)
 	if !mcpAddForce {
 		for _, plat := range platforms {
-			if _, err := plat.GetMCP(name); err == nil {
+			if _, err := plat.GetMCP(name, cli.ScopeDefault); err == nil {
 				return errors.Newf("server %q already exists on %s (use --force to overwrite)",
 					name, plat.DisplayName())
 			}
@@ -184,7 +192,7 @@ func runMCPAddCore(args []string) error {
 		fmt.Printf("Adding '%s' to %s... ", name, plat.DisplayName())
 
 		// Create platform-specific server and add it
-		if err := addMCPToPlatform(plat, name, command, cmdArgs, transport, envMap, headersMap); err != nil {
+		if err := addMCPToPlatform(plat, name, command, cmdArgs, transport, envMap, headersMap, scope); err != nil {
 			fmt.Println("failed")
 			return errors.Wrapf(err, "failed to add to %s", plat.DisplayName())
 		}
@@ -340,6 +348,7 @@ func addMCPToPlatform(
 	args []string,
 	transport string,
 	env, headers map[string]string,
+	scope cli.Scope,
 ) error {
 	switch plat.Name() {
 	case "claude":
@@ -359,7 +368,7 @@ func addMCPToPlatform(
 			Headers:   headers,
 			Platforms: mcpAddPlatforms,
 		}
-		return errors.Wrap(plat.AddMCP(server, cli.ScopeUser), "adding MCP server to Claude")
+		return errors.Wrap(plat.AddMCP(server, scope), "adding MCP server to Claude")
 
 	case "opencode":
 		// Show warning if platforms restriction is specified
@@ -388,7 +397,7 @@ func addMCPToPlatform(
 			Environment: env,
 			Headers:     headers,
 		}
-		return errors.Wrap(plat.AddMCP(server, cli.ScopeUser), "adding MCP server to OpenCode")
+		return errors.Wrap(plat.AddMCP(server, scope), "adding MCP server to OpenCode")
 
 	default:
 		return errors.Newf("unsupported platform: %s", plat.Name())

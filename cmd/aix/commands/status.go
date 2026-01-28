@@ -149,9 +149,9 @@ func collectPlatformStatus(p cli.Platform) platformStatus {
 		return status
 	}
 
-	status.Skills, status.SkillsErr = p.ListSkills()
-	status.Commands, status.CommandsErr = p.ListCommands()
-	status.MCP, status.MCPErr = p.ListMCP()
+	status.Skills, status.SkillsErr = p.ListSkills(cli.ScopeDefault)
+	status.Commands, status.CommandsErr = p.ListCommands(cli.ScopeDefault)
+	status.MCP, status.MCPErr = p.ListMCP(cli.ScopeDefault)
 
 	return status
 }

@@ -66,6 +66,7 @@ aix agent install <source> [flags]
   -f, --file                   treat argument as a file path instead of searching repos
       --force                  overwrite existing agent without confirmation
   -h, --help                   help for install
+      --scope string           configuration scope (user, project, local)
 ```
 
 ### Options inherited from parent commands

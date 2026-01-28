@@ -96,12 +96,14 @@ func runShowWithWriter(name string, w io.Writer) error {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
+	scope := cli.ParseScope(flags.GetScopeFlag())
+
 	// Collect command info from all platforms where it exists
 	var detail *showDetail
 	installations := make([]installLocation, 0, len(platforms))
 
 	for _, p := range platforms {
-		cmdAny, err := p.GetCommand(name)
+		cmdAny, err := p.GetCommand(name, scope)
 		if err != nil {
 			// Command not found on this platform, continue to next
 			continue

@@ -108,6 +108,11 @@ func Pull(repoPath string) error {
 	return nil
 }
 
+func IsRepo(path string) bool {
+	cmd := exec.Command("git", "-C", path, "rev-parse", "--is-inside-work-tree")
+	return cmd.Run() == nil
+}
+
 // ValidateRemote checks if repoPath is a valid git repository by verifying
 // the existence of a .git directory.
 func ValidateRemote(repoPath string) error {

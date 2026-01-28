@@ -85,7 +85,7 @@ func runSetEnabledWithIO(name string, enabled bool, w io.Writer) error {
 		}
 
 		// Check if server exists
-		_, err := plat.GetMCP(name)
+		_, err := plat.GetMCP(name, cli.ScopeDefault)
 		if err != nil {
 			fmt.Fprintf(w, "  %s: not found\n", plat.Name())
 			continue

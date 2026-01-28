@@ -74,12 +74,14 @@ func runEdit(_ *cobra.Command, args []string) error {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
+	scope := cli.ParseScope(flags.GetScopeFlag())
+
 	// Find the skill on available platforms
 	var skillPath string
 	var foundPlatform cli.Platform
 
 	for _, p := range platforms {
-		_, err := p.GetSkill(target)
+		_, err := p.GetSkill(target, scope)
 		if err == nil {
 			// Found it
 			foundPlatform = p
