@@ -42,8 +42,9 @@ aix command remove <name> [flags]
 ### Options
 
 ```
-      --force   Skip confirmation prompt
-  -h, --help    help for remove
+      --force          Skip confirmation prompt
+  -h, --help           help for remove
+      --scope string   configuration scope (user, project, local)
 ```
 
 ### Options inherited from parent commands

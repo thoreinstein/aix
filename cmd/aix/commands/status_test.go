@@ -33,10 +33,10 @@ func (m *statusMockPlatform) InstallSkill(_ any, _ cli.Scope) error { return nil
 func (m *statusMockPlatform) UninstallSkill(_ string, _ cli.Scope) error {
 	return errors.New("not implemented")
 }
-func (m *statusMockPlatform) ListSkills() ([]cli.SkillInfo, error) {
+func (m *statusMockPlatform) ListSkills(_ cli.Scope) ([]cli.SkillInfo, error) {
 	return m.skills, m.skillsErr
 }
-func (m *statusMockPlatform) GetSkill(_ string) (any, error) {
+func (m *statusMockPlatform) GetSkill(_ string, _ cli.Scope) (any, error) {
 	return nil, errors.New("not implemented")
 }
 
@@ -45,18 +45,20 @@ func (m *statusMockPlatform) InstallCommand(_ any, _ cli.Scope) error { return n
 func (m *statusMockPlatform) UninstallCommand(_ string, _ cli.Scope) error {
 	return errors.New("not implemented")
 }
-func (m *statusMockPlatform) ListCommands() ([]cli.CommandInfo, error) {
+func (m *statusMockPlatform) ListCommands(_ cli.Scope) ([]cli.CommandInfo, error) {
 	return m.commands, m.commandsErr
 }
-func (m *statusMockPlatform) GetCommand(_ string) (any, error) {
+func (m *statusMockPlatform) GetCommand(_ string, _ cli.Scope) (any, error) {
 	return nil, errors.New("not implemented")
 }
 
 func (m *statusMockPlatform) MCPConfigPath() string                 { return "/mock/mcp.json" }
 func (m *statusMockPlatform) AddMCP(_ any, _ cli.Scope) error       { return nil }
 func (m *statusMockPlatform) RemoveMCP(_ string, _ cli.Scope) error { return nil }
-func (m *statusMockPlatform) ListMCP() ([]cli.MCPInfo, error)       { return m.mcp, m.mcpErr }
-func (m *statusMockPlatform) GetMCP(_ string) (any, error) {
+func (m *statusMockPlatform) ListMCP(_ cli.Scope) ([]cli.MCPInfo, error) {
+	return m.mcp, m.mcpErr
+}
+func (m *statusMockPlatform) GetMCP(_ string, _ cli.Scope) (any, error) {
 	return nil, errors.New("not implemented")
 }
 func (m *statusMockPlatform) EnableMCP(_ string) error  { return nil }
@@ -67,10 +69,10 @@ func (m *statusMockPlatform) InstallAgent(_ any, _ cli.Scope) error { return nil
 func (m *statusMockPlatform) UninstallAgent(_ string, _ cli.Scope) error {
 	return errors.New("not implemented")
 }
-func (m *statusMockPlatform) ListAgents() ([]cli.AgentInfo, error) {
+func (m *statusMockPlatform) ListAgents(_ cli.Scope) ([]cli.AgentInfo, error) {
 	return nil, errors.New("not implemented")
 }
-func (m *statusMockPlatform) GetAgent(_ string) (any, error) {
+func (m *statusMockPlatform) GetAgent(_ string, _ cli.Scope) (any, error) {
 	return nil, errors.New("not implemented")
 }
 

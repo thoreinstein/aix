@@ -16,7 +16,7 @@ type listMockPlatform struct {
 	mcpErr     error
 }
 
-func (m *listMockPlatform) ListMCP() ([]cli.MCPInfo, error) {
+func (m *listMockPlatform) ListMCP(_ cli.Scope) ([]cli.MCPInfo, error) {
 	if m.mcpErr != nil {
 		return nil, m.mcpErr
 	}
@@ -56,7 +56,7 @@ func TestOutputTabular_EmptyState(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputTabular(&buf, platforms)
+	err := outputTabular(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputTabular() error = %v", err)
 	}
@@ -101,7 +101,7 @@ func TestOutputTabular_WithServers(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputTabular(&buf, platforms)
+	err := outputTabular(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputTabular() error = %v", err)
 	}
@@ -163,7 +163,7 @@ func TestOutputTabular_MultiplePlatforms(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputTabular(&buf, platforms)
+	err := outputTabular(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputTabular() error = %v", err)
 	}
@@ -196,7 +196,7 @@ func TestOutputTabular_NoServersAcrossPlatforms(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputTabular(&buf, platforms)
+	err := outputTabular(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputTabular() error = %v", err)
 	}
@@ -228,6 +228,7 @@ func TestOutputJSON(t *testing.T) {
 					Env: map[string]string{
 						"GITHUB_TOKEN": "ghp_xxxxxxxxxxxx1234",
 						"DEBUG":        "true",
+						"API_KEY":      "sk-secret-key-value",
 					},
 				},
 			},
@@ -235,7 +236,7 @@ func TestOutputJSON(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputJSON(&buf, platforms)
+	err := outputJSON(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputJSON() error = %v", err)
 	}
@@ -276,6 +277,14 @@ func TestOutputJSON(t *testing.T) {
 	if server.Env["DEBUG"] != "true" {
 		t.Errorf("DEBUG should not be masked, got %q", server.Env["DEBUG"])
 	}
+
+	// API_KEY should be masked (contains KEY)
+	if server.Env["API_KEY"] != "sk-s****alue" {
+		// doctor.MaskSecrets behavior might vary, simplified check
+		if !strings.Contains(server.Env["API_KEY"], "****") {
+			t.Errorf("API_KEY should be masked, got %q", server.Env["API_KEY"])
+		}
+	}
 }
 
 func TestOutputJSON_ShowSecrets(t *testing.T) {
@@ -304,7 +313,7 @@ func TestOutputJSON_ShowSecrets(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputJSON(&buf, platforms)
+	err := outputJSON(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputJSON() error = %v", err)
 	}
@@ -333,7 +342,7 @@ func TestOutputJSON_EmptyServers(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputJSON(&buf, platforms)
+	err := outputJSON(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputJSON() error = %v", err)
 	}

@@ -62,7 +62,7 @@ func (m *enableMockPlatform) IsAvailable() bool {
 	return m.isAvailable
 }
 
-func (m *enableMockPlatform) GetMCP(name string) (any, error) {
+func (m *enableMockPlatform) GetMCP(name string, _ cli.Scope) (any, error) {
 	server, ok := m.mcpServers[name]
 	if !ok {
 		return nil, errors.New("MCP server not found")
@@ -309,7 +309,7 @@ func runMCPSetEnabledWithMockPlatforms(name string, enabled bool, w *bytes.Buffe
 		}
 
 		// Check if server exists
-		_, err := plat.GetMCP(name)
+		_, err := plat.GetMCP(name, cli.ScopeDefault)
 		if err != nil {
 			w.WriteString("  " + plat.Name() + ": not found\n")
 			continue

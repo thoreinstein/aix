@@ -60,11 +60,13 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
+	scope := cli.ParseScope(flags.GetScopeFlag())
+
 	var agentPath string
 	var foundPlatform cli.Platform
 
 	for _, p := range platforms {
-		_, err := p.GetAgent(target)
+		_, err := p.GetAgent(target, scope)
 		if err == nil {
 			foundPlatform = p
 			// Agents are .md files, not directories

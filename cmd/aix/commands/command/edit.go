@@ -12,6 +12,7 @@ import (
 )
 
 func init() {
+	flags.AddScopeFlag(editCmd)
 	Cmd.AddCommand(editCmd)
 }
 
@@ -41,13 +42,15 @@ func runEdit(_ *cobra.Command, args []string) error {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
-	return runEditWithPlatforms(name, platforms, editor.Open)
+	scope := cli.ParseScope(flags.GetScopeFlag())
+
+	return runEditWithPlatforms(name, platforms, scope, editor.Open)
 }
 
-func runEditWithPlatforms(name string, platforms []cli.Platform, opener func(string) error) error {
+func runEditWithPlatforms(name string, platforms []cli.Platform, scope cli.Scope, opener func(string) error) error {
 	var cmdPath string
 	for _, p := range platforms {
-		_, err := p.GetCommand(name)
+		_, err := p.GetCommand(name, scope)
 		if err != nil {
 			// Command not found on this platform, continue to next
 			continue

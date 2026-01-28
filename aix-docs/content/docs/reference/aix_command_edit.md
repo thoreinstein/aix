@@ -34,7 +34,8 @@ aix command edit <name> [flags]
 ### Options
 
 ```
-  -h, --help   help for edit
+  -h, --help           help for edit
+      --scope string   configuration scope (user, project, local)
 ```
 
 ### Options inherited from parent commands

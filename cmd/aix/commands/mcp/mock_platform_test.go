@@ -29,7 +29,7 @@ func (m *mockPlatform) UninstallSkill(name string, _ cli.Scope) error {
 	return nil
 }
 
-func (m *mockPlatform) ListSkills() ([]cli.SkillInfo, error) {
+func (m *mockPlatform) ListSkills(_ cli.Scope) ([]cli.SkillInfo, error) {
 	skills := make([]cli.SkillInfo, 0, len(m.skills))
 	for name := range m.skills {
 		skills = append(skills, cli.SkillInfo{Name: name})
@@ -37,7 +37,7 @@ func (m *mockPlatform) ListSkills() ([]cli.SkillInfo, error) {
 	return skills, nil
 }
 
-func (m *mockPlatform) GetSkill(name string) (any, error) {
+func (m *mockPlatform) GetSkill(name string, _ cli.Scope) (any, error) {
 	skill, ok := m.skills[name]
 	if !ok {
 		return nil, errors.New("skill not found")
@@ -54,7 +54,7 @@ func (m *mockPlatform) UninstallCommand(name string, _ cli.Scope) error {
 	return nil
 }
 
-func (m *mockPlatform) ListCommands() ([]cli.CommandInfo, error) {
+func (m *mockPlatform) ListCommands(_ cli.Scope) ([]cli.CommandInfo, error) {
 	commands := make([]cli.CommandInfo, 0, len(m.commands))
 	for name := range m.commands {
 		commands = append(commands, cli.CommandInfo{Name: name})
@@ -62,7 +62,7 @@ func (m *mockPlatform) ListCommands() ([]cli.CommandInfo, error) {
 	return commands, nil
 }
 
-func (m *mockPlatform) GetCommand(name string) (any, error) {
+func (m *mockPlatform) GetCommand(name string, _ cli.Scope) (any, error) {
 	cmd, ok := m.commands[name]
 	if !ok {
 		return nil, errors.New("command not found")
@@ -74,8 +74,8 @@ func (m *mockPlatform) GetCommand(name string) (any, error) {
 func (m *mockPlatform) MCPConfigPath() string           { return "/mock/mcp.json" }
 func (m *mockPlatform) AddMCP(_ any, _ cli.Scope) error              { return nil }
 func (m *mockPlatform) RemoveMCP(_ string, _ cli.Scope) error        { return nil }
-func (m *mockPlatform) ListMCP() ([]cli.MCPInfo, error) { return nil, nil }
-func (m *mockPlatform) GetMCP(_ string) (any, error)    { return nil, errors.New("not found") }
+func (m *mockPlatform) ListMCP(_ cli.Scope) ([]cli.MCPInfo, error) { return nil, nil }
+func (m *mockPlatform) GetMCP(_ string, _ cli.Scope) (any, error)    { return nil, errors.New("not found") }
 func (m *mockPlatform) EnableMCP(_ string) error        { return nil }
 func (m *mockPlatform) DisableMCP(_ string) error       { return nil }
 
@@ -83,8 +83,8 @@ func (m *mockPlatform) DisableMCP(_ string) error       { return nil }
 func (m *mockPlatform) AgentDir() string                     { return "/mock/agents" }
 func (m *mockPlatform) InstallAgent(_ any, _ cli.Scope) error             { return nil }
 func (m *mockPlatform) UninstallAgent(_ string, _ cli.Scope) error        { return nil }
-func (m *mockPlatform) ListAgents() ([]cli.AgentInfo, error) { return nil, nil }
-func (m *mockPlatform) GetAgent(_ string) (any, error)       { return nil, errors.New("not found") }
+func (m *mockPlatform) ListAgents(_ cli.Scope) ([]cli.AgentInfo, error) { return nil, nil }
+func (m *mockPlatform) GetAgent(_ string, _ cli.Scope) (any, error)       { return nil, errors.New("not found") }
 
 // Backup methods for cli.Platform interface.
 func (m *mockPlatform) BackupPaths() []string { return []string{"/mock/backup"} }
