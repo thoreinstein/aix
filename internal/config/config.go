@@ -114,10 +114,25 @@ func ActiveConfigPath() string {
 
 // DefaultConfigPath returns the default path for the config file.
 // This respects AIX_CONFIG_DIR if set, otherwise uses XDG config home.
+// It prioritizes ~/.config/aix/config.yaml if it exists (common for CLI tools on macOS),
+// falling back to the system default (e.g. ~/Library/Application Support/aix/config.yaml).
 func DefaultConfigPath() string {
 	if envDir := os.Getenv("AIX_CONFIG_DIR"); envDir != "" {
 		return filepath.Join(envDir, "config.yaml")
 	}
+
+	// Check standard ~/.config/aix/config.yaml explicitly first
+	// This ensures that if a user (or previous version) established config there,
+	// we keep using it even if the OS default points elsewhere.
+	if home, err := os.UserHomeDir(); err == nil {
+		dotConfig := filepath.Join(home, ".config", AppName, "config.yaml")
+		if _, err := os.Stat(dotConfig); err == nil {
+			return dotConfig
+		}
+	}
+
+	// Fallback to system primary path (e.g. XDG/Library)
+	// This is the default for new installations or if ~/.config is missing
 	return filepath.Join(paths.ConfigHome(), AppName, "config.yaml")
 }
 
