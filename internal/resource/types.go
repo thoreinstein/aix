@@ -2,6 +2,12 @@
 // agents, and MCP servers) that can be discovered and installed from repositories.
 package resource
 
+import (
+	"path/filepath"
+
+	"github.com/thoreinstein/aix/internal/paths"
+)
+
 // ResourceType identifies the kind of resource.
 type ResourceType string
 
@@ -36,4 +42,9 @@ type Resource struct {
 
 	// Metadata contains additional key-value pairs for extensibility.
 	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
+// SourcePath returns the absolute path to the resource in the persistent repository cache.
+func (r *Resource) SourcePath() string {
+	return filepath.Join(paths.ReposCacheDir(), r.RepoName, r.Path)
 }

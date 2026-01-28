@@ -252,19 +252,8 @@ func installFromRepo(name string, matches []resource.Resource) error {
 		selected = choice
 	}
 
-	// Copy from cache to temp directory
-	tempDir, err := resource.CopyToTemp(selected)
-	if err != nil {
-		return errors.Wrap(err, "copying from repository cache")
-	}
-	defer func() {
-		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to clean up temp dir: %v\n", removeErr)
-		}
-	}()
-
 	fmt.Printf("Installing from repository: %s\n", selected.RepoName)
-	return installFromLocal(tempDir)
+	return installFromLocal(selected.SourcePath())
 }
 
 // installFromLocal installs an agent from a local file or directory.
@@ -278,6 +267,12 @@ func installFromLocal(source string) error {
 	agentPath, err := resolveAgentPath(source)
 	if err != nil {
 		return err
+	}
+
+	// Calculate default name from filename/directory
+	defaultName := strings.TrimSuffix(filepath.Base(agentPath), filepath.Ext(agentPath))
+	if strings.ToUpper(defaultName) == "AGENT" {
+		defaultName = filepath.Base(filepath.Dir(agentPath))
 	}
 
 	// Read and parse the AGENT.md file
@@ -308,7 +303,7 @@ func installFromLocal(source string) error {
 
 		result := installResult{platform: p.Name()}
 
-		agent, parseErr := parseAgentForPlatform(p.Name(), content)
+		agent, parseErr := parseAgentForPlatform(p.Name(), content, defaultName)
 		if parseErr != nil {
 			result.errMsg = fmt.Sprintf("could not parse agent: %v", parseErr)
 			results = append(results, result)
@@ -432,7 +427,7 @@ func resolveAgentPath(source string) (string, error) {
 }
 
 // parseAgentForPlatform parses AGENT.md content into platform-specific agent struct.
-func parseAgentForPlatform(platform string, content []byte) (any, error) {
+func parseAgentForPlatform(platform string, content []byte, defaultName string) (any, error) {
 	switch platform {
 	case "claude":
 		var meta struct {
@@ -442,6 +437,9 @@ func parseAgentForPlatform(platform string, content []byte) (any, error) {
 		body, err := frontmatter.Parse(bytes.NewReader(content), &meta)
 		if err != nil {
 			return nil, errors.Wrap(err, "parsing frontmatter")
+		}
+		if meta.Name == "" {
+			meta.Name = defaultName
 		}
 		if meta.Name == "" {
 			return nil, errAgentNameRequired
@@ -462,6 +460,9 @@ func parseAgentForPlatform(platform string, content []byte) (any, error) {
 		body, err := frontmatter.Parse(bytes.NewReader(content), &meta)
 		if err != nil {
 			return nil, errors.Wrap(err, "parsing frontmatter")
+		}
+		if meta.Name == "" {
+			meta.Name = defaultName
 		}
 		if meta.Name == "" {
 			return nil, errAgentNameRequired

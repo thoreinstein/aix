@@ -256,19 +256,8 @@ func installFromRepo(name string, matches []resource.Resource) error {
 		selected = choice
 	}
 
-	// Copy from cache to temp directory
-	tempDir, err := resource.CopyToTemp(selected)
-	if err != nil {
-		return errors.Wrap(err, "copying from repository cache")
-	}
-	defer func() {
-		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to clean up temp dir: %v\n", removeErr)
-		}
-	}()
-
 	fmt.Printf("Installing from repository: %s\n", selected.RepoName)
-	return installFromLocal(tempDir)
+	return installFromLocal(selected.SourcePath())
 }
 
 // installFromGit clones a git repository and installs the command from it.

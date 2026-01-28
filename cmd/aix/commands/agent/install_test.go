@@ -110,11 +110,27 @@ Some instructions.`,
 			content: "Just plain markdown without frontmatter.",
 			wantErr: errAgentNameRequired,
 		},
+		{
+			name: "fallback to default name when missing in frontmatter",
+			content: `---
+description: No name here
+---
+
+Some instructions.`,
+			wantName:  "default-agent",
+			wantDesc:  "No name here",
+			wantInstr: "\nSome instructions.",
+			wantErr:   nil,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseAgentForPlatform("claude", []byte(tt.content))
+			defaultName := ""
+			if tt.wantName == "default-agent" {
+				defaultName = "default-agent"
+			}
+			got, err := parseAgentForPlatform("claude", []byte(tt.content), defaultName)
 
 			if tt.wantErr != nil {
 				if err == nil {
@@ -204,7 +220,7 @@ Some instructions.`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseAgentForPlatform("opencode", []byte(tt.content))
+			got, err := parseAgentForPlatform("opencode", []byte(tt.content), "")
 
 			if tt.wantErr != nil {
 				if err == nil {
@@ -251,7 +267,7 @@ name: test
 
 Instructions.`
 
-	_, err := parseAgentForPlatform("unknown", []byte(content))
+	_, err := parseAgentForPlatform("unknown", []byte(content), "")
 	if err == nil {
 		t.Error("expected error for unsupported platform, got nil")
 	}
