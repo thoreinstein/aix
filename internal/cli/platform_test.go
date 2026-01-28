@@ -236,7 +236,7 @@ func TestClaudeAdapter_InstallCommand_WrongType(t *testing.T) {
 		t.Fatalf("NewPlatform(claude) unexpected error: %v", err)
 	}
 
-	err = p.InstallCommand("not a command")
+	err = p.InstallCommand("not a command", ScopeUser)
 	if err == nil {
 		t.Error("InstallCommand with wrong type expected error, got nil")
 	}
@@ -248,7 +248,7 @@ func TestOpencodeAdapter_InstallCommand_WrongType(t *testing.T) {
 		t.Fatalf("NewPlatform(opencode) unexpected error: %v", err)
 	}
 
-	err = p.InstallCommand("not a command")
+	err = p.InstallCommand("not a command", ScopeUser)
 	if err == nil {
 		t.Error("InstallCommand with wrong type expected error, got nil")
 	}
@@ -260,7 +260,7 @@ func TestGeminiAdapter_InstallCommand_WrongType(t *testing.T) {
 		t.Fatalf("NewPlatform(gemini) unexpected error: %v", err)
 	}
 
-	err = p.InstallCommand("not a command")
+	err = p.InstallCommand("not a command", ScopeUser)
 	if err == nil {
 		t.Error("InstallCommand with wrong type expected error, got nil")
 	}

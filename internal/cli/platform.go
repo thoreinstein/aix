@@ -64,6 +64,51 @@ type AgentInfo struct {
 	Source      string // "local" or future: git URL
 }
 
+// Scope defines the configuration layer target (User, Project, Local, Managed).
+type Scope int
+
+const (
+	// ScopeUser targets the user's global home directory configuration.
+	ScopeUser Scope = iota
+	// ScopeProject targets the project/repository configuration (typically committed).
+	ScopeProject
+	// ScopeLocal targets local overrides within a project (typically gitignored).
+	ScopeLocal
+	// ScopeManaged targets system-level managed configuration.
+	ScopeManaged
+)
+
+func (s Scope) String() string {
+	switch s {
+	case ScopeUser:
+		return "user"
+	case ScopeProject:
+		return "project"
+	case ScopeLocal:
+		return "local"
+	case ScopeManaged:
+		return "managed"
+	default:
+		return "user"
+	}
+}
+
+// ParseScope converts a string to a Scope. Returns ScopeUser as default.
+func ParseScope(s string) Scope {
+	switch strings.ToLower(s) {
+	case "user":
+		return ScopeUser
+	case "project":
+		return ScopeProject
+	case "local":
+		return ScopeLocal
+	case "managed":
+		return ScopeManaged
+	default:
+		return ScopeUser
+	}
+}
+
 // Platform defines the interface that platform adapters must implement
 // for CLI operations. This is the consumer interface used by CLI commands.
 type Platform interface {
@@ -81,10 +126,10 @@ type Platform interface {
 
 	// InstallSkill installs a skill to the platform.
 	// The skill parameter is platform-specific.
-	InstallSkill(skill any) error
+	InstallSkill(skill any, scope Scope) error
 
 	// UninstallSkill removes a skill by name.
-	UninstallSkill(name string) error
+	UninstallSkill(name string, scope Scope) error
 
 	// ListSkills returns information about all installed skills.
 	ListSkills() ([]SkillInfo, error)
@@ -98,10 +143,10 @@ type Platform interface {
 
 	// InstallCommand installs a slash command to the platform.
 	// The cmd parameter is platform-specific.
-	InstallCommand(cmd any) error
+	InstallCommand(cmd any, scope Scope) error
 
 	// UninstallCommand removes a command by name.
-	UninstallCommand(name string) error
+	UninstallCommand(name string, scope Scope) error
 
 	// ListCommands returns information about all installed commands.
 	ListCommands() ([]CommandInfo, error)
@@ -112,8 +157,8 @@ type Platform interface {
 
 	// MCP configuration
 	MCPConfigPath() string
-	AddMCP(server any) error
-	RemoveMCP(name string) error
+	AddMCP(server any, scope Scope) error
+	RemoveMCP(name string, scope Scope) error
 	ListMCP() ([]MCPInfo, error)
 	GetMCP(name string) (any, error)
 	EnableMCP(name string) error
@@ -121,8 +166,8 @@ type Platform interface {
 
 	// Agent configuration
 	AgentDir() string
-	InstallAgent(agent any) error
-	UninstallAgent(name string) error
+	InstallAgent(agent any, scope Scope) error
+	UninstallAgent(name string, scope Scope) error
 	ListAgents() ([]AgentInfo, error)
 	GetAgent(name string) (any, error)
 
@@ -149,15 +194,17 @@ func (a *claudeAdapter) IsAvailable() bool {
 	return a.p.IsAvailable()
 }
 
-func (a *claudeAdapter) InstallSkill(skill any) error {
+func (a *claudeAdapter) InstallSkill(skill any, scope Scope) error {
 	s, ok := skill.(*claude.Skill)
 	if !ok {
 		return errors.Newf("expected *claude.Skill, got %T", skill)
 	}
+	// TODO: implement scoped install in Claude platform
 	return errors.Wrap(a.p.InstallSkill(s), "installing skill to Claude")
 }
 
-func (a *claudeAdapter) UninstallSkill(name string) error {
+func (a *claudeAdapter) UninstallSkill(name string, scope Scope) error {
+	// TODO: implement scoped uninstall in Claude platform
 	return errors.Wrap(a.p.UninstallSkill(name), "uninstalling skill from Claude")
 }
 
@@ -194,15 +241,17 @@ func (a *claudeAdapter) CommandDir() string {
 	return a.p.CommandDir()
 }
 
-func (a *claudeAdapter) InstallCommand(cmd any) error {
+func (a *claudeAdapter) InstallCommand(cmd any, scope Scope) error {
 	c, ok := cmd.(*claude.Command)
 	if !ok {
 		return errors.Newf("expected *claude.Command, got %T", cmd)
 	}
+	// TODO: implement scoped install in Claude platform
 	return errors.Wrap(a.p.InstallCommand(c), "installing command to Claude")
 }
 
-func (a *claudeAdapter) UninstallCommand(name string) error {
+func (a *claudeAdapter) UninstallCommand(name string, scope Scope) error {
+	// TODO: implement scoped uninstall in Claude platform
 	return errors.Wrap(a.p.UninstallCommand(name), "uninstalling command from Claude")
 }
 
@@ -235,15 +284,17 @@ func (a *claudeAdapter) MCPConfigPath() string {
 	return a.p.MCPConfigPath()
 }
 
-func (a *claudeAdapter) AddMCP(server any) error {
+func (a *claudeAdapter) AddMCP(server any, scope Scope) error {
 	s, ok := server.(*claude.MCPServer)
 	if !ok {
 		return errors.Newf("expected *claude.MCPServer, got %T", server)
 	}
+	// TODO: implement scoped add in Claude platform
 	return errors.Wrap(a.p.AddMCP(s), "adding MCP server to Claude")
 }
 
-func (a *claudeAdapter) RemoveMCP(name string) error {
+func (a *claudeAdapter) RemoveMCP(name string, scope Scope) error {
+	// TODO: implement scoped remove in Claude platform
 	return errors.Wrap(a.p.RemoveMCP(name), "removing MCP server from Claude")
 }
 
@@ -301,15 +352,17 @@ func (a *claudeAdapter) AgentDir() string {
 	return a.p.AgentDir()
 }
 
-func (a *claudeAdapter) InstallAgent(agent any) error {
+func (a *claudeAdapter) InstallAgent(agent any, scope Scope) error {
 	ag, ok := agent.(*claude.Agent)
 	if !ok {
 		return errors.Newf("expected *claude.Agent, got %T", agent)
 	}
+	// TODO: implement scoped install in Claude platform
 	return errors.Wrap(a.p.InstallAgent(ag), "installing agent to Claude")
 }
 
-func (a *claudeAdapter) UninstallAgent(name string) error {
+func (a *claudeAdapter) UninstallAgent(name string, scope Scope) error {
+	// TODO: implement scoped uninstall in Claude platform
 	return errors.Wrap(a.p.UninstallAgent(name), "uninstalling agent from Claude")
 }
 
@@ -359,7 +412,7 @@ func (a *opencodeAdapter) IsAvailable() bool {
 	return a.p.IsAvailable()
 }
 
-func (a *opencodeAdapter) InstallSkill(skill any) error {
+func (a *opencodeAdapter) InstallSkill(skill any, scope Scope) error {
 	s, ok := skill.(*opencode.Skill)
 	if !ok {
 		return errors.Newf("expected *opencode.Skill, got %T", skill)
@@ -367,7 +420,7 @@ func (a *opencodeAdapter) InstallSkill(skill any) error {
 	return errors.Wrap(a.p.InstallSkill(s), "installing skill to OpenCode")
 }
 
-func (a *opencodeAdapter) UninstallSkill(name string) error {
+func (a *opencodeAdapter) UninstallSkill(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallSkill(name), "uninstalling skill from OpenCode")
 }
 
@@ -404,7 +457,7 @@ func (a *opencodeAdapter) CommandDir() string {
 	return a.p.CommandDir()
 }
 
-func (a *opencodeAdapter) InstallCommand(cmd any) error {
+func (a *opencodeAdapter) InstallCommand(cmd any, scope Scope) error {
 	c, ok := cmd.(*opencode.Command)
 	if !ok {
 		return errors.Newf("expected *opencode.Command, got %T", cmd)
@@ -412,7 +465,7 @@ func (a *opencodeAdapter) InstallCommand(cmd any) error {
 	return errors.Wrap(a.p.InstallCommand(c), "installing command to OpenCode")
 }
 
-func (a *opencodeAdapter) UninstallCommand(name string) error {
+func (a *opencodeAdapter) UninstallCommand(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallCommand(name), "uninstalling command from OpenCode")
 }
 
@@ -445,7 +498,7 @@ func (a *opencodeAdapter) MCPConfigPath() string {
 	return a.p.MCPConfigPath()
 }
 
-func (a *opencodeAdapter) AddMCP(server any) error {
+func (a *opencodeAdapter) AddMCP(server any, scope Scope) error {
 	s, ok := server.(*opencode.MCPServer)
 	if !ok {
 		return errors.Newf("expected *opencode.MCPServer, got %T", server)
@@ -453,7 +506,7 @@ func (a *opencodeAdapter) AddMCP(server any) error {
 	return errors.Wrap(a.p.AddMCP(s), "adding MCP server to OpenCode")
 }
 
-func (a *opencodeAdapter) RemoveMCP(name string) error {
+func (a *opencodeAdapter) RemoveMCP(name string, scope Scope) error {
 	return errors.Wrap(a.p.RemoveMCP(name), "removing MCP server from OpenCode")
 }
 
@@ -509,7 +562,7 @@ func (a *opencodeAdapter) AgentDir() string {
 	return a.p.AgentDir()
 }
 
-func (a *opencodeAdapter) InstallAgent(agent any) error {
+func (a *opencodeAdapter) InstallAgent(agent any, scope Scope) error {
 	ag, ok := agent.(*opencode.Agent)
 	if !ok {
 		return errors.Newf("expected *opencode.Agent, got %T", agent)
@@ -517,7 +570,7 @@ func (a *opencodeAdapter) InstallAgent(agent any) error {
 	return errors.Wrap(a.p.InstallAgent(ag), "installing agent to OpenCode")
 }
 
-func (a *opencodeAdapter) UninstallAgent(name string) error {
+func (a *opencodeAdapter) UninstallAgent(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallAgent(name), "uninstalling agent from OpenCode")
 }
 
@@ -567,7 +620,7 @@ func (a *geminiAdapter) IsAvailable() bool {
 	return a.p.IsAvailable()
 }
 
-func (a *geminiAdapter) InstallSkill(skill any) error {
+func (a *geminiAdapter) InstallSkill(skill any, scope Scope) error {
 	s, ok := skill.(*gemini.Skill)
 	if !ok {
 		return errors.Newf("expected *gemini.Skill, got %T", skill)
@@ -575,7 +628,7 @@ func (a *geminiAdapter) InstallSkill(skill any) error {
 	return errors.Wrap(a.p.InstallSkill(s), "installing skill to Gemini")
 }
 
-func (a *geminiAdapter) UninstallSkill(name string) error {
+func (a *geminiAdapter) UninstallSkill(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallSkill(name), "uninstalling skill from Gemini")
 }
 
@@ -612,7 +665,7 @@ func (a *geminiAdapter) CommandDir() string {
 	return a.p.CommandDir()
 }
 
-func (a *geminiAdapter) InstallCommand(cmd any) error {
+func (a *geminiAdapter) InstallCommand(cmd any, scope Scope) error {
 	c, ok := cmd.(*gemini.Command)
 	if !ok {
 		return errors.Newf("expected *gemini.Command, got %T", cmd)
@@ -620,7 +673,7 @@ func (a *geminiAdapter) InstallCommand(cmd any) error {
 	return errors.Wrap(a.p.InstallCommand(c), "installing command to Gemini")
 }
 
-func (a *geminiAdapter) UninstallCommand(name string) error {
+func (a *geminiAdapter) UninstallCommand(name string, scope Scope) error {
 	return errors.Wrap(a.p.UninstallCommand(name), "uninstalling command from Gemini")
 }
 
@@ -653,7 +706,7 @@ func (a *geminiAdapter) MCPConfigPath() string {
 	return a.p.MCPConfigPath()
 }
 
-func (a *geminiAdapter) AddMCP(server any) error {
+func (a *geminiAdapter) AddMCP(server any, scope Scope) error {
 	s, ok := server.(*gemini.MCPServer)
 	if !ok {
 		return errors.Newf("expected *gemini.MCPServer, got %T", server)
@@ -661,7 +714,7 @@ func (a *geminiAdapter) AddMCP(server any) error {
 	return errors.Wrap(a.p.AddMCP(s), "adding MCP server to Gemini")
 }
 
-func (a *geminiAdapter) RemoveMCP(name string) error {
+func (a *geminiAdapter) RemoveMCP(name string, scope Scope) error {
 	return errors.Wrap(a.p.RemoveMCP(name), "removing MCP server from Gemini")
 }
 
@@ -708,11 +761,11 @@ func (a *geminiAdapter) AgentDir() string {
 	return a.p.AgentDir()
 }
 
-func (a *geminiAdapter) InstallAgent(agent any) error {
+func (a *geminiAdapter) InstallAgent(agent any, scope Scope) error {
 	return errors.New("agents are not supported by Gemini CLI")
 }
 
-func (a *geminiAdapter) UninstallAgent(name string) error {
+func (a *geminiAdapter) UninstallAgent(name string, scope Scope) error {
 	return errors.New("agents are not supported by Gemini CLI")
 }
 

@@ -359,7 +359,7 @@ func addMCPToPlatform(
 			Headers:   headers,
 			Platforms: mcpAddPlatforms,
 		}
-		return errors.Wrap(plat.AddMCP(server), "adding MCP server to Claude")
+		return errors.Wrap(plat.AddMCP(server, cli.ScopeUser), "adding MCP server to Claude")
 
 	case "opencode":
 		// Show warning if platforms restriction is specified
@@ -388,7 +388,7 @@ func addMCPToPlatform(
 			Environment: env,
 			Headers:     headers,
 		}
-		return errors.Wrap(plat.AddMCP(server), "adding MCP server to OpenCode")
+		return errors.Wrap(plat.AddMCP(server, cli.ScopeUser), "adding MCP server to OpenCode")
 
 	default:
 		return errors.Newf("unsupported platform: %s", plat.Name())

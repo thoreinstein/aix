@@ -46,14 +46,18 @@ aix mcp install <source> [flags]
 
   # Force overwrite existing server
   aix mcp install github-mcp --force
+
+  # Install all MCP servers from a specific repo
+  aix mcp install --all-from-repo official
 ```
 
 ### Options
 
 ```
-  -f, --file    treat argument as a file path instead of searching repos
-      --force   overwrite existing MCP server without confirmation
-  -h, --help    help for install
+      --all-from-repo string   install all MCP servers from a specific repository
+  -f, --file                   treat argument as a file path instead of searching repos
+      --force                  overwrite existing MCP server without confirmation
+  -h, --help                   help for install
 ```
 
 ### Options inherited from parent commands

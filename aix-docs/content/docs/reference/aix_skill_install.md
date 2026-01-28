@@ -49,14 +49,18 @@ aix skill install <source> [flags]
 
   # Force overwrite existing skill
   aix skill install code-review --force
+
+  # Install all skills from a specific repo
+  aix skill install --all-from-repo official
 ```
 
 ### Options
 
 ```
-  -f, --file    treat argument as a file path instead of searching repos
-      --force   overwrite existing skill without confirmation
-  -h, --help    help for install
+      --all-from-repo string   install all skills from a specific repository
+  -f, --file                   treat argument as a file path instead of searching repos
+      --force                  overwrite existing skill without confirmation
+  -h, --help                   help for install
 ```
 
 ### Options inherited from parent commands

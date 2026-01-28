@@ -29,8 +29,8 @@ func (m *statusMockPlatform) DisplayName() string { return m.displayName }
 func (m *statusMockPlatform) IsAvailable() bool   { return m.available }
 func (m *statusMockPlatform) SkillDir() string    { return "/mock/skills" }
 
-func (m *statusMockPlatform) InstallSkill(_ any) error { return nil }
-func (m *statusMockPlatform) UninstallSkill(_ string) error {
+func (m *statusMockPlatform) InstallSkill(_ any, _ cli.Scope) error { return nil }
+func (m *statusMockPlatform) UninstallSkill(_ string, _ cli.Scope) error {
 	return errors.New("not implemented")
 }
 func (m *statusMockPlatform) ListSkills() ([]cli.SkillInfo, error) {
@@ -40,9 +40,9 @@ func (m *statusMockPlatform) GetSkill(_ string) (any, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (m *statusMockPlatform) CommandDir() string         { return "/mock/commands" }
-func (m *statusMockPlatform) InstallCommand(_ any) error { return nil }
-func (m *statusMockPlatform) UninstallCommand(_ string) error {
+func (m *statusMockPlatform) CommandDir() string                      { return "/mock/commands" }
+func (m *statusMockPlatform) InstallCommand(_ any, _ cli.Scope) error { return nil }
+func (m *statusMockPlatform) UninstallCommand(_ string, _ cli.Scope) error {
 	return errors.New("not implemented")
 }
 func (m *statusMockPlatform) ListCommands() ([]cli.CommandInfo, error) {
@@ -52,19 +52,21 @@ func (m *statusMockPlatform) GetCommand(_ string) (any, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (m *statusMockPlatform) MCPConfigPath() string           { return "/mock/mcp.json" }
-func (m *statusMockPlatform) AddMCP(_ any) error              { return nil }
-func (m *statusMockPlatform) RemoveMCP(_ string) error        { return nil }
-func (m *statusMockPlatform) ListMCP() ([]cli.MCPInfo, error) { return m.mcp, m.mcpErr }
+func (m *statusMockPlatform) MCPConfigPath() string                 { return "/mock/mcp.json" }
+func (m *statusMockPlatform) AddMCP(_ any, _ cli.Scope) error       { return nil }
+func (m *statusMockPlatform) RemoveMCP(_ string, _ cli.Scope) error { return nil }
+func (m *statusMockPlatform) ListMCP() ([]cli.MCPInfo, error)       { return m.mcp, m.mcpErr }
 func (m *statusMockPlatform) GetMCP(_ string) (any, error) {
 	return nil, errors.New("not implemented")
 }
 func (m *statusMockPlatform) EnableMCP(_ string) error  { return nil }
 func (m *statusMockPlatform) DisableMCP(_ string) error { return nil }
 
-func (m *statusMockPlatform) AgentDir() string              { return "/mock/agents" }
-func (m *statusMockPlatform) InstallAgent(_ any) error      { return nil }
-func (m *statusMockPlatform) UninstallAgent(_ string) error { return errors.New("not implemented") }
+func (m *statusMockPlatform) AgentDir() string                      { return "/mock/agents" }
+func (m *statusMockPlatform) InstallAgent(_ any, _ cli.Scope) error { return nil }
+func (m *statusMockPlatform) UninstallAgent(_ string, _ cli.Scope) error {
+	return errors.New("not implemented")
+}
 func (m *statusMockPlatform) ListAgents() ([]cli.AgentInfo, error) {
 	return nil, errors.New("not implemented")
 }

@@ -23,34 +23,34 @@ func (m *removeMockPlatform) DisplayName() string { return m.displayName }
 func (m *removeMockPlatform) IsAvailable() bool   { return true }
 
 // Skill methods
-func (m *removeMockPlatform) SkillDir() string                     { return "/mock/skills" }
-func (m *removeMockPlatform) InstallSkill(_ any) error             { return nil }
-func (m *removeMockPlatform) UninstallSkill(_ string) error        { return nil }
-func (m *removeMockPlatform) ListSkills() ([]cli.SkillInfo, error) { return nil, nil }
-func (m *removeMockPlatform) GetSkill(_ string) (any, error)       { return nil, errors.New("not found") }
+func (m *removeMockPlatform) SkillDir() string                           { return "/mock/skills" }
+func (m *removeMockPlatform) InstallSkill(_ any, _ cli.Scope) error      { return nil }
+func (m *removeMockPlatform) UninstallSkill(_ string, _ cli.Scope) error { return nil }
+func (m *removeMockPlatform) ListSkills() ([]cli.SkillInfo, error)       { return nil, nil }
+func (m *removeMockPlatform) GetSkill(_ string) (any, error)             { return nil, errors.New("not found") }
 
 // Command methods
-func (m *removeMockPlatform) CommandDir() string                       { return "/mock/commands" }
-func (m *removeMockPlatform) InstallCommand(_ any) error               { return nil }
-func (m *removeMockPlatform) UninstallCommand(_ string) error          { return nil }
-func (m *removeMockPlatform) ListCommands() ([]cli.CommandInfo, error) { return nil, nil }
-func (m *removeMockPlatform) GetCommand(_ string) (any, error)         { return nil, errors.New("not found") }
+func (m *removeMockPlatform) CommandDir() string                           { return "/mock/commands" }
+func (m *removeMockPlatform) InstallCommand(_ any, _ cli.Scope) error      { return nil }
+func (m *removeMockPlatform) UninstallCommand(_ string, _ cli.Scope) error { return nil }
+func (m *removeMockPlatform) ListCommands() ([]cli.CommandInfo, error)     { return nil, nil }
+func (m *removeMockPlatform) GetCommand(_ string) (any, error)             { return nil, errors.New("not found") }
 
 // MCP methods
-func (m *removeMockPlatform) MCPConfigPath() string           { return "/mock/mcp.json" }
-func (m *removeMockPlatform) AddMCP(_ any) error              { return nil }
-func (m *removeMockPlatform) RemoveMCP(_ string) error        { return nil }
-func (m *removeMockPlatform) ListMCP() ([]cli.MCPInfo, error) { return nil, nil }
-func (m *removeMockPlatform) GetMCP(_ string) (any, error)    { return nil, errors.New("not found") }
-func (m *removeMockPlatform) EnableMCP(_ string) error        { return nil }
-func (m *removeMockPlatform) DisableMCP(_ string) error       { return nil }
+func (m *removeMockPlatform) MCPConfigPath() string                 { return "/mock/mcp.json" }
+func (m *removeMockPlatform) AddMCP(_ any, _ cli.Scope) error       { return nil }
+func (m *removeMockPlatform) RemoveMCP(_ string, _ cli.Scope) error { return nil }
+func (m *removeMockPlatform) ListMCP() ([]cli.MCPInfo, error)       { return nil, nil }
+func (m *removeMockPlatform) GetMCP(_ string) (any, error)          { return nil, errors.New("not found") }
+func (m *removeMockPlatform) EnableMCP(_ string) error              { return nil }
+func (m *removeMockPlatform) DisableMCP(_ string) error             { return nil }
 
 // Agent methods
 func (m *removeMockPlatform) AgentDir() string { return "/mock/agents" }
 
-func (m *removeMockPlatform) InstallAgent(_ any) error { return nil }
+func (m *removeMockPlatform) InstallAgent(_ any, _ cli.Scope) error { return nil }
 
-func (m *removeMockPlatform) UninstallAgent(name string) error {
+func (m *removeMockPlatform) UninstallAgent(name string, _ cli.Scope) error {
 	m.uninstallName = name
 	if m.uninstallErr != nil {
 		return m.uninstallErr
