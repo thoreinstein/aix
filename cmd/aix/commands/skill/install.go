@@ -252,31 +252,8 @@ func installFromRepo(name string, matches []resource.Resource) error {
 		selected = choice
 	}
 
-	// Copy from cache to temp directory
-	// For directory resources, tempDir is the resource subdirectory (e.g., /tmp/aix-install-xyz/implement/)
-	// We need to clean up the parent temp directory
-	tempDir, err := resource.CopyToTemp(selected)
-	if err != nil {
-		return errors.Wrap(err, "copying from repository cache")
-	}
-	defer func() {
-		// For directory resources, tempDir is a subdirectory; clean up the parent
-		// For flat files, tempDir is the temp directory itself
-		parentDir := filepath.Dir(tempDir)
-		if strings.Contains(filepath.Base(parentDir), "aix-install-") {
-			if removeErr := os.RemoveAll(parentDir); removeErr != nil {
-				fmt.Fprintf(os.Stderr, "Warning: failed to clean up temp dir: %v\n", removeErr)
-			}
-		} else {
-			// Flat file case: tempDir is the temp directory
-			if removeErr := os.RemoveAll(tempDir); removeErr != nil {
-				fmt.Fprintf(os.Stderr, "Warning: failed to clean up temp dir: %v\n", removeErr)
-			}
-		}
-	}()
-
 	fmt.Printf("Installing from repository: %s\n", selected.RepoName)
-	return installFromLocal(tempDir)
+	return installFromLocal(selected.SourcePath())
 }
 
 // installFromGit clones a git repository and installs the skill from it.
