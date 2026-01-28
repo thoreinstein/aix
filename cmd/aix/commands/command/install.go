@@ -43,6 +43,7 @@ func init() {
 		"treat argument as a file path instead of searching repos")
 	installCmd.Flags().StringVar(&installAllFromRepo, "all-from-repo", "",
 		"install all commands from a specific repository")
+	flags.AddScopeFlag(installCmd)
 	Cmd.AddCommand(installCmd)
 
 	installer = install.NewInstaller(resource.TypeCommand, "command", installFromLocal)
@@ -64,7 +65,7 @@ If the command exists in multiple repositories, you will be prompted to select o
 Use --file to skip repo search and treat the argument as a file path.
 
 For git URLs, the repository is cloned to a temporary directory, the command
-is installed, and the temporary directory is cleaned up.`,
+ is installed, and the temporary directory is cleaned up.`,
 	Example: `  # Install by name from configured repos
   aix command install review
 
@@ -108,8 +109,14 @@ is installed, and the temporary directory is cleaned up.`,
 }
 
 func runInstall(_ *cobra.Command, args []string) error {
+	// Determine configuration scope
+	scope, err := cli.DetermineScope(flags.GetScopeFlag())
+	if err != nil {
+		return fmt.Errorf("determining configuration scope: %w", err)
+	}
+
 	if installAllFromRepo != "" {
-		if err := installer.InstallAllFromRepo(installAllFromRepo); err != nil {
+		if err := installer.InstallAllFromRepo(installAllFromRepo, scope); err != nil {
 			return errors.Wrap(err, "installing all from repo")
 		}
 		return nil
@@ -120,23 +127,23 @@ func runInstall(_ *cobra.Command, args []string) error {
 	// If --file flag is set, treat argument as file path or URL (old behavior)
 	if installFile {
 		if git.IsURL(source) {
-			if err := installer.InstallFromGit(source); err != nil {
+			if err := installer.InstallFromGit(source, scope); err != nil {
 				return errors.Wrap(err, "installing from git")
 			}
 			return nil
 		}
-		return installFromLocal(source)
+		return installFromLocal(source, scope)
 	}
 
 	// If source is clearly a path or URL, use direct install
 	if git.IsURL(source) || install.LooksLikePath(source) {
 		if git.IsURL(source) {
-			if err := installer.InstallFromGit(source); err != nil {
+			if err := installer.InstallFromGit(source, scope); err != nil {
 				return errors.Wrap(err, "installing from git")
 			}
 			return nil
 		}
-		return installFromLocal(source)
+		return installFromLocal(source, scope)
 	}
 
 	// Try repo lookup first
@@ -148,7 +155,7 @@ func runInstall(_ *cobra.Command, args []string) error {
 		return errors.Wrap(err, "searching repositories")
 	}
 	if len(matches) > 0 {
-		if err := installer.InstallFromRepo(source, matches); err != nil {
+		if err := installer.InstallFromRepo(source, matches, scope); err != nil {
 			return errors.Wrap(err, "installing from repo")
 		}
 		return nil
@@ -163,14 +170,14 @@ func runInstall(_ *cobra.Command, args []string) error {
 
 	// Check if it's a local path that exists
 	if _, err := os.Stat(source); err == nil {
-		return installFromLocal(source)
+		return installFromLocal(source, scope)
 	}
 
 	return errors.Newf("command %q not found in any configured repository", source)
 }
 
 // installFromLocal installs a command from a local file or directory.
-func installFromLocal(source string) error {
+func installFromLocal(source string, scope cli.Scope) error {
 	// Resolve to absolute path for consistent error messages
 	absPath, err := filepath.Abs(source)
 	if err != nil {
@@ -251,7 +258,7 @@ func installFromLocal(source string) error {
 	// Check for existing commands (unless --force)
 	if !installForce {
 		for _, plat := range platforms {
-			if _, err := plat.GetCommand((*cmd).Name); err == nil {
+			if _, err := plat.GetCommand((*cmd).Name, cli.ScopeDefault); err == nil {
 				return errors.Newf("command %q already exists on %s (use --force to overwrite)",
 					(*cmd).Name, plat.DisplayName())
 			}
@@ -271,7 +278,7 @@ func installFromLocal(source string) error {
 		// Convert command to platform-specific type
 		platformCmd := convertForPlatform(*cmd, plat.Name())
 
-		if err := plat.InstallCommand(platformCmd, cli.ScopeUser); err != nil {
+		if err := plat.InstallCommand(platformCmd, scope); err != nil {
 			fmt.Println("failed")
 			return errors.Wrapf(err, "failed to install to %s", plat.DisplayName())
 		}

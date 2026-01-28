@@ -90,18 +90,20 @@ func runListWithWriter(w io.Writer) error {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
+	scope := cli.ParseScope(flags.GetScopeFlag())
+
 	if listJSON {
-		return outputJSON(w, platforms)
+		return outputJSON(w, platforms, scope)
 	}
-	return outputTabular(w, platforms)
+	return outputTabular(w, platforms, scope)
 }
 
 // outputJSON outputs MCP servers in JSON format.
-func outputJSON(w io.Writer, platforms []cli.Platform) error {
+func outputJSON(w io.Writer, platforms []cli.Platform, scope cli.Scope) error {
 	output := make([]listPlatformOutput, 0, len(platforms))
 
 	for _, p := range platforms {
-		servers, err := p.ListMCP()
+		servers, err := p.ListMCP(scope)
 		if err != nil {
 			return errors.Wrapf(err, "listing MCP servers for %s", p.Name())
 		}
@@ -129,11 +131,11 @@ func outputJSON(w io.Writer, platforms []cli.Platform) error {
 }
 
 // outputTabular outputs MCP servers in tabular format grouped by platform.
-func outputTabular(w io.Writer, platforms []cli.Platform) error {
+func outputTabular(w io.Writer, platforms []cli.Platform, scope cli.Scope) error {
 	hasServers := false
 
 	for i, p := range platforms {
-		servers, err := p.ListMCP()
+		servers, err := p.ListMCP(scope)
 		if err != nil {
 			return errors.Wrapf(err, "listing MCP servers for %s", p.Name())
 		}

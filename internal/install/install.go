@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/thoreinstein/aix/internal/cli"
 	cliprompt "github.com/thoreinstein/aix/internal/cli/prompt"
 	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/errors"
@@ -13,7 +14,7 @@ import (
 )
 
 // LocalInstaller is a function that installs a resource from a local path.
-type LocalInstaller func(sourcePath string) error
+type LocalInstaller func(sourcePath string, scope cli.Scope) error
 
 // Installer handles shared logic for installing resources from repositories.
 type Installer struct {
@@ -32,7 +33,7 @@ func NewInstaller(t resource.ResourceType, name string, local LocalInstaller) *I
 }
 
 // InstallFromRepo installs a resource from a list of matches (usually from repo lookup).
-func (i *Installer) InstallFromRepo(name string, matches []resource.Resource) error {
+func (i *Installer) InstallFromRepo(name string, matches []resource.Resource, scope cli.Scope) error {
 	var selected *resource.Resource
 
 	if len(matches) == 1 {
@@ -47,11 +48,11 @@ func (i *Installer) InstallFromRepo(name string, matches []resource.Resource) er
 	}
 
 	fmt.Printf("Installing from repository: %s\n", selected.RepoName)
-	return i.localInstall(selected.SourcePath())
+	return i.localInstall(selected.SourcePath(), scope)
 }
 
 // InstallAllFromRepo installs all resources of the configured type from a specific repository.
-func (i *Installer) InstallAllFromRepo(repoName string) error {
+func (i *Installer) InstallAllFromRepo(repoName string, scope cli.Scope) error {
 	// 1. Get repo config
 	configPath := config.DefaultConfigPath()
 	mgr := repo.NewManager(configPath)
@@ -89,7 +90,7 @@ func (i *Installer) InstallAllFromRepo(repoName string) error {
 		fmt.Printf("\nInstalling %s...\n", res.Name)
 
 		// Create a synthetic match list (size 1) for InstallFromRepo logic
-		if err := i.InstallFromRepo(res.Name, []resource.Resource{res}); err != nil {
+		if err := i.InstallFromRepo(res.Name, []resource.Resource{res}, scope); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to install %s: %v\n", res.Name, err)
 		} else {
 			successCount++
@@ -106,7 +107,7 @@ func (i *Installer) InstallAllFromRepo(repoName string) error {
 }
 
 // InstallFromGit clones a git repository and installs the resource from it.
-func (i *Installer) InstallFromGit(url string) error {
+func (i *Installer) InstallFromGit(url string, scope cli.Scope) error {
 	fmt.Println("Cloning repository...")
 
 	// Create temp directory for clone
@@ -126,5 +127,5 @@ func (i *Installer) InstallFromGit(url string) error {
 		return errors.Wrap(err, "cloning repository")
 	}
 
-	return i.localInstall(tempDir)
+	return i.localInstall(tempDir, scope)
 }

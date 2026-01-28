@@ -18,6 +18,7 @@ var listJSON bool
 
 func init() {
 	listCmd.Flags().BoolVar(&listJSON, "json", false, "Output in JSON format")
+	flags.AddScopeFlag(listCmd)
 	Cmd.AddCommand(listCmd)
 }
 
@@ -61,18 +62,20 @@ func runListWithWriter(w io.Writer) error {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
+	scope := cli.ParseScope(flags.GetScopeFlag())
+
 	if listJSON {
-		return outputListJSON(w, platforms)
+		return outputListJSON(w, platforms, scope)
 	}
-	return outputListTabular(w, platforms)
+	return outputListTabular(w, platforms, scope)
 }
 
 // outputListJSON outputs agents in JSON format.
-func outputListJSON(w io.Writer, platforms []cli.Platform) error {
+func outputListJSON(w io.Writer, platforms []cli.Platform, scope cli.Scope) error {
 	output := make(listOutput)
 
 	for _, p := range platforms {
-		agents, err := p.ListAgents()
+		agents, err := p.ListAgents(scope)
 		if err != nil {
 			return fmt.Errorf("listing agents for %s: %w", p.Name(), err)
 		}
@@ -102,11 +105,11 @@ const (
 )
 
 // outputListTabular outputs agents in tabular format grouped by platform.
-func outputListTabular(w io.Writer, platforms []cli.Platform) error {
+func outputListTabular(w io.Writer, platforms []cli.Platform, scope cli.Scope) error {
 	hasAgents := false
 
 	for i, p := range platforms {
-		agents, err := p.ListAgents()
+		agents, err := p.ListAgents(scope)
 		if err != nil {
 			return fmt.Errorf("listing agents for %s: %w", p.Name(), err)
 		}

@@ -32,8 +32,9 @@ aix agent list [flags]
 ### Options
 
 ```
-  -h, --help   help for list
-      --json   Output in JSON format
+  -h, --help           help for list
+      --json           Output in JSON format
+      --scope string   configuration scope (user, project, local)
 ```
 
 ### Options inherited from parent commands

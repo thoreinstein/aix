@@ -382,7 +382,7 @@ type showMockPlatform struct {
 	agentErr error
 }
 
-func (m *showMockPlatform) GetAgent(_ string) (any, error) {
+func (m *showMockPlatform) GetAgent(_ string, _ cli.Scope) (any, error) {
 	if m.agentErr != nil {
 		return nil, m.agentErr
 	}
@@ -573,7 +573,7 @@ func TestShowErrorHandling(t *testing.T) {
 			var firstErr error
 
 			for _, p := range tt.platforms {
-				_, err := p.GetAgent("test-agent")
+				_, err := p.GetAgent("test-agent", cli.ScopeDefault)
 				if err != nil {
 					if errors.Is(err, claude.ErrAgentNotFound) ||
 						errors.Is(err, opencode.ErrAgentNotFound) {

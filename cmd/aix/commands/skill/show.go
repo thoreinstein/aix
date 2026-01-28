@@ -83,12 +83,14 @@ func runShow(_ *cobra.Command, args []string) error {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
+	scope := cli.ParseScope(flags.GetScopeFlag())
+
 	// Collect skill info from all platforms where it exists
 	var detail *showDetail
 	installations := make([]installLocation, 0, len(platforms))
 
 	for _, p := range platforms {
-		skillAny, err := p.GetSkill(name)
+		skillAny, err := p.GetSkill(name, scope)
 		if err != nil {
 			// Skill not found on this platform, continue to next
 			continue

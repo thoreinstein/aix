@@ -35,6 +35,7 @@ func init() {
 		"treat argument as a file path instead of searching repos")
 	installCmd.Flags().StringVar(&installAllFromRepo, "all-from-repo", "",
 		"install all MCP servers from a specific repository")
+	flags.AddScopeFlag(installCmd)
 	Cmd.AddCommand(installCmd)
 
 	installer = install.NewInstaller(resource.TypeMCP, "MCP server", installFromLocal)
@@ -93,8 +94,14 @@ are discovered in the mcp/ directory, and you select which to install.`,
 var errInstallFailed = errors.New("installation failed")
 
 func runInstall(_ *cobra.Command, args []string) error {
+	// Determine configuration scope
+	scope, err := cli.DetermineScope(flags.GetScopeFlag())
+	if err != nil {
+		return fmt.Errorf("determining configuration scope: %w", err)
+	}
+
 	if installAllFromRepo != "" {
-		if err := installer.InstallAllFromRepo(installAllFromRepo); err != nil {
+		if err := installer.InstallAllFromRepo(installAllFromRepo, scope); err != nil {
 			return errors.Wrap(err, "installing all from repo")
 		}
 		return nil
@@ -105,17 +112,17 @@ func runInstall(_ *cobra.Command, args []string) error {
 	// If --file flag is set, treat argument as file path or URL (old behavior)
 	if installFile {
 		if git.IsURL(source) {
-			return installFromGit(source)
+			return installFromGit(source, scope)
 		}
-		return installFromLocal(source)
+		return installFromLocal(source, scope)
 	}
 
 	// If source is clearly a path or URL, use direct install
 	if git.IsURL(source) || install.LooksLikePath(source) {
 		if git.IsURL(source) {
-			return installFromGit(source)
+			return installFromGit(source, scope)
 		}
-		return installFromLocal(source)
+		return installFromLocal(source, scope)
 	}
 
 	// Try repo lookup first
@@ -128,7 +135,7 @@ func runInstall(_ *cobra.Command, args []string) error {
 	}
 
 	if len(matches) > 0 {
-		if err := installer.InstallFromRepo(source, matches); err != nil {
+		if err := installer.InstallFromRepo(source, matches, scope); err != nil {
 			return errors.Wrap(err, "installing from repo")
 		}
 		return nil
@@ -143,14 +150,14 @@ func runInstall(_ *cobra.Command, args []string) error {
 
 	// Check if it's a local path that exists
 	if _, err := os.Stat(source); err == nil {
-		return installFromLocal(source)
+		return installFromLocal(source, scope)
 	}
 
 	return errors.Newf("MCP server %q not found in any configured repository", source)
 }
 
 // installFromGit clones a git repository and installs MCP servers from it.
-func installFromGit(url string) error {
+func installFromGit(url string, scope cli.Scope) error {
 	fmt.Println("Cloning repository...")
 
 	// Create temp directory for clone
@@ -197,7 +204,7 @@ func installFromGit(url string) error {
 
 	// If single file, install it directly
 	if len(jsonFiles) == 1 {
-		return installFromLocal(jsonFiles[0])
+		return installFromLocal(jsonFiles[0], scope)
 	}
 
 	// Multiple files - prompt user to select
@@ -212,11 +219,11 @@ func installFromGit(url string) error {
 		return errors.New("invalid selection")
 	}
 
-	return installFromLocal(jsonFiles[choice-1])
+	return installFromLocal(jsonFiles[choice-1], scope)
 }
 
 // installFromLocal installs an MCP server from a local JSON file.
-func installFromLocal(serverPath string) error {
+func installFromLocal(serverPath string, scope cli.Scope) error {
 	// Resolve to absolute path for consistent error messages
 	absPath, err := filepath.Abs(serverPath)
 	if err != nil {
@@ -292,7 +299,7 @@ func installFromLocal(serverPath string) error {
 	// Check for existing servers (unless --force)
 	if !installForce {
 		for _, plat := range platforms {
-			if _, err := plat.GetMCP(server.Name); err == nil {
+			if _, err := plat.GetMCP(server.Name, cli.ScopeDefault); err == nil {
 				return errors.Newf("MCP server %q already exists on %s (use --force to overwrite)",
 					server.Name, plat.DisplayName())
 			}
@@ -324,7 +331,7 @@ func installFromLocal(serverPath string) error {
 		mcpAddPlatforms = server.Platforms
 
 		// Use the existing addMCPToPlatform function
-		if err := addMCPToPlatform(plat, server.Name, server.Command, server.Args, transport, server.Env, server.Headers); err != nil {
+		if err := addMCPToPlatform(plat, server.Name, server.Command, server.Args, transport, server.Env, server.Headers, scope); err != nil {
 			fmt.Println("failed")
 			return errors.Wrapf(err, "failed to install to %s", plat.DisplayName())
 		}

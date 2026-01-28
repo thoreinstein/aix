@@ -75,12 +75,14 @@ func runShowWithWriter(name string, w io.Writer) error {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
+	scope := cli.ParseScope(flags.GetScopeFlag())
+
 	// Collect agent info from all platforms where it exists
 	var detail *showDetail
 	installations := make([]installLocation, 0, len(platforms))
 
 	for _, p := range platforms {
-		agentAny, err := p.GetAgent(name)
+		agentAny, err := p.GetAgent(name, scope)
 		if err != nil {
 			// Agent not found on this platform is expected - try next platform
 			if errors.Is(err, claude.ErrAgentNotFound) || errors.Is(err, opencode.ErrAgentNotFound) {

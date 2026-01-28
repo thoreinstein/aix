@@ -55,6 +55,7 @@ aix mcp add [name] [command] [args...] [flags]
       --headers strings    HTTP headers for SSE auth in KEY=VALUE format (repeatable)
   -h, --help               help for add
       --platform strings   restrict server to specific platform(s): darwin, linux, windows (repeatable)
+      --scope string       configuration scope (user, project, local)
       --transport string   explicit transport type: stdio, sse
       --url string         remote server endpoint for SSE transport
 ```

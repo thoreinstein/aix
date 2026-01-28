@@ -27,6 +27,7 @@ var listJSON bool
 
 func init() {
 	listCmd.Flags().BoolVar(&listJSON, "json", false, "Output in JSON format")
+	flags.AddScopeFlag(listCmd)
 	Cmd.AddCommand(listCmd)
 }
 
@@ -73,18 +74,20 @@ func runListWithWriter(w io.Writer) error {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
+	scope := cli.ParseScope(flags.GetScopeFlag())
+
 	if listJSON {
-		return outputJSON(w, platforms)
+		return outputJSON(w, platforms, scope)
 	}
-	return outputTabular(w, platforms)
+	return outputTabular(w, platforms, scope)
 }
 
 // outputJSON outputs commands in JSON format.
-func outputJSON(w io.Writer, platforms []cli.Platform) error {
+func outputJSON(w io.Writer, platforms []cli.Platform, scope cli.Scope) error {
 	output := make(listOutput)
 
 	for _, p := range platforms {
-		commands, err := p.ListCommands()
+		commands, err := p.ListCommands(scope)
 		if err != nil {
 			return errors.Wrapf(err, "listing commands for %s", p.Name())
 		}
@@ -105,11 +108,11 @@ func outputJSON(w io.Writer, platforms []cli.Platform) error {
 }
 
 // outputTabular outputs commands in tabular format grouped by platform.
-func outputTabular(w io.Writer, platforms []cli.Platform) error {
+func outputTabular(w io.Writer, platforms []cli.Platform, scope cli.Scope) error {
 	hasCommands := false
 
 	for i, p := range platforms {
-		commands, err := p.ListCommands()
+		commands, err := p.ListCommands(scope)
 		if err != nil {
 			return errors.Wrapf(err, "listing commands for %s", p.Name())
 		}

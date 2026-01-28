@@ -2,7 +2,13 @@
 package cli
 
 import (
+	"bufio"
+	"fmt"
+	"os"
+	"os/exec"
 	"strings"
+
+	"golang.org/x/term"
 
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/paths"
@@ -68,8 +74,11 @@ type AgentInfo struct {
 type Scope int
 
 const (
+	// ScopeDefault indicates that the platform should use its default behavior
+	// (usually merged view for listing, or precedence-based for getting).
+	ScopeDefault Scope = iota
 	// ScopeUser targets the user's global home directory configuration.
-	ScopeUser Scope = iota
+	ScopeUser
 	// ScopeProject targets the project/repository configuration (typically committed).
 	ScopeProject
 	// ScopeLocal targets local overrides within a project (typically gitignored).
@@ -80,6 +89,8 @@ const (
 
 func (s Scope) String() string {
 	switch s {
+	case ScopeDefault:
+		return "default"
 	case ScopeUser:
 		return "user"
 	case ScopeProject:
@@ -89,11 +100,11 @@ func (s Scope) String() string {
 	case ScopeManaged:
 		return "managed"
 	default:
-		return "user"
+		return "default"
 	}
 }
 
-// ParseScope converts a string to a Scope. Returns ScopeUser as default.
+// ParseScope converts a string to a Scope. Returns ScopeDefault if empty or invalid.
 func ParseScope(s string) Scope {
 	switch strings.ToLower(s) {
 	case "user":
@@ -105,7 +116,7 @@ func ParseScope(s string) Scope {
 	case "managed":
 		return ScopeManaged
 	default:
-		return ScopeUser
+		return ScopeDefault
 	}
 }
 
@@ -132,11 +143,11 @@ type Platform interface {
 	UninstallSkill(name string, scope Scope) error
 
 	// ListSkills returns information about all installed skills.
-	ListSkills() ([]SkillInfo, error)
+	ListSkills(scope Scope) ([]SkillInfo, error)
 
 	// GetSkill retrieves a skill by name.
 	// Returns the platform-specific skill type.
-	GetSkill(name string) (any, error)
+	GetSkill(name string, scope Scope) (any, error)
 
 	// CommandDir returns the commands directory for the platform.
 	CommandDir() string
@@ -149,18 +160,18 @@ type Platform interface {
 	UninstallCommand(name string, scope Scope) error
 
 	// ListCommands returns information about all installed commands.
-	ListCommands() ([]CommandInfo, error)
+	ListCommands(scope Scope) ([]CommandInfo, error)
 
 	// GetCommand retrieves a command by name.
 	// Returns the platform-specific command type.
-	GetCommand(name string) (any, error)
+	GetCommand(name string, scope Scope) (any, error)
 
 	// MCP configuration
 	MCPConfigPath() string
 	AddMCP(server any, scope Scope) error
 	RemoveMCP(name string, scope Scope) error
-	ListMCP() ([]MCPInfo, error)
-	GetMCP(name string) (any, error)
+	ListMCP(scope Scope) ([]MCPInfo, error)
+	GetMCP(name string, scope Scope) (any, error)
 	EnableMCP(name string) error
 	DisableMCP(name string) error
 
@@ -168,8 +179,8 @@ type Platform interface {
 	AgentDir() string
 	InstallAgent(agent any, scope Scope) error
 	UninstallAgent(name string, scope Scope) error
-	ListAgents() ([]AgentInfo, error)
-	GetAgent(name string) (any, error)
+	ListAgents(scope Scope) ([]AgentInfo, error)
+	GetAgent(name string, scope Scope) (any, error)
 
 	// Backup configuration
 	// BackupPaths returns all config files/directories that should be backed up.
@@ -233,9 +244,8 @@ func (a *claudeAdapter) UninstallSkill(name string, scope Scope) error {
 	// TODO: implement scoped uninstall in Claude platform
 	return errors.Wrap(a.claude.UninstallSkill(name), "uninstalling skill from Claude")
 }
-}
 
-func (a *claudeAdapter) ListSkills() ([]SkillInfo, error) {
+func (a *claudeAdapter) ListSkills(scope Scope) ([]SkillInfo, error) {
 	skills, err := a.claude.ListSkills()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Claude skills")
@@ -247,7 +257,7 @@ func (a *claudeAdapter) ListSkills() ([]SkillInfo, error) {
 	return infos, nil
 }
 
-func (a *claudeAdapter) GetSkill(name string) (any, error) {
+func (a *claudeAdapter) GetSkill(name string, scope Scope) (any, error) {
 	s, err := a.claude.GetSkill(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Claude skill")
@@ -268,9 +278,8 @@ func (a *claudeAdapter) UninstallCommand(name string, scope Scope) error {
 	// TODO: implement scoped uninstall in Claude platform
 	return errors.Wrap(a.claude.UninstallCommand(name), "uninstalling command from Claude")
 }
-}
 
-func (a *claudeAdapter) ListCommands() ([]CommandInfo, error) {
+func (a *claudeAdapter) ListCommands(scope Scope) ([]CommandInfo, error) {
 	commands, err := a.claude.ListCommands()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Claude commands")
@@ -282,7 +291,7 @@ func (a *claudeAdapter) ListCommands() ([]CommandInfo, error) {
 	return infos, nil
 }
 
-func (a *claudeAdapter) GetCommand(name string) (any, error) {
+func (a *claudeAdapter) GetCommand(name string, scope Scope) (any, error) {
 	c, err := a.claude.GetCommand(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Claude command")
@@ -303,9 +312,8 @@ func (a *claudeAdapter) RemoveMCP(name string, scope Scope) error {
 	// TODO: implement scoped remove in Claude platform
 	return errors.Wrap(a.claude.RemoveMCP(name), "removing MCP server from Claude")
 }
-}
 
-func (a *claudeAdapter) ListMCP() ([]MCPInfo, error) {
+func (a *claudeAdapter) ListMCP(scope Scope) ([]MCPInfo, error) {
 	servers, err := a.claude.ListMCP()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Claude MCP servers")
@@ -324,7 +332,7 @@ func (a *claudeAdapter) ListMCP() ([]MCPInfo, error) {
 	return infos, nil
 }
 
-func (a *claudeAdapter) GetMCP(name string) (any, error) {
+func (a *claudeAdapter) GetMCP(name string, scope Scope) (any, error) {
 	s, err := a.claude.GetMCP(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Claude MCP server")
@@ -353,9 +361,8 @@ func (a *claudeAdapter) UninstallAgent(name string, scope Scope) error {
 	// TODO: implement scoped uninstall in Claude platform
 	return errors.Wrap(a.claude.UninstallAgent(name), "uninstalling agent from Claude")
 }
-}
 
-func (a *claudeAdapter) ListAgents() ([]AgentInfo, error) {
+func (a *claudeAdapter) ListAgents(scope Scope) ([]AgentInfo, error) {
 	agents, err := a.claude.ListAgents()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Claude agents")
@@ -367,7 +374,7 @@ func (a *claudeAdapter) ListAgents() ([]AgentInfo, error) {
 	return infos, nil
 }
 
-func (a *claudeAdapter) GetAgent(name string) (any, error) {
+func (a *claudeAdapter) GetAgent(name string, scope Scope) (any, error) {
 	ag, err := a.claude.GetAgent(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Claude agent")
@@ -400,10 +407,10 @@ func (a *opencodeAdapter) InstallSkill(skill any, scope Scope) error {
 func (a *opencodeAdapter) UninstallSkill(name string, scope Scope) error {
 	return errors.Wrap(a.opencode.UninstallSkill(name), "uninstalling skill from OpenCode")
 }
-}
 
-func (a *opencodeAdapter) ListSkills() ([]SkillInfo, error) {
+func (a *opencodeAdapter) ListSkills(scope Scope) ([]SkillInfo, error) {
 	skills, err := a.opencode.ListSkills()
+
 	if err != nil {
 		return nil, errors.Wrap(err, "listing OpenCode skills")
 	}
@@ -414,7 +421,7 @@ func (a *opencodeAdapter) ListSkills() ([]SkillInfo, error) {
 	return infos, nil
 }
 
-func (a *opencodeAdapter) GetSkill(name string) (any, error) {
+func (a *opencodeAdapter) GetSkill(name string, scope Scope) (any, error) {
 	s, err := a.opencode.GetSkill(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting OpenCode skill")
@@ -433,9 +440,8 @@ func (a *opencodeAdapter) InstallCommand(cmd any, scope Scope) error {
 func (a *opencodeAdapter) UninstallCommand(name string, scope Scope) error {
 	return errors.Wrap(a.opencode.UninstallCommand(name), "uninstalling command from OpenCode")
 }
-}
 
-func (a *opencodeAdapter) ListCommands() ([]CommandInfo, error) {
+func (a *opencodeAdapter) ListCommands(scope Scope) ([]CommandInfo, error) {
 	commands, err := a.opencode.ListCommands()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing OpenCode commands")
@@ -447,7 +453,7 @@ func (a *opencodeAdapter) ListCommands() ([]CommandInfo, error) {
 	return infos, nil
 }
 
-func (a *opencodeAdapter) GetCommand(name string) (any, error) {
+func (a *opencodeAdapter) GetCommand(name string, scope Scope) (any, error) {
 	c, err := a.opencode.GetCommand(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting OpenCode command")
@@ -466,9 +472,8 @@ func (a *opencodeAdapter) AddMCP(server any, scope Scope) error {
 func (a *opencodeAdapter) RemoveMCP(name string, scope Scope) error {
 	return errors.Wrap(a.opencode.RemoveMCP(name), "removing MCP server from OpenCode")
 }
-}
 
-func (a *opencodeAdapter) ListMCP() ([]MCPInfo, error) {
+func (a *opencodeAdapter) ListMCP(scope Scope) ([]MCPInfo, error) {
 	servers, err := a.opencode.ListMCP()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing OpenCode MCP servers")
@@ -492,7 +497,7 @@ func (a *opencodeAdapter) ListMCP() ([]MCPInfo, error) {
 	return infos, nil
 }
 
-func (a *opencodeAdapter) GetMCP(name string) (any, error) {
+func (a *opencodeAdapter) GetMCP(name string, scope Scope) (any, error) {
 	s, err := a.opencode.GetMCP(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting OpenCode MCP server")
@@ -519,9 +524,8 @@ func (a *opencodeAdapter) InstallAgent(agent any, scope Scope) error {
 func (a *opencodeAdapter) UninstallAgent(name string, scope Scope) error {
 	return errors.Wrap(a.opencode.UninstallAgent(name), "uninstalling agent from OpenCode")
 }
-}
 
-func (a *opencodeAdapter) ListAgents() ([]AgentInfo, error) {
+func (a *opencodeAdapter) ListAgents(scope Scope) ([]AgentInfo, error) {
 	agents, err := a.opencode.ListAgents()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing OpenCode agents")
@@ -533,7 +537,7 @@ func (a *opencodeAdapter) ListAgents() ([]AgentInfo, error) {
 	return infos, nil
 }
 
-func (a *opencodeAdapter) GetAgent(name string) (any, error) {
+func (a *opencodeAdapter) GetAgent(name string, scope Scope) (any, error) {
 	ag, err := a.opencode.GetAgent(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting OpenCode agent")
@@ -567,7 +571,7 @@ func (a *geminiAdapter) UninstallSkill(name string, scope Scope) error {
 	return errors.Wrap(a.gemini.UninstallSkill(name), "uninstalling skill from Gemini")
 }
 
-func (a *geminiAdapter) ListSkills() ([]SkillInfo, error) {
+func (a *geminiAdapter) ListSkills(scope Scope) ([]SkillInfo, error) {
 	skills, err := a.gemini.ListSkills()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Gemini skills")
@@ -579,7 +583,7 @@ func (a *geminiAdapter) ListSkills() ([]SkillInfo, error) {
 	return infos, nil
 }
 
-func (a *geminiAdapter) GetSkill(name string) (any, error) {
+func (a *geminiAdapter) GetSkill(name string, scope Scope) (any, error) {
 	s, err := a.gemini.GetSkill(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Gemini skill")
@@ -599,7 +603,7 @@ func (a *geminiAdapter) UninstallCommand(name string, scope Scope) error {
 	return errors.Wrap(a.gemini.UninstallCommand(name), "uninstalling command from Gemini")
 }
 
-func (a *geminiAdapter) ListCommands() ([]CommandInfo, error) {
+func (a *geminiAdapter) ListCommands(scope Scope) ([]CommandInfo, error) {
 	commands, err := a.gemini.ListCommands()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Gemini commands")
@@ -611,7 +615,7 @@ func (a *geminiAdapter) ListCommands() ([]CommandInfo, error) {
 	return infos, nil
 }
 
-func (a *geminiAdapter) GetCommand(name string) (any, error) {
+func (a *geminiAdapter) GetCommand(name string, scope Scope) (any, error) {
 	c, err := a.gemini.GetCommand(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Gemini command")
@@ -631,7 +635,7 @@ func (a *geminiAdapter) RemoveMCP(name string, scope Scope) error {
 	return errors.Wrap(a.gemini.RemoveMCP(name), "removing MCP server from Gemini")
 }
 
-func (a *geminiAdapter) ListMCP() ([]MCPInfo, error) {
+func (a *geminiAdapter) ListMCP(scope Scope) ([]MCPInfo, error) {
 	servers, err := a.gemini.ListMCP()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing Gemini MCP servers")
@@ -647,7 +651,7 @@ func (a *geminiAdapter) ListMCP() ([]MCPInfo, error) {
 	return infos, nil
 }
 
-func (a *geminiAdapter) GetMCP(name string) (any, error) {
+func (a *geminiAdapter) GetMCP(name string, scope Scope) (any, error) {
 	s, err := a.gemini.GetMCP(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting Gemini MCP server")
@@ -671,11 +675,11 @@ func (a *geminiAdapter) UninstallAgent(name string, scope Scope) error {
 	return errors.New("agents are not supported by Gemini CLI")
 }
 
-func (a *geminiAdapter) ListAgents() ([]AgentInfo, error) {
+func (a *geminiAdapter) ListAgents(scope Scope) ([]AgentInfo, error) {
 	return nil, errors.New("agents are not supported by Gemini CLI")
 }
 
-func (a *geminiAdapter) GetAgent(name string) (any, error) {
+func (a *geminiAdapter) GetAgent(name string, scope Scope) (any, error) {
 	return nil, errors.New("agents are not supported by Gemini CLI")
 }
 
@@ -755,4 +759,75 @@ func ResolvePlatforms(names []string) ([]Platform, error) {
 	}
 
 	return platforms, nil
+}
+
+// DetermineScope resolves the configuration scope based on user request,
+// environment context (Git), and interactivity.
+//
+// Precedence:
+// 1. Explicit request via flag (--scope)
+// 2. Interactive prompt (if in repo and TTY available)
+// 3. Project scope default (if in repo but no TTY)
+// 4. User scope default (if not in repo)
+func DetermineScope(requested string) (Scope, error) {
+	if requested != "" {
+		return ParseScope(requested), nil
+	}
+
+	// Default context detection
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ScopeUser, fmt.Errorf("getting cwd: %w", err) // Fallback to safe default
+	}
+
+	inRepo := IsRepo(cwd)
+
+	// If not in a repository, always default to User scope
+	if !inRepo {
+		return ScopeUser, nil
+	}
+
+	// If in a repository, check for interactivity
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		// CI/Non-interactive: default to Project scope inside a repo
+		return ScopeProject, nil
+	}
+
+	// Interactive: Prompt user to select scope
+	return promptForScope()
+}
+
+func promptForScope() (Scope, error) {
+	fmt.Println("\nTarget configuration scope?")
+	fmt.Println("  [1] Project (Shared, committed to Git)")
+	fmt.Println("  [2] User    (Personal, global)")
+	fmt.Println("  [3] Local   (Personal, this project only, gitignored)")
+	fmt.Print("Selection [1]: ")
+
+	reader := bufio.NewReader(os.Stdin)
+	choice, err := reader.ReadString('\n')
+	if err != nil {
+		return ScopeUser, fmt.Errorf("reading input: %w", err)
+	}
+
+	choice = strings.TrimSpace(choice)
+	switch choice {
+	case "1", "project", "":
+		return ScopeProject, nil
+	case "2", "user":
+		return ScopeUser, nil
+	case "3", "local":
+		return ScopeLocal, nil
+	default:
+		fmt.Printf("Invalid selection %q, defaulting to Project scope.\n", choice)
+		return ScopeProject, nil
+	}
+}
+
+// IsRepo returns true if the given path is within a git repository.
+func IsRepo(path string) bool {
+	// We use git command directly to avoid duplicating logic.
+	// This helper is used by DetermineScope.
+	cmd := exec.Command("git", "-C", path, "rev-parse", "--is-inside-work-tree")
+	return cmd.Run() == nil
 }

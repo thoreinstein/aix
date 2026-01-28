@@ -19,6 +19,7 @@ var removeForce bool
 
 func init() {
 	removeCmd.Flags().BoolVar(&removeForce, "force", false, "Skip confirmation prompt")
+	flags.AddScopeFlag(removeCmd)
 	Cmd.AddCommand(removeCmd)
 }
 
@@ -59,6 +60,12 @@ func runRemoveWithIO(args []string, w io.Writer, r io.Reader) error {
 		return errors.Wrap(err, "resolving platforms")
 	}
 
+	// Determine configuration scope
+	scope, err := cli.DetermineScope(flags.GetScopeFlag())
+	if err != nil {
+		return fmt.Errorf("determining configuration scope: %w", err)
+	}
+
 	// Find platforms that have this agent installed
 	installedOn := findPlatformsWithAgent(platforms, name)
 	if len(installedOn) == 0 {
@@ -83,7 +90,7 @@ func runRemoveWithIO(args []string, w io.Writer, r io.Reader) error {
 		}
 
 		fmt.Fprintf(w, "Removing from %s... ", p.DisplayName())
-		if err := p.UninstallAgent(name, cli.ScopeUser); err != nil {
+		if err := p.UninstallAgent(name, scope); err != nil {
 			fmt.Fprintln(w, "failed")
 			failed = append(failed, fmt.Sprintf("%s: %v", p.DisplayName(), err))
 			continue
@@ -103,7 +110,7 @@ func runRemoveWithIO(args []string, w io.Writer, r io.Reader) error {
 func findPlatformsWithAgent(platforms []cli.Platform, name string) []cli.Platform {
 	var result []cli.Platform
 	for _, p := range platforms {
-		_, err := p.GetAgent(name)
+		_, err := p.GetAgent(name, cli.ScopeDefault)
 		if err == nil {
 			result = append(result, p)
 		}

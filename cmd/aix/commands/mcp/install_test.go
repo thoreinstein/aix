@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/git"
 	"github.com/thoreinstein/aix/internal/install"
 )
@@ -110,7 +111,7 @@ func Test_isGitURL(t *testing.T) {
 }
 
 func Test_installFromLocal_FileNotFound(t *testing.T) {
-	err := installFromLocal("/nonexistent/path/to/server.json")
+	err := installFromLocal("/nonexistent/path/to/server.json", cli.ScopeUser)
 	if err == nil {
 		t.Error("expected error for nonexistent file, got nil")
 	}
@@ -133,7 +134,7 @@ func Test_installFromLocal_NotJSONFile(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(txtPath)
+	err := installFromLocal(txtPath, cli.ScopeUser)
 	if err == nil {
 		t.Error("expected error for non-JSON file extension, got nil")
 	}
@@ -154,7 +155,7 @@ func Test_installFromLocal_InvalidJSON(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	if err == nil {
 		t.Error("expected error for invalid JSON, got nil")
 	}
@@ -169,7 +170,7 @@ func Test_installFromLocal_EmptyJSON(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	if err == nil {
 		t.Error("expected error for empty JSON (missing required fields), got nil")
 	}
@@ -185,7 +186,7 @@ func Test_installFromLocal_MissingCommand(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	if err == nil {
 		t.Error("expected error for server missing command/URL, got nil")
 	}
@@ -434,7 +435,7 @@ func Test_installFromLocal_VariousJSONFormats(t *testing.T) {
 				t.Fatalf("failed to write test file: %v", err)
 			}
 
-			err := installFromLocal(jsonPath)
+			err := installFromLocal(jsonPath, cli.ScopeUser)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("installFromLocal() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -458,7 +459,7 @@ func Test_installFromLocal_FilePermissions(t *testing.T) {
 		_ = os.Chmod(jsonPath, 0o644)
 	})
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	if err == nil {
 		// On some systems (e.g., running as root), permission checks may pass
 		t.Skip("permission test requires non-root user")
@@ -474,7 +475,7 @@ func Test_installFromLocal_DirectoryInsteadOfFile(t *testing.T) {
 		t.Fatalf("failed to create test directory: %v", err)
 	}
 
-	err := installFromLocal(dirPath)
+	err := installFromLocal(dirPath, cli.ScopeUser)
 	if err == nil {
 		t.Error("expected error when path is a directory, got nil")
 	}
@@ -497,7 +498,7 @@ func Test_installFromLocal_SymlinkRejected(t *testing.T) {
 	}
 
 	// The function should reject symlinks for security
-	err := installFromLocal(symlink)
+	err := installFromLocal(symlink, cli.ScopeUser)
 	if err == nil {
 		t.Fatal("expected error due to symlink, but succeeded")
 	}
@@ -521,7 +522,7 @@ func Test_installFromLocal_ValidServerWithWarnings(t *testing.T) {
 	}
 
 	// This should pass validation (with warnings) and proceed to platform install
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Expect success or platform-related error (not validation error)
 	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass (possibly with warnings), got errInstallFailed")
@@ -540,7 +541,7 @@ func Test_installFromLocal_URLServer(t *testing.T) {
 	}
 
 	// This should pass validation and proceed to platform install
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Should not fail at validation
 	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass for valid remote server")
@@ -562,7 +563,7 @@ func Test_installFromLocal_ServerWithEnvAndHeaders(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Should not fail at validation
 	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass for server with headers and env")
@@ -583,7 +584,7 @@ func Test_installFromLocal_ServerWithPlatforms(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Should not fail at validation
 	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass for server with platform restriction")
@@ -604,7 +605,7 @@ func Test_installFromLocal_ServerWithInvalidPlatform(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Should fail validation
 	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed for invalid platform, got: %v", err)
@@ -625,7 +626,7 @@ func Test_installFromLocal_ServerWithInvalidTransport(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Should fail validation
 	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed for invalid transport, got: %v", err)
@@ -646,7 +647,7 @@ func Test_installFromLocal_ServerWithEmptyEnvKey(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Should fail validation
 	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed for empty env key, got: %v", err)
@@ -667,7 +668,7 @@ func Test_installFromLocal_ServerWithEmptyHeaderKey(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Should fail validation
 	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed for empty header key, got: %v", err)
@@ -688,7 +689,7 @@ func Test_installFromLocal_StdioTransportWithURL(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Should fail validation (stdio requires command)
 	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed for stdio without command, got: %v", err)
@@ -709,7 +710,7 @@ func Test_installFromLocal_SSETransportWithCommand(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Should fail validation (sse requires url)
 	if !errors.Is(err, errInstallFailed) {
 		t.Errorf("expected errInstallFailed for sse without url, got: %v", err)
@@ -731,7 +732,7 @@ func Test_installFromLocal_ExplicitTransportStdio(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Should not fail at validation
 	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass for valid stdio server")
@@ -752,7 +753,7 @@ func Test_installFromLocal_ExplicitTransportSSE(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Should not fail at validation
 	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass for valid sse server")
@@ -773,7 +774,7 @@ func Test_installFromLocal_DisabledServer(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := installFromLocal(jsonPath)
+	err := installFromLocal(jsonPath, cli.ScopeUser)
 	// Should not fail at validation - disabled is just a flag
 	if errors.Is(err, errInstallFailed) {
 		t.Error("expected validation to pass for disabled server")
@@ -794,7 +795,7 @@ func Test_installFromLocal_RelativePath(t *testing.T) {
 	t.Chdir(tempDir)
 
 	// Use relative path
-	err := installFromLocal("./relative.json")
+	err := installFromLocal("./relative.json", cli.ScopeUser)
 	// Should not fail at file reading
 	if err != nil && strings.Contains(err.Error(), "not found") {
 		t.Errorf("failed to read file with relative path: %v", err)

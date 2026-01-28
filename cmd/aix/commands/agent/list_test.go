@@ -17,7 +17,7 @@ type listMockPlatform struct {
 	agentErr error
 }
 
-func (m *listMockPlatform) ListAgents() ([]cli.AgentInfo, error) {
+func (m *listMockPlatform) ListAgents(_ cli.Scope) ([]cli.AgentInfo, error) {
 	if m.agentErr != nil {
 		return nil, m.agentErr
 	}
@@ -51,7 +51,7 @@ func TestOutputListTabular_EmptyState(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputListTabular(&buf, platforms)
+	err := outputListTabular(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputListTabular() error = %v", err)
 	}
@@ -86,7 +86,7 @@ func TestOutputListTabular_WithAgents(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputListTabular(&buf, platforms)
+	err := outputListTabular(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputListTabular() error = %v", err)
 	}
@@ -136,7 +136,7 @@ func TestOutputListTabular_MultiplePlatforms(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputListTabular(&buf, platforms)
+	err := outputListTabular(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputListTabular() error = %v", err)
 	}
@@ -169,7 +169,7 @@ func TestOutputListTabular_NoAgentsAcrossPlatforms(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputListTabular(&buf, platforms)
+	err := outputListTabular(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputListTabular() error = %v", err)
 	}
@@ -195,7 +195,7 @@ func TestOutputListTabular_TruncatesLongDescriptions(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputListTabular(&buf, platforms)
+	err := outputListTabular(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputListTabular() error = %v", err)
 	}
@@ -228,7 +228,7 @@ func TestOutputListJSON(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputListJSON(&buf, platforms)
+	err := outputListJSON(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputListJSON() error = %v", err)
 	}
@@ -279,7 +279,7 @@ func TestOutputListJSON_MultiplePlatforms(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputListJSON(&buf, platforms)
+	err := outputListJSON(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputListJSON() error = %v", err)
 	}
@@ -309,7 +309,7 @@ func TestOutputListJSON_EmptyAgents(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputListJSON(&buf, platforms)
+	err := outputListJSON(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputListJSON() error = %v", err)
 	}
@@ -338,7 +338,7 @@ func TestOutputListJSON_FormattedOutput(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := outputListJSON(&buf, platforms)
+	err := outputListJSON(&buf, platforms, cli.ScopeUser)
 	if err != nil {
 		t.Fatalf("outputListJSON() error = %v", err)
 	}
@@ -425,7 +425,7 @@ func TestOutputListTabular_Error(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			err := outputListTabular(&buf, tt.platforms)
+			err := outputListTabular(&buf, tt.platforms, cli.ScopeUser)
 
 			if err == nil {
 				t.Fatalf("expected error, got nil; %s", tt.description)
@@ -511,7 +511,7 @@ func TestOutputListJSON_Error(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			err := outputListJSON(&buf, tt.platforms)
+			err := outputListJSON(&buf, tt.platforms, cli.ScopeUser)
 
 			if err == nil {
 				t.Fatalf("expected error, got nil; %s", tt.description)
