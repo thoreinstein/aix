@@ -25,7 +25,7 @@ func (m *removeMockPlatform) GetMCP(name string) (any, error) {
 	return server, nil
 }
 
-func (m *removeMockPlatform) RemoveMCP(_ string) error {
+func (m *removeMockPlatform) RemoveMCP(_ string, _ cli.Scope) error {
 	m.removeCalled = true
 	return m.removeErr
 }

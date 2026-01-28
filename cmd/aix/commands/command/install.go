@@ -271,7 +271,7 @@ func installFromLocal(source string) error {
 		// Convert command to platform-specific type
 		platformCmd := convertForPlatform(*cmd, plat.Name())
 
-		if err := plat.InstallCommand(platformCmd); err != nil {
+		if err := plat.InstallCommand(platformCmd, cli.ScopeUser); err != nil {
 			fmt.Println("failed")
 			return errors.Wrapf(err, "failed to install to %s", plat.DisplayName())
 		}
