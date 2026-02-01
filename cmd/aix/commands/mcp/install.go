@@ -12,13 +12,11 @@ import (
 	"github.com/thoreinstein/aix/cmd/aix/commands/flags"
 	"github.com/thoreinstein/aix/internal/backup"
 	"github.com/thoreinstein/aix/internal/cli"
-	cliprompt "github.com/thoreinstein/aix/internal/cli/prompt"
-	"github.com/thoreinstein/aix/internal/config"
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/git"
+	"github.com/thoreinstein/aix/internal/install"
 	"github.com/thoreinstein/aix/internal/mcp"
 	mcpvalidator "github.com/thoreinstein/aix/internal/mcp/validator"
-	"github.com/thoreinstein/aix/internal/repo"
 	"github.com/thoreinstein/aix/internal/resource"
 	"github.com/thoreinstein/aix/internal/validator"
 )
@@ -27,6 +25,7 @@ var (
 	installForce       bool
 	installFile        bool
 	installAllFromRepo string
+	installer          *install.Installer
 )
 
 func init() {
@@ -37,6 +36,8 @@ func init() {
 	installCmd.Flags().StringVar(&installAllFromRepo, "all-from-repo", "",
 		"install all MCP servers from a specific repository")
 	Cmd.AddCommand(installCmd)
+
+	installer = install.NewInstaller(resource.TypeMCP, "MCP server", installFromLocal)
 }
 
 var installCmd = &cobra.Command{
@@ -93,7 +94,10 @@ var errInstallFailed = errors.New("installation failed")
 
 func runInstall(_ *cobra.Command, args []string) error {
 	if installAllFromRepo != "" {
-		return runInstallAllFromRepo(installAllFromRepo)
+		if err := installer.InstallAllFromRepo(installAllFromRepo); err != nil {
+			return errors.Wrap(err, "installing all from repo")
+		}
+		return nil
 	}
 
 	source := args[0]
@@ -107,7 +111,7 @@ func runInstall(_ *cobra.Command, args []string) error {
 	}
 
 	// If source is clearly a path or URL, use direct install
-	if git.IsURL(source) || looksLikePath(source) {
+	if git.IsURL(source) || install.LooksLikePath(source) {
 		if git.IsURL(source) {
 			return installFromGit(source)
 		}
@@ -124,11 +128,14 @@ func runInstall(_ *cobra.Command, args []string) error {
 	}
 
 	if len(matches) > 0 {
-		return installFromRepo(source, matches)
+		if err := installer.InstallFromRepo(source, matches); err != nil {
+			return errors.Wrap(err, "installing from repo")
+		}
+		return nil
 	}
 
 	// No matches in repos - check if input might be a forgotten path
-	if mightBePath(source) {
+	if install.MightBePath(source, "mcp") {
 		if _, statErr := os.Stat(source); statErr == nil {
 			return errors.Newf("MCP server %q not found in repositories, but a local file exists at that path.\nDid you mean: aix mcp install --file %s", source, source)
 		}
@@ -140,109 +147,6 @@ func runInstall(_ *cobra.Command, args []string) error {
 	}
 
 	return errors.Newf("MCP server %q not found in any configured repository", source)
-}
-
-func runInstallAllFromRepo(repoName string) error {
-	// 1. Get repo config
-	configPath := config.DefaultConfigPath()
-	mgr := repo.NewManager(configPath)
-
-	rConfig, err := mgr.Get(repoName)
-	if err != nil {
-		return errors.Wrapf(err, "getting repository %q", repoName)
-	}
-
-	// 2. Scan repo for MCP servers
-	scanner := resource.NewScanner()
-	resources, err := scanner.ScanRepo(rConfig.Path, rConfig.Name, rConfig.URL)
-	if err != nil {
-		return errors.Wrapf(err, "scanning repository %q", repoName)
-	}
-
-	// 3. Filter for MCP servers
-	var servers []resource.Resource
-	for _, res := range resources {
-		if res.Type == resource.TypeMCP {
-			servers = append(servers, res)
-		}
-	}
-
-	if len(servers) == 0 {
-		fmt.Printf("No MCP servers found in repository %q\n", repoName)
-		return nil
-	}
-
-	fmt.Printf("Found %d MCP servers in repository %q. Installing...\n", len(servers), repoName)
-
-	// 4. Install each server
-	successCount := 0
-	for _, s := range servers {
-		fmt.Printf("\nInstalling %s...\n", s.Name)
-
-		matches := []resource.Resource{s}
-		if err := installFromRepo(s.Name, matches); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to install %s: %v\n", s.Name, err)
-		} else {
-			successCount++
-		}
-	}
-
-	fmt.Printf("\nSuccessfully installed %d/%d MCP servers from %q.\n", successCount, len(servers), repoName)
-
-	if successCount < len(servers) {
-		return errors.New("some MCP servers failed to install")
-	}
-
-	return nil
-}
-
-// looksLikePath returns true if the source appears to be a file path.
-func looksLikePath(source string) bool {
-	// Starts with ./ or ../ or /
-	if strings.HasPrefix(source, "./") || strings.HasPrefix(source, "../") || strings.HasPrefix(source, "/") {
-		return true
-	}
-	// Contains path separator
-	if strings.Contains(source, string(filepath.Separator)) {
-		return true
-	}
-	// On Windows, also check for backslash
-	if filepath.Separator != '/' && strings.Contains(source, "/") {
-		return true
-	}
-	return false
-}
-
-// mightBePath returns true if the input might be a path the user forgot the --file flag for.
-func mightBePath(s string) bool {
-	// Ends with .json extension
-	if strings.HasSuffix(strings.ToLower(s), ".json") {
-		return true
-	}
-	// Contains backslash (Windows paths, even on Unix)
-	if strings.Contains(s, "\\") {
-		return true
-	}
-	return false
-}
-
-// installFromRepo installs an MCP server from a configured repository.
-func installFromRepo(name string, matches []resource.Resource) error {
-	var selected *resource.Resource
-
-	if len(matches) == 1 {
-		selected = &matches[0]
-	} else {
-		// Multiple matches - prompt user to select
-		choice, err := cliprompt.SelectResourceDefault(name, matches)
-		if err != nil {
-			return errors.Wrap(err, "selecting resource")
-		}
-		selected = choice
-	}
-
-	fmt.Printf("Installing from repository: %s\n", selected.RepoName)
-	return installFromLocal(selected.SourcePath())
 }
 
 // installFromGit clones a git repository and installs MCP servers from it.
