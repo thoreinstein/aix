@@ -101,9 +101,9 @@ func copyDir(src, dst string) error {
 		srcPath := filepath.Join(src, entry.Name())
 		dstPath := filepath.Join(dst, entry.Name())
 
-		// Reject symlinks
+		// Reject symlinks for security (prevent traversal out of repo)
 		if entry.Type()&os.ModeSymlink != 0 {
-			continue // Skip symlinks silently or maybe warn? Skipping is safer default.
+			return fmt.Errorf("symlink found in resource (security restriction): %s", srcPath)
 		}
 
 		if entry.IsDir() {

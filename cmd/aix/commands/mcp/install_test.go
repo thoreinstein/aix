@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/thoreinstein/aix/internal/git"
@@ -837,7 +838,7 @@ func Test_installFromLocal_DirectoryInsteadOfFile(t *testing.T) {
 	}
 }
 
-func Test_installFromLocal_SymlinkToValidFile(t *testing.T) {
+func Test_installFromLocal_SymlinkRejected(t *testing.T) {
 	tempDir := t.TempDir()
 	realFile := filepath.Join(tempDir, "real.json")
 	symlink := filepath.Join(tempDir, "link.json")
@@ -853,17 +854,16 @@ func Test_installFromLocal_SymlinkToValidFile(t *testing.T) {
 		t.Skip("symlink creation not supported on this system")
 	}
 
-	// The function should be able to read through the symlink
-	// It will still fail validation due to missing platform setup,
-	// but it should get past the file reading stage
+	// The function should reject symlinks for security
 	err := installFromLocal(symlink)
-	// We expect an error due to validation/platform issues, not file reading
-	if err != nil {
-		// As long as it's not a "file not found" error, the symlink was followed
-		errMsg := err.Error()
-		if errMsg == "MCP server file not found: "+symlink {
-			t.Error("symlink was not followed")
-		}
+	if err == nil {
+		t.Fatal("expected error due to symlink, but succeeded")
+	}
+
+	// Verify error message mentions symlink and security
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "symlink") {
+		t.Errorf("expected error to mention symlink, got: %v", err)
 	}
 }
 

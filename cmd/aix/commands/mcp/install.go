@@ -278,7 +278,12 @@ func installFromGit(url string) error {
 	var jsonFiles []string
 	for _, entry := range entries {
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".json") {
-			jsonFiles = append(jsonFiles, filepath.Join(mcpDir, entry.Name()))
+			// Validate entry name contains no path separators (defense in depth)
+			name := entry.Name()
+			if filepath.Base(name) != name || strings.ContainsAny(name, `/\`) {
+				continue // Skip entries with suspicious names
+			}
+			jsonFiles = append(jsonFiles, filepath.Join(mcpDir, name))
 		}
 	}
 
@@ -314,9 +319,18 @@ func installFromLocal(serverPath string) error {
 		absPath = serverPath
 	}
 
-	// Check if file exists
-	if _, err := os.Stat(absPath); os.IsNotExist(err) {
-		return errors.Newf("MCP server file not found: %s", absPath)
+	// Check if file exists and is not a symlink (security: prevent traversal)
+	info, err := os.Lstat(absPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return errors.Newf("MCP server file not found: %s", absPath)
+		}
+		return errors.Wrapf(err, "checking file: %s", absPath)
+	}
+
+	// Reject symlinks for security (prevent traversal out of repo)
+	if info.Mode()&os.ModeSymlink != 0 {
+		return errors.Newf("MCP server file is a symlink (security restriction): %s", absPath)
 	}
 
 	// Check if it's a JSON file

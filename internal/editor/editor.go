@@ -15,10 +15,12 @@ import (
 func Open(path string) error {
 	editorEnv := detectEditor()
 
-	// Split editor command and arguments (e.g., "code -w" -> ["code", "-w"])
-	// We use a simple fields split which handles most cases.
-	// For more complex quoting, shell parsing would be needed but adds complexity/risk.
-	parts := strings.Fields(editorEnv)
+	// Split editor command and arguments, respecting quoted strings
+	// e.g., `"Visual Studio Code" --wait` -> ["Visual Studio Code", "--wait"]
+	parts, err := splitCommand(editorEnv)
+	if err != nil {
+		return fmt.Errorf("parsing editor command: %w", err)
+	}
 	if len(parts) == 0 {
 		return errors.New("no editor found")
 	}
@@ -69,4 +71,54 @@ func detectEditor() string {
 
 	// POSIX standard fallback (vi is available on all Unix systems)
 	return "vi"
+}
+
+// splitCommand splits a command string into parts, respecting quoted strings.
+// Supports both single and double quotes. Backslash escapes the next character
+// inside double quotes. Returns an error if quotes are unbalanced.
+func splitCommand(cmd string) ([]string, error) {
+	var parts []string
+	var current strings.Builder
+	var inSingleQuote, inDoubleQuote bool
+
+	for i := 0; i < len(cmd); i++ {
+		c := cmd[i]
+
+		switch {
+		case c == '\\' && inDoubleQuote && i+1 < len(cmd):
+			// Backslash escape inside double quotes
+			i++
+			current.WriteByte(cmd[i])
+
+		case c == '\'' && !inDoubleQuote:
+			inSingleQuote = !inSingleQuote
+
+		case c == '"' && !inSingleQuote:
+			inDoubleQuote = !inDoubleQuote
+
+		case (c == ' ' || c == '\t') && !inSingleQuote && !inDoubleQuote:
+			// Whitespace outside quotes - end of token
+			if current.Len() > 0 {
+				parts = append(parts, current.String())
+				current.Reset()
+			}
+
+		default:
+			current.WriteByte(c)
+		}
+	}
+
+	if inSingleQuote {
+		return nil, errors.New("unbalanced single quotes")
+	}
+	if inDoubleQuote {
+		return nil, errors.New("unbalanced double quotes")
+	}
+
+	// Don't forget the last token
+	if current.Len() > 0 {
+		parts = append(parts, current.String())
+	}
+
+	return parts, nil
 }

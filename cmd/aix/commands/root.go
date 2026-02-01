@@ -37,6 +37,9 @@ var logFile string
 // configLoadErr holds any error that occurred during config loading.
 var configLoadErr error
 
+// logFileHandle holds the log file for cleanup on exit.
+var logFileHandle *os.File
+
 func init() {
 	cobra.OnInitialize(initConfig)
 
@@ -101,6 +104,16 @@ target all detected/installed platforms.`,
 		}
 		return validatePlatformFlag(cmd, args)
 	},
+	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		// Close log file if opened
+		if logFileHandle != nil {
+			if err := logFileHandle.Close(); err != nil {
+				return errors.Wrap(err, "closing log file")
+			}
+			logFileHandle = nil
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},
@@ -151,6 +164,7 @@ func setupLogging(cmd *cobra.Command) error {
 		if err != nil {
 			return errors.NewUserError(err, "failed to open log file")
 		}
+		logFileHandle = f // Store for cleanup in PersistentPostRunE
 		// File output uses JSON format
 		handlers = append(handlers, slog.NewJSONHandler(f, &slog.HandlerOptions{
 			Level: level,

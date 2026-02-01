@@ -434,6 +434,8 @@ func generateRelPath(absPath string) string {
 }
 
 // expandHome expands ~ to the user's home directory.
+// Returns the original path unchanged if expansion fails or if the path
+// would escape the home directory via path traversal (e.g., ~/../../../etc/passwd).
 func expandHome(path string) string {
 	if !strings.HasPrefix(path, "~") {
 		return path
@@ -449,8 +451,23 @@ func expandHome(path string) string {
 	}
 
 	if strings.HasPrefix(path, "~/") {
-		return filepath.Join(home, path[2:])
+		suffix := path[2:]
+		// Reject path traversal attempts - check for ".." as a path component
+		if containsPathTraversal(suffix) {
+			return path // Return unexpanded to prevent traversal
+		}
+		return filepath.Join(home, suffix)
 	}
 
 	return path
+}
+
+// containsPathTraversal checks if a path contains ".." as a component.
+func containsPathTraversal(path string) bool {
+	for _, part := range strings.Split(filepath.ToSlash(path), "/") {
+		if part == ".." {
+			return true
+		}
+	}
+	return false
 }
