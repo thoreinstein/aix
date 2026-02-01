@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v3"
 
 	"github.com/thoreinstein/aix/internal/errors"
@@ -112,4 +113,31 @@ func AtomicWriteYAMLWithPerm(path string, v any, perm os.FileMode) (err error) {
 // The file is created with 0600 permissions.
 func AtomicWriteYAML(path string, v any) (err error) {
 	return AtomicWriteYAMLWithPerm(path, v, 0600)
+}
+
+// AtomicWriteTOMLWithPerm writes v as TOML to path atomically with specified permissions.
+// Appends a trailing newline for POSIX compliance.
+//
+// The caller is responsible for ensuring the parent directory exists.
+func AtomicWriteTOMLWithPerm(path string, v any, perm os.FileMode) error {
+	data, err := toml.Marshal(v)
+	if err != nil {
+		return errors.Wrap(err, "marshaling TOML")
+	}
+
+	// Add trailing newline for POSIX compliance
+	if len(data) > 0 && data[len(data)-1] != '\n' {
+		data = append(data, '\n')
+	}
+
+	return AtomicWriteFile(path, data, perm)
+}
+
+// AtomicWriteTOML writes v as TOML to path atomically.
+// Appends a trailing newline for POSIX compliance.
+//
+// The caller is responsible for ensuring the parent directory exists.
+// The file is created with 0600 permissions.
+func AtomicWriteTOML(path string, v any) error {
+	return AtomicWriteTOMLWithPerm(path, v, 0600)
 }
