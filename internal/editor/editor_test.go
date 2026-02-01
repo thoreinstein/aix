@@ -107,3 +107,100 @@ func TestOpen_NoEditor(t *testing.T) {
 		t.Error("expected error for non-existent editor, got nil")
 	}
 }
+
+func TestSplitCommand(t *testing.T) {
+	tests := []struct {
+		name    string
+		cmd     string
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "simple command",
+			cmd:  "vim",
+			want: []string{"vim"},
+		},
+		{
+			name: "command with arguments",
+			cmd:  "vim --wait -n",
+			want: []string{"vim", "--wait", "-n"},
+		},
+		{
+			name: "double quoted path with spaces",
+			cmd:  `"/path/to/My Editor" --wait`,
+			want: []string{"/path/to/My Editor", "--wait"},
+		},
+		{
+			name: "single quoted path with spaces",
+			cmd:  `'/path/to/My Editor' --wait`,
+			want: []string{"/path/to/My Editor", "--wait"},
+		},
+		{
+			name: "mixed quotes",
+			cmd:  `"code" '-w' --new-window`,
+			want: []string{"code", "-w", "--new-window"},
+		},
+		{
+			name: "escaped quote in double quotes",
+			cmd:  `"path with \"quote"`,
+			want: []string{`path with "quote`},
+		},
+		{
+			name: "multiple spaces between args",
+			cmd:  "vim    --wait    -n",
+			want: []string{"vim", "--wait", "-n"},
+		},
+		{
+			name: "tabs as separators",
+			cmd:  "vim\t--wait\t-n",
+			want: []string{"vim", "--wait", "-n"},
+		},
+		{
+			name:    "unbalanced double quotes",
+			cmd:     `"unbalanced`,
+			wantErr: true,
+		},
+		{
+			name:    "unbalanced single quotes",
+			cmd:     `'unbalanced`,
+			wantErr: true,
+		},
+		{
+			name: "empty string",
+			cmd:  "",
+			want: nil,
+		},
+		{
+			name: "only whitespace",
+			cmd:  "   \t  ",
+			want: nil,
+		},
+		{
+			name: "VS Code style",
+			cmd:  `"/Applications/Visual Studio Code.app/Contents/MacOS/Electron" --wait`,
+			want: []string{"/Applications/Visual Studio Code.app/Contents/MacOS/Electron", "--wait"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := splitCommand(tt.cmd)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("splitCommand() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				return
+			}
+			if len(got) != len(tt.want) {
+				t.Errorf("splitCommand() = %v (len=%d), want %v (len=%d)", got, len(got), tt.want, len(tt.want))
+				return
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("splitCommand()[%d] = %q, want %q", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}

@@ -270,24 +270,24 @@ func TestExpandHome(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"/abs/path", "/usr/abs/path"}, // Not expanded if not starting with ~
-		{"~", home},
-		{"~/file.txt", filepath.Join(home, "file.txt")},
-		{"~user/file.txt", "~user/file.txt"}, // Not supported, returns as is
+		{"/abs/path", "/abs/path"}, // Not expanded if not starting with ~
+		{"~", home},                // Just tilde
+		{"~/file.txt", filepath.Join(home, "file.txt")},         // Normal expansion
+		{"~user/file.txt", "~user/file.txt"},                    // Not supported, returns as is
+		{"~/../../../etc/passwd", "~/../../../etc/passwd"},      // Path traversal blocked
+		{"~/subdir/../file.txt", "~/subdir/../file.txt"},        // Path traversal blocked
+		{"~/..hidden", filepath.Join(home, "..hidden")},         // Filename starting with .. is OK
+		{"~/.hidden/file", filepath.Join(home, ".hidden/file")}, // Hidden directories are OK
+		{"~/..", "~/.."},                         // ".." as path component is blocked
+		{"~/foo/bar/../baz", "~/foo/bar/../baz"}, // ".." in middle is blocked
 	}
 
 	for _, tt := range tests {
-		got := expandHome(tt.input)
-		// We can't strictly compare absolute paths because of prefixing,
-		// but we can check if it starts with home when it should.
-		if tt.input == "~" || (len(tt.input) >= 2 && tt.input[:2] == "~/") {
+		t.Run(tt.input, func(t *testing.T) {
+			got := expandHome(tt.input)
 			if got != tt.expected {
 				t.Errorf("expandHome(%q) = %q, want %q", tt.input, got, tt.expected)
 			}
-		} else if tt.input == "/abs/path" {
-			if got != "/abs/path" {
-				t.Errorf("expandHome(%q) = %q, want %q", tt.input, got, tt.input)
-			}
-		}
+		})
 	}
 }

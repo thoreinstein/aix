@@ -3,6 +3,7 @@ package resource
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -40,28 +41,20 @@ func TestCopyToTemp_SymlinkTraversal(t *testing.T) {
 		Path:     "skills/test-skill",
 	}
 
-	// Copy to temp
+	// Copy to temp - should fail due to symlink
 	// We pass srcDir as cacheDir
 	tempDir, err := CopyToTempFromCache(res, srcDir)
-	if err != nil {
-		t.Fatalf("CopyToTempFromCache failed: %v", err)
+	if tempDir != "" {
+		defer os.RemoveAll(filepath.Dir(tempDir))
 	}
-	defer os.RemoveAll(filepath.Dir(tempDir))
 
-	// Verify the symlink was NOT followed or copied
-	destExploit := filepath.Join(tempDir, "exploit.txt")
-
-	// If the file exists, check content
-	if _, err := os.Stat(destExploit); err == nil {
-		content, _ := os.ReadFile(destExploit)
-		if string(content) == "sensitive data" {
-			t.Error("Symlink traversal succeeded: secret file was copied")
-		} else {
-			// It might be copied as a symlink or empty file, which is safer but strict rejection is better
-			t.Logf("Symlink copied but content differs (or is symlink)")
-		}
-	} else if !os.IsNotExist(err) {
-		t.Errorf("Unexpected error checking destination: %v", err)
+	// Expect an error due to symlink rejection
+	if err == nil {
+		t.Fatal("Expected error due to symlink, but copy succeeded")
 	}
-	// If it doesn't exist, that's what we want (symlink skipped)
+
+	// Verify error message mentions symlink and security
+	if !strings.Contains(err.Error(), "symlink") {
+		t.Errorf("Expected error to mention symlink, got: %v", err)
+	}
 }
