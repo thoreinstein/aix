@@ -1,7 +1,7 @@
 package gemini
 
 import (
-	"encoding/json"
+	"github.com/pelletier/go-toml/v2"
 
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/mcp"
@@ -19,10 +19,10 @@ func NewMCPTranslator() *MCPTranslator {
 func (t *MCPTranslator) ToCanonical(platformData []byte) (*mcp.Config, error) {
 	// Try to parse as MCPConfig (with mcp key)
 	var geminiConfig MCPConfig
-	if err := json.Unmarshal(platformData, &geminiConfig); err != nil {
+	if err := toml.Unmarshal(platformData, &geminiConfig); err != nil {
 		// If fails, try parsing as a bare servers map
 		var servers map[string]*MCPServer
-		if err := json.Unmarshal(platformData, &servers); err != nil {
+		if err := toml.Unmarshal(platformData, &servers); err != nil {
 			return nil, errors.Wrap(err, "parsing Gemini CLI MCP config")
 		}
 		geminiConfig.Servers = servers
@@ -78,7 +78,7 @@ func (t *MCPTranslator) FromCanonical(cfg *mcp.Config) ([]byte, error) {
 		geminiConfig.Servers[name] = geminiServer
 	}
 
-	data, err := json.MarshalIndent(geminiConfig, "", "  ")
+	data, err := toml.Marshal(geminiConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshaling Gemini CLI MCP config")
 	}

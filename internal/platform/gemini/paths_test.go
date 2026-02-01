@@ -74,7 +74,7 @@ func TestGeminiPaths_SubDirs(t *testing.T) {
 		{"SkillDir", p.SkillDir(), filepath.Join(base, "skills")},
 		{"CommandDir", p.CommandDir(), filepath.Join(base, "commands")},
 		{"AgentDir", p.AgentDir(), filepath.Join(base, "agents")},
-		{"MCPConfigPath", p.MCPConfigPath(), filepath.Join(base, "settings.json")},
+		{"MCPConfigPath", p.MCPConfigPath(), filepath.Join(base, "settings.toml")},
 	}
 
 	for _, tt := range tests {

@@ -1,10 +1,11 @@
 package gemini
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/pelletier/go-toml/v2"
 
 	"github.com/thoreinstein/aix/internal/mcp"
 )
@@ -14,9 +15,11 @@ func TestMCPManager(t *testing.T) {
 	paths := NewGeminiPaths(ScopeProject, tmpDir)
 	mgr := NewMCPManager(paths)
 
-	// Test settings.json preservation
+	// Test settings.toml preservation
 	configPath := paths.MCPConfigPath()
-	initialSettings := `{"other": "value", "mcp": {"servers": {}}}`
+	initialSettings := `other = "value"
+[mcp.servers]
+`
 	err := os.MkdirAll(filepath.Dir(configPath), 0o755)
 	if err != nil {
 		t.Fatal(err)
@@ -40,14 +43,14 @@ func TestMCPManager(t *testing.T) {
 			t.Fatalf("Add failed: %v", err)
 		}
 
-		// Verify settings.json preservation
+		// Verify settings.toml preservation
 		data, err := os.ReadFile(configPath)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		var raw map[string]any
-		if err := json.Unmarshal(data, &raw); err != nil {
+		if err := toml.Unmarshal(data, &raw); err != nil {
 			t.Fatalf("Failed to unmarshal settings: %v", err)
 		}
 		if raw["other"] != "value" {
@@ -93,8 +96,13 @@ func TestMCPTranslator(t *testing.T) {
 	translator := NewMCPTranslator()
 
 	t.Run("ToCanonical", func(t *testing.T) {
-		geminiJSON := `{"servers": {"myserver": {"command": "node", "enabled": true}}}`
-		config, err := translator.ToCanonical([]byte(geminiJSON))
+		geminiTOML := `
+[servers]
+  [servers.myserver]
+    command = "node"
+    enabled = true
+`
+		config, err := translator.ToCanonical([]byte(geminiTOML))
 		if err != nil {
 			t.Fatalf("ToCanonical failed: %v", err)
 		}
@@ -128,7 +136,7 @@ func TestMCPTranslator(t *testing.T) {
 		}
 
 		var geminiConfig MCPConfig
-		err = json.Unmarshal(data, &geminiConfig)
+		err = toml.Unmarshal(data, &geminiConfig)
 		if err != nil {
 			t.Fatal(err)
 		}

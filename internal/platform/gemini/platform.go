@@ -132,19 +132,41 @@ func (p *GeminiPlatform) GetCommand(name string) (*Command, error) {
 // Agent Operations
 
 func (p *GeminiPlatform) InstallAgent(a *Agent) error {
-	return errors.New("agents are not supported by Gemini CLI")
+	// Automatically enable agents in settings if not already enabled
+	if err := p.EnableAgents(); err != nil {
+		return errors.Wrap(err, "enabling agents in settings")
+	}
+	return p.agents.Install(a)
 }
 
 func (p *GeminiPlatform) UninstallAgent(name string) error {
-	return errors.New("agents are not supported by Gemini CLI")
+	return p.agents.Uninstall(name)
 }
 
 func (p *GeminiPlatform) ListAgents() ([]*Agent, error) {
-	return nil, errors.New("agents are not supported by Gemini CLI")
+	return p.agents.List()
 }
 
 func (p *GeminiPlatform) GetAgent(name string) (*Agent, error) {
-	return nil, errors.New("agents are not supported by Gemini CLI")
+	return p.agents.Get(name)
+}
+
+func (p *GeminiPlatform) EnableAgents() error {
+	settings, err := p.mcp.loadSettings()
+	if err != nil {
+		return err
+	}
+
+	if settings.Experimental == nil {
+		settings.Experimental = &ExperimentalConfig{}
+	}
+
+	if settings.Experimental.EnableAgents {
+		return nil // Already enabled
+	}
+
+	settings.Experimental.EnableAgents = true
+	return p.mcp.saveSettings(settings)
 }
 
 // MCP Operations

@@ -1,10 +1,11 @@
 package gemini
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"sort"
+
+	"github.com/pelletier/go-toml/v2"
 
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/pkg/fileutil"
@@ -147,14 +148,35 @@ func (m *MCPManager) loadSettings() (*Settings, error) {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &Settings{}, nil
+			return &Settings{
+				Other: make(map[string]any),
+			}, nil
 		}
 		return nil, errors.Wrap(err, "reading settings file")
 	}
 
-	var settings Settings
-	if err := json.Unmarshal(data, &settings); err != nil {
+	// 1. Unmarshal into raw map to preserve everything
+	var raw map[string]any
+	if err := toml.Unmarshal(data, &raw); err != nil {
 		return nil, errors.Wrap(err, "parsing settings file")
+	}
+
+	// 2. Unmarshal into struct for typed access
+	var settings Settings
+	if err := toml.Unmarshal(data, &settings); err != nil {
+		return nil, errors.Wrap(err, "parsing settings file into struct")
+	}
+
+	// 3. Store raw map
+	settings.Other = raw
+
+	// 4. Set server names from keys (lost during unmarshal because Name has toml:"-")
+	if settings.MCP != nil && settings.MCP.Servers != nil {
+		for name, server := range settings.MCP.Servers {
+			if server != nil {
+				server.Name = name
+			}
+		}
 	}
 
 	return &settings, nil
@@ -171,5 +193,24 @@ func (m *MCPManager) saveSettings(settings *Settings) error {
 		return errors.Wrapf(err, "creating directory %s", dir)
 	}
 
-	return errors.Wrap(fileutil.AtomicWriteJSON(configPath, settings), "writing settings file")
+	// Merge MCP back into Other map
+	if settings.Other == nil {
+		settings.Other = make(map[string]any)
+	}
+
+	// Update the mcp section in the raw map with the typed struct
+	if settings.MCP != nil {
+		settings.Other["mcp"] = settings.MCP
+	} else {
+		delete(settings.Other, "mcp")
+	}
+
+	// Update experimental section
+	if settings.Experimental != nil {
+		settings.Other["experimental"] = settings.Experimental
+	} else {
+		delete(settings.Other, "experimental")
+	}
+
+	return errors.Wrap(fileutil.AtomicWriteTOML(configPath, settings.Other), "writing settings file")
 }

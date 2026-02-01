@@ -80,15 +80,13 @@ func (p *GeminiPaths) AgentDir() string {
 }
 
 // MCPConfigPath returns the path to the MCP servers configuration file.
-// Returns <base>/settings.json
+// Returns <base>/settings.toml
 func (p *GeminiPaths) MCPConfigPath() string {
 	base := p.BaseDir()
 	if base == "" {
 		return ""
 	}
-	// Note: We use settings.json as per the latest requirements,
-	// although some docs may still refer to settings.toml.
-	return filepath.Join(base, "settings.json")
+	return filepath.Join(base, "settings.toml")
 }
 
 // InstructionsPath returns the path to the GEMINI.md instructions file.
@@ -141,7 +139,7 @@ func (p *GeminiPaths) CommandPath(name string) string {
 }
 
 // AgentPath returns the path to a specific agent file.
-// Returns <agents>/<name>.toml
+// Returns <agents>/<name>.md
 // Returns empty string if name is empty.
 func (p *GeminiPaths) AgentPath(name string) string {
 	if name == "" {
@@ -151,5 +149,5 @@ func (p *GeminiPaths) AgentPath(name string) string {
 	if agentDir == "" {
 		return ""
 	}
-	return filepath.Join(agentDir, name+".toml")
+	return filepath.Join(agentDir, name+".md")
 }
