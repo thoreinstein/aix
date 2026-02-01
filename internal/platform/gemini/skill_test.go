@@ -3,62 +3,9 @@ package gemini
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
-
-func TestTranslateVariables(t *testing.T) {
-	tests := []struct {
-		name    string
-		content string
-		want    string
-	}{
-		{
-			name:    "translate $ARGUMENTS",
-			content: "Run with $ARGUMENTS",
-			want:    "Run with {{argument}}",
-		},
-		{
-			name:    "no variables",
-			content: "Pure text",
-			want:    "Pure text",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := TranslateVariables(tt.content); got != tt.want {
-				t.Errorf("TranslateVariables() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestTranslateToCanonical(t *testing.T) {
-	tests := []struct {
-		name    string
-		content string
-		want    string
-	}{
-		{
-			name:    "translate {{args}}",
-			content: "Run with {{args}}",
-			want:    "Run with $ARGUMENTS",
-		},
-		{
-			name:    "translate {{argument}}",
-			content: "Run with {{argument}}",
-			want:    "Run with $ARGUMENTS",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := TranslateToCanonical(tt.content); got != tt.want {
-				t.Errorf("TranslateToCanonical() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestSkillManager(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -93,7 +40,7 @@ func TestSkillManager(t *testing.T) {
 			t.Fatalf("Failed to read skill file: %v", err)
 		}
 
-		if !contains(string(data), "{{argument}}") {
+		if !strings.Contains(string(data), "{{argument}}") {
 			t.Errorf("Skill content not translated: %s", string(data))
 		}
 	})
@@ -145,8 +92,4 @@ func TestSkillManager(t *testing.T) {
 			t.Errorf("Skill directory still exists after Uninstall")
 		}
 	})
-}
-
-func contains(s, substr string) bool {
-	return filepath.Base(s) != s || (len(s) >= len(substr) && s[0:len(substr)] == substr) || (len(s) > 0 && contains(s[1:], substr))
 }

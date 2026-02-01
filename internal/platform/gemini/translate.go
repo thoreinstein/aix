@@ -10,17 +10,20 @@ import (
 // Variables supported by Gemini CLI.
 const (
 	VarArguments = "$ARGUMENTS"
+	VarSelection = "$SELECTION"
 )
 
 // platformVars maps canonical variables to Gemini CLI format.
 var platformVars = map[string]string{
 	VarArguments: "{{argument}}",
+	VarSelection: "{{selection}}",
 }
 
 // canonicalVars maps Gemini CLI variables back to canonical format.
 var canonicalVars = map[string]string{
-	"{{argument}}": VarArguments,
-	"{{args}}":     VarArguments, // Support both for compatibility
+	"{{argument}}":  VarArguments,
+	"{{args}}":      VarArguments, // Support both for compatibility
+	"{{selection}}": VarSelection,
 }
 
 // varPattern matches variable syntax: $ followed by 2+ uppercase letters/underscores.

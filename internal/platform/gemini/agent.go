@@ -1,14 +1,14 @@
 package gemini
 
 import (
+	"bytes"
 	"io/fs"
 	"os"
 	"strings"
 
-	"github.com/pelletier/go-toml/v2"
-
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/pkg/fileutil"
+	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
 
 // Sentinel errors for agent operations.
@@ -44,37 +44,26 @@ func (m *AgentManager) List() ([]*Agent, error) {
 		return nil, errors.Wrap(err, "reading agents directory")
 	}
 
-	tomlCount := 0
+	agentCount := 0
 	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".toml") {
-			tomlCount++
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".md") {
+			agentCount++
 		}
 	}
 
-	agents := make([]*Agent, 0, tomlCount)
+	agents := make([]*Agent, 0, agentCount)
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".toml") {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
 			continue
 		}
 
-		name := strings.TrimSuffix(entry.Name(), ".toml")
-		agentPath := m.paths.AgentPath(name)
-
-		data, err := os.ReadFile(agentPath)
+		name := strings.TrimSuffix(entry.Name(), ".md")
+		agent, err := m.Get(name)
 		if err != nil {
-			return nil, errors.Wrapf(err, "reading agent file %q", name)
+			return nil, errors.Wrapf(err, "loading agent %q", name)
 		}
 
-		var agent Agent
-		if err := toml.Unmarshal(data, &agent); err != nil {
-			return nil, errors.Wrapf(err, "unmarshaling agent %q", name)
-		}
-
-		if agent.Name == "" {
-			agent.Name = name
-		}
-
-		agents = append(agents, &agent)
+		agents = append(agents, agent)
 	}
 
 	return agents, nil
@@ -99,19 +88,28 @@ func (m *AgentManager) Get(name string) (*Agent, error) {
 		return nil, errors.Wrap(err, "reading agent file")
 	}
 
-	var agent Agent
-	if err := toml.Unmarshal(data, &agent); err != nil {
-		return nil, errors.Wrap(err, "unmarshaling agent")
+	var meta struct {
+		Name        string `yaml:"name"`
+		Description string `yaml:"description"`
 	}
 
-	if agent.Name == "" {
-		agent.Name = name
+	body, err := frontmatter.Parse(bytes.NewReader(data), &meta)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing agent frontmatter")
 	}
 
-	return &agent, nil
+	if meta.Name == "" {
+		meta.Name = name
+	}
+
+	return &Agent{
+		Name:         meta.Name,
+		Description:  meta.Description,
+		Instructions: strings.TrimSpace(string(body)),
+	}, nil
 }
 
-// Install writes an agent to disk in TOML format.
+// Install writes an agent to disk in Markdown format with YAML frontmatter.
 func (m *AgentManager) Install(a *Agent) error {
 	if a == nil || a.Name == "" {
 		return ErrInvalidAgent
@@ -126,13 +124,18 @@ func (m *AgentManager) Install(a *Agent) error {
 		return errors.Wrap(err, "creating agents directory")
 	}
 
-	data, err := toml.Marshal(a)
-	if err != nil {
-		return errors.Wrap(err, "marshaling agent to TOML")
+	// Construct Markdown with YAML frontmatter
+	var buf bytes.Buffer
+	buf.WriteString("---\n")
+	buf.WriteString("name: " + a.Name + "\n")
+	if a.Description != "" {
+		buf.WriteString("description: " + a.Description + "\n")
 	}
+	buf.WriteString("---\n\n")
+	buf.WriteString(a.Instructions)
 
 	agentPath := m.paths.AgentPath(a.Name)
-	if err := fileutil.AtomicWriteFile(agentPath, data, 0o644); err != nil {
+	if err := fileutil.AtomicWriteFile(agentPath, buf.Bytes(), 0o644); err != nil {
 		return errors.Wrap(err, "writing agent file")
 	}
 

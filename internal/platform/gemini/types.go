@@ -1,7 +1,6 @@
 package gemini
 
 import (
-	"encoding/json"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -111,90 +110,49 @@ type Agent struct {
 // Gemini uses an "inferred" transport type based on presence of command or url.
 type MCPServer struct {
 	// Name is the server's identifier, derived from the map key.
-	Name string `json:"-"`
+	Name string `json:"-" toml:"-"`
 
 	// Command is the executable path for local servers.
-	Command string `json:"command,omitempty"`
+	Command string `json:"command,omitempty" toml:"command,omitempty"`
 
 	// Args are command-line arguments for the server process.
-	Args []string `json:"args,omitempty"`
+	Args []string `json:"args,omitempty" toml:"args,omitempty"`
 
 	// URL is the server endpoint for remote servers.
-	URL string `json:"url,omitempty"`
+	URL string `json:"url,omitempty" toml:"url,omitempty"`
 
 	// Env contains environment variables for the server process.
-	Env map[string]string `json:"env,omitempty"`
+	Env map[string]string `json:"env,omitempty" toml:"env,omitempty"`
 
 	// Headers contains HTTP headers for remote connections.
-	Headers map[string]string `json:"headers,omitempty"`
+	Headers map[string]string `json:"headers,omitempty" toml:"headers,omitempty"`
 
 	// Enabled indicates whether the server is active.
-	Enabled bool `json:"enabled"`
+	Enabled bool `json:"enabled" toml:"enabled"`
 }
 
-// MCPConfig represents the MCP section in Gemini CLI's settings.json.
+// MCPConfig represents the MCP section in Gemini CLI's settings.toml.
 type MCPConfig struct {
 	// Servers maps server names to their configurations.
-	Servers map[string]*MCPServer `json:"servers"`
+	Servers map[string]*MCPServer `json:"servers" toml:"servers"`
 }
 
-// Settings represents the root structure of Gemini CLI's settings.json.
-// It preserves unknown fields to avoid data loss when modifying MCP section.
+// ExperimentalConfig represents the experimental section in settings.toml.
+type ExperimentalConfig struct {
+	// EnableAgents indicates whether custom sub-agents are enabled.
+	EnableAgents bool `json:"enableAgents" toml:"enableAgents"`
+}
+
+// Settings represents the root structure of Gemini CLI's settings.toml.
 type Settings struct {
 	// MCP contains the MCP server configurations.
-	MCP *MCPConfig `json:"mcp,omitempty"`
+	MCP *MCPConfig `json:"mcp,omitempty" toml:"mcp,omitempty"`
 
-	// unknownFields stores any other fields in settings.json.
-	unknownFields map[string]json.RawMessage
-}
+	// Experimental contains experimental feature flags.
+	Experimental *ExperimentalConfig `json:"experimental,omitempty" toml:"experimental,omitempty"`
 
-// MarshalJSON implements json.Marshaler.
-func (s *Settings) MarshalJSON() ([]byte, error) {
-	result := make(map[string]any)
-	for k, v := range s.unknownFields {
-		var val any
-		if err := json.Unmarshal(v, &val); err != nil {
-			return nil, errors.Wrap(err, "unmarshaling unknown field")
-		}
-		result[k] = val
-	}
-	if s.MCP != nil {
-		result["mcp"] = s.MCP
-	}
-	data, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		return nil, errors.Wrap(err, "marshaling settings")
-	}
-	return data, nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (s *Settings) UnmarshalJSON(data []byte) error {
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return errors.Wrap(err, "unmarshaling raw settings")
-	}
-
-	if mcpData, ok := raw["mcp"]; ok {
-		if err := json.Unmarshal(mcpData, &s.MCP); err != nil {
-			return errors.Wrap(err, "unmarshaling mcp section")
-		}
-		delete(raw, "mcp")
-
-		// Set server names from keys
-		if s.MCP != nil && s.MCP.Servers != nil {
-			for name, server := range s.MCP.Servers {
-				if server != nil {
-					server.Name = name
-				}
-			}
-		}
-	}
-
-	if len(raw) > 0 {
-		s.unknownFields = raw
-	}
-	return nil
+	// Other stores any other fields in settings.toml to preserve them.
+	Other map[string]any `json:"-" toml:"-"`
 }
 
 // GetName returns the agent's name.
