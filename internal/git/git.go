@@ -129,3 +129,17 @@ func ValidateRemote(repoPath string) error {
 	}
 	return nil
 }
+
+// IsIgnored checks if the given path is ignored by git.
+func IsIgnored(repoPath, targetPath string) (bool, error) {
+	cmd := exec.Command("git", "-C", repoPath, "check-ignore", "-q", targetPath)
+	err := cmd.Run()
+	if err == nil {
+		return true, nil // Exit code 0 means ignored
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+		return false, nil // Exit code 1 means NOT ignored
+	}
+	return false, errors.Wrapf(err, "checking git ignore for %s", targetPath)
+}
