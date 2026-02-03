@@ -1,0 +1,34 @@
+all: false
+dir: "{{.InterfaceDir}}/mocks"
+filename: "mock_{{.InterfaceName | snakecase}}.go"
+structname: "Mock{{.InterfaceName}}"
+pkgname: mocks
+formatter: goimports
+template: testify
+packages:
+  github.com/thoreinstein/aix/internal/cli:
+    interfaces:
+      Platform:
+  github.com/thoreinstein/aix/internal/doctor:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mock_{{.InterfaceName | snakecase}}_test.go"
+      pkgname: doctor
+      inpackage: true
+    interfaces:
+      Check:
+      Fixer:
+  github.com/thoreinstein/aix/internal/mcp:
+    interfaces:
+      Translator:
+  github.com/thoreinstein/aix/internal/agent/validator:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mock_{{.InterfaceName | snakecase}}_test.go"
+      pkgname: validator
+      inpackage: true
+    interfaces:
+      Agentable:
+  github.com/thoreinstein/aix/internal/command/parser:
+    interfaces:
+      Commandable:

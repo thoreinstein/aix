@@ -631,3 +631,68 @@ func TestSkillManager_RoundTrip(t *testing.T) {
 		t.Errorf("Get() after uninstall = %v, want %v", err, ErrSkillNotFound)
 	}
 }
+
+func TestSkillManager_CheckCollision(t *testing.T) {
+	homeDir := t.TempDir()
+	projectDir := t.TempDir()
+
+	// Mock HOME for user scope resolution
+	t.Setenv("HOME", homeDir)
+
+	// User scope paths (aware of project root)
+	userPaths := NewClaudePaths(ScopeUser, projectDir)
+	userMgr := NewSkillManager(userPaths)
+
+	// Project scope paths
+	projectPaths := NewClaudePaths(ScopeProject, projectDir)
+	projectMgr := NewSkillManager(projectPaths)
+
+	// Case 1: No collision initially
+	found, err := projectMgr.CheckCollision("collision-skill")
+	if err != nil {
+		t.Fatalf("CheckCollision() error = %v", err)
+	}
+	if found {
+		t.Error("CheckCollision() = true, want false")
+	}
+
+	// Case 2: Create skill in User scope, check from Project scope
+	skill := &Skill{Name: "collision-skill", Description: "User skill"}
+	if err := userMgr.Install(skill); err != nil {
+		t.Fatalf("userMgr.Install() error = %v", err)
+	}
+
+	found, err = projectMgr.CheckCollision("collision-skill")
+	if err != nil {
+		t.Fatalf("CheckCollision() error = %v", err)
+	}
+	if !found {
+		t.Error("CheckCollision() = false, want true (collision with user scope)")
+	}
+
+	// Case 3: Create skill in Project scope, check from User scope
+	projSkill := &Skill{Name: "project-skill", Description: "Project skill"}
+	if err := projectMgr.Install(projSkill); err != nil {
+		t.Fatalf("projectMgr.Install() error = %v", err)
+	}
+
+	found, err = userMgr.CheckCollision("project-skill")
+	if err != nil {
+		t.Fatalf("CheckCollision() error = %v", err)
+	}
+	if !found {
+		t.Error("CheckCollision() = false, want true (collision with project scope)")
+	}
+
+	// Case 4: Opposing scope unavailable (User scope without project root)
+	orphanUserPaths := NewClaudePaths(ScopeUser, "")
+	orphanMgr := NewSkillManager(orphanUserPaths)
+
+	found, err = orphanMgr.CheckCollision("any-skill")
+	if err != nil {
+		t.Fatalf("CheckCollision() error = %v", err)
+	}
+	if found {
+		t.Error("CheckCollision() = true, want false (no opposing scope)")
+	}
+}

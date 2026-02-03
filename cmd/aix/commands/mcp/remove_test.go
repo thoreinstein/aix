@@ -5,86 +5,65 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+
 	"github.com/thoreinstein/aix/internal/cli"
+	climocks "github.com/thoreinstein/aix/internal/cli/mocks"
 	"github.com/thoreinstein/aix/internal/errors"
 )
-
-// removeMockPlatform extends mockPlatform for MCP remove testing.
-type removeMockPlatform struct {
-	mockPlatform
-	mcpServers   map[string]any
-	removeErr    error
-	removeCalled bool
-}
-
-func (m *removeMockPlatform) GetMCP(name string, _ cli.Scope) (any, error) {
-	server, ok := m.mcpServers[name]
-	if !ok {
-		return nil, errors.New("MCP server not found")
-	}
-	return server, nil
-}
-
-func (m *removeMockPlatform) RemoveMCP(_ string, _ cli.Scope) error {
-	m.removeCalled = true
-	return m.removeErr
-}
 
 func TestFindPlatformsWithMCP(t *testing.T) {
 	tests := []struct {
 		name       string
-		platforms  []cli.Platform
+		setupMocks func(t *testing.T) []cli.Platform
 		serverName string
 		wantCount  int
 	}{
 		{
 			name: "server found on one platform",
-			platforms: []cli.Platform{
-				&removeMockPlatform{
-					mockPlatform: mockPlatform{name: "claude"},
-					mcpServers:   map[string]any{"github": struct{}{}},
-				},
-				&removeMockPlatform{
-					mockPlatform: mockPlatform{name: "opencode"},
-					mcpServers:   map[string]any{},
-				},
+			setupMocks: func(t *testing.T) []cli.Platform {
+				m1 := climocks.NewMockPlatform(t)
+				m1.EXPECT().GetMCP("github", mock.Anything).Return(struct{}{}, nil)
+
+				m2 := climocks.NewMockPlatform(t)
+				m2.EXPECT().GetMCP("github", mock.Anything).Return(nil, errors.New("not found"))
+
+				return []cli.Platform{m1, m2}
 			},
 			serverName: "github",
 			wantCount:  1,
 		},
 		{
 			name: "server found on all platforms",
-			platforms: []cli.Platform{
-				&removeMockPlatform{
-					mockPlatform: mockPlatform{name: "claude"},
-					mcpServers:   map[string]any{"github": struct{}{}},
-				},
-				&removeMockPlatform{
-					mockPlatform: mockPlatform{name: "opencode"},
-					mcpServers:   map[string]any{"github": struct{}{}},
-				},
+			setupMocks: func(t *testing.T) []cli.Platform {
+				m1 := climocks.NewMockPlatform(t)
+				m1.EXPECT().GetMCP("github", mock.Anything).Return(struct{}{}, nil)
+
+				m2 := climocks.NewMockPlatform(t)
+				m2.EXPECT().GetMCP("github", mock.Anything).Return(struct{}{}, nil)
+
+				return []cli.Platform{m1, m2}
 			},
 			serverName: "github",
 			wantCount:  2,
 		},
 		{
 			name: "server not found on any platform",
-			platforms: []cli.Platform{
-				&removeMockPlatform{
-					mockPlatform: mockPlatform{name: "claude"},
-					mcpServers:   map[string]any{},
-				},
-				&removeMockPlatform{
-					mockPlatform: mockPlatform{name: "opencode"},
-					mcpServers:   map[string]any{},
-				},
+			setupMocks: func(t *testing.T) []cli.Platform {
+				m1 := climocks.NewMockPlatform(t)
+				m1.EXPECT().GetMCP("github", mock.Anything).Return(nil, errors.New("not found"))
+
+				m2 := climocks.NewMockPlatform(t)
+				m2.EXPECT().GetMCP("github", mock.Anything).Return(nil, errors.New("not found"))
+
+				return []cli.Platform{m1, m2}
 			},
 			serverName: "github",
 			wantCount:  0,
 		},
 		{
 			name:       "no platforms",
-			platforms:  []cli.Platform{},
+			setupMocks: func(t *testing.T) []cli.Platform { return []cli.Platform{} },
 			serverName: "github",
 			wantCount:  0,
 		},
@@ -92,7 +71,8 @@ func TestFindPlatformsWithMCP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := findPlatformsWithMCP(tt.platforms, tt.serverName)
+			platforms := tt.setupMocks(t)
+			got := findPlatformsWithMCP(platforms, tt.serverName)
 			if len(got) != tt.wantCount {
 				t.Errorf("findPlatformsWithMCP() returned %d platforms, want %d", len(got), tt.wantCount)
 			}
@@ -104,54 +84,66 @@ func TestConfirmMCPRemoval(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     string
-		platforms []cli.Platform
+		setupMock func(t *testing.T) *climocks.MockPlatform
 		want      bool
 	}{
 		{
 			name:  "yes confirms",
 			input: "yes\n",
-			platforms: []cli.Platform{
-				&removeMockPlatform{mockPlatform: mockPlatform{displayName: "Claude Code"}},
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().DisplayName().Return("Claude Code")
+				return m
 			},
 			want: true,
 		},
 		{
 			name:  "y confirms",
 			input: "y\n",
-			platforms: []cli.Platform{
-				&removeMockPlatform{mockPlatform: mockPlatform{displayName: "Claude Code"}},
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().DisplayName().Return("Claude Code")
+				return m
 			},
 			want: true,
 		},
 		{
 			name:  "Y confirms (case insensitive)",
 			input: "Y\n",
-			platforms: []cli.Platform{
-				&removeMockPlatform{mockPlatform: mockPlatform{displayName: "Claude Code"}},
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().DisplayName().Return("Claude Code")
+				return m
 			},
 			want: true,
 		},
 		{
 			name:  "no rejects",
 			input: "no\n",
-			platforms: []cli.Platform{
-				&removeMockPlatform{mockPlatform: mockPlatform{displayName: "Claude Code"}},
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().DisplayName().Return("Claude Code")
+				return m
 			},
 			want: false,
 		},
 		{
 			name:  "empty input rejects (default N)",
 			input: "\n",
-			platforms: []cli.Platform{
-				&removeMockPlatform{mockPlatform: mockPlatform{displayName: "Claude Code"}},
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().DisplayName().Return("Claude Code")
+				return m
 			},
 			want: false,
 		},
 		{
 			name:  "random input rejects",
 			input: "maybe\n",
-			platforms: []cli.Platform{
-				&removeMockPlatform{mockPlatform: mockPlatform{displayName: "Claude Code"}},
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().DisplayName().Return("Claude Code")
+				return m
 			},
 			want: false,
 		},
@@ -162,7 +154,8 @@ func TestConfirmMCPRemoval(t *testing.T) {
 			var out bytes.Buffer
 			in := strings.NewReader(tt.input)
 
-			got := confirmRemoval(&out, in, "github", tt.platforms)
+			platforms := []cli.Platform{tt.setupMock(t)}
+			got := confirmRemoval(&out, in, "github", platforms)
 			if got != tt.want {
 				t.Errorf("confirmMCPRemoval() = %v, want %v", got, tt.want)
 			}
@@ -180,10 +173,13 @@ func TestConfirmMCPRemoval(t *testing.T) {
 }
 
 func TestConfirmMCPRemoval_ListsPlatforms(t *testing.T) {
-	platforms := []cli.Platform{
-		&removeMockPlatform{mockPlatform: mockPlatform{displayName: "Claude Code"}},
-		&removeMockPlatform{mockPlatform: mockPlatform{displayName: "OpenCode"}},
-	}
+	m1 := climocks.NewMockPlatform(t)
+	m1.EXPECT().DisplayName().Return("Claude Code")
+
+	m2 := climocks.NewMockPlatform(t)
+	m2.EXPECT().DisplayName().Return("OpenCode")
+
+	platforms := []cli.Platform{m1, m2}
 
 	var out bytes.Buffer
 	in := strings.NewReader("n\n")

@@ -126,7 +126,7 @@ func (m *MCPManager) setDisabled(name string, disabled bool) error {
 }
 
 // loadConfig reads the MCP configuration from disk.
-// Returns an empty config with initialized MCPServers map if the file doesn't exist.
+// Handles nesting for ScopeLocal under the project path key.
 func (m *MCPManager) loadConfig() (*MCPConfig, error) {
 	configPath := m.paths.MCPConfigPath()
 	if configPath == "" {
@@ -136,7 +136,6 @@ func (m *MCPManager) loadConfig() (*MCPConfig, error) {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// Return empty config if file doesn't exist
 			return &MCPConfig{
 				MCPServers: make(map[string]*MCPServer),
 			}, nil
@@ -144,17 +143,48 @@ func (m *MCPManager) loadConfig() (*MCPConfig, error) {
 		return nil, errors.Wrap(err, "reading MCP config")
 	}
 
+	// For ScopeLocal, we need to extract the section for the current project
+	if m.paths.scope == ScopeLocal {
+		var fullConfig map[string]json.RawMessage
+		if err := json.Unmarshal(data, &fullConfig); err != nil {
+			return nil, errors.Wrap(err, "parsing full config")
+		}
+
+		projectPath, err := m.projectPath()
+		if err != nil {
+			return nil, err
+		}
+
+		projectData, ok := fullConfig[projectPath]
+		if !ok {
+			return &MCPConfig{MCPServers: make(map[string]*MCPServer)}, nil
+		}
+
+		var config MCPConfig
+		if err := json.Unmarshal(projectData, &config); err != nil {
+			return nil, errors.Wrap(err, "parsing project config section")
+		}
+
+		// Ensure map is initialized and names populated
+		if config.MCPServers == nil {
+			config.MCPServers = make(map[string]*MCPServer)
+		}
+		for name, server := range config.MCPServers {
+			server.Name = name
+		}
+		return &config, nil
+	}
+
+	// Standard handling for ScopeUser and ScopeProject
 	var config MCPConfig
 	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, errors.Wrap(err, "parsing MCP config")
 	}
 
-	// Ensure the map is initialized
 	if config.MCPServers == nil {
 		config.MCPServers = make(map[string]*MCPServer)
 	}
 
-	// Populate Name field from map keys for consistency
 	for name, server := range config.MCPServers {
 		server.Name = name
 	}
@@ -163,6 +193,7 @@ func (m *MCPManager) loadConfig() (*MCPConfig, error) {
 }
 
 // saveConfig writes the MCP configuration to disk atomically.
+// Handles nesting for ScopeLocal under the project path key.
 func (m *MCPManager) saveConfig(config *MCPConfig) error {
 	configPath := m.paths.MCPConfigPath()
 	if configPath == "" {
@@ -175,5 +206,50 @@ func (m *MCPManager) saveConfig(config *MCPConfig) error {
 		return errors.Wrapf(err, "creating directory %s", dir)
 	}
 
+	if m.paths.scope == ScopeLocal {
+		// Load the full file first to preserve other sections
+		data, err := os.ReadFile(configPath)
+		var fullConfig map[string]json.RawMessage
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return errors.Wrap(err, "reading existing config for update")
+			}
+			fullConfig = make(map[string]json.RawMessage)
+		} else {
+			if err := json.Unmarshal(data, &fullConfig); err != nil {
+				return errors.Wrap(err, "parsing existing config for update")
+			}
+		}
+
+		projectPath, err := m.projectPath()
+		if err != nil {
+			return err
+		}
+
+		projectData, err := json.Marshal(config)
+		if err != nil {
+			return errors.Wrap(err, "marshaling project config")
+		}
+
+		fullConfig[projectPath] = projectData
+		return errors.Wrap(fileutil.AtomicWriteJSON(configPath, fullConfig), "writing nested MCP config")
+	}
+
 	return errors.Wrap(fileutil.AtomicWriteJSON(configPath, config), "writing MCP config")
+}
+
+// projectPath returns the absolute path of the project for ScopeLocal.
+func (m *MCPManager) projectPath() (string, error) {
+	if m.paths.projectRoot != "" {
+		abs, err := filepath.Abs(m.paths.projectRoot)
+		if err != nil {
+			return "", errors.Wrapf(err, "getting absolute path for project root %q", m.paths.projectRoot)
+		}
+		return abs, nil
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", errors.Wrap(err, "getting current working directory for project path")
+	}
+	return cwd, nil
 }

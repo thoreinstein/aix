@@ -7,77 +7,9 @@ import (
 	"testing"
 
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/cli/mocks"
 	"github.com/thoreinstein/aix/internal/errors"
 )
-
-// statusMockPlatform implements cli.Platform for status command testing.
-// It extends the base mockPlatform with status-specific fields.
-type statusMockPlatform struct {
-	name        string
-	displayName string
-	available   bool
-	skills      []cli.SkillInfo
-	skillsErr   error
-	commands    []cli.CommandInfo
-	commandsErr error
-	mcp         []cli.MCPInfo
-	mcpErr      error
-}
-
-func (m *statusMockPlatform) Name() string        { return m.name }
-func (m *statusMockPlatform) DisplayName() string { return m.displayName }
-func (m *statusMockPlatform) IsAvailable() bool   { return m.available }
-func (m *statusMockPlatform) SkillDir() string    { return "/mock/skills" }
-
-func (m *statusMockPlatform) InstallSkill(_ any, _ cli.Scope) error { return nil }
-func (m *statusMockPlatform) UninstallSkill(_ string, _ cli.Scope) error {
-	return errors.New("not implemented")
-}
-func (m *statusMockPlatform) ListSkills(_ cli.Scope) ([]cli.SkillInfo, error) {
-	return m.skills, m.skillsErr
-}
-func (m *statusMockPlatform) GetSkill(_ string, _ cli.Scope) (any, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *statusMockPlatform) CommandDir() string                      { return "/mock/commands" }
-func (m *statusMockPlatform) InstallCommand(_ any, _ cli.Scope) error { return nil }
-func (m *statusMockPlatform) UninstallCommand(_ string, _ cli.Scope) error {
-	return errors.New("not implemented")
-}
-func (m *statusMockPlatform) ListCommands(_ cli.Scope) ([]cli.CommandInfo, error) {
-	return m.commands, m.commandsErr
-}
-func (m *statusMockPlatform) GetCommand(_ string, _ cli.Scope) (any, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *statusMockPlatform) MCPConfigPath() string                 { return "/mock/mcp.json" }
-func (m *statusMockPlatform) AddMCP(_ any, _ cli.Scope) error       { return nil }
-func (m *statusMockPlatform) RemoveMCP(_ string, _ cli.Scope) error { return nil }
-func (m *statusMockPlatform) ListMCP(_ cli.Scope) ([]cli.MCPInfo, error) {
-	return m.mcp, m.mcpErr
-}
-func (m *statusMockPlatform) GetMCP(_ string, _ cli.Scope) (any, error) {
-	return nil, errors.New("not implemented")
-}
-func (m *statusMockPlatform) EnableMCP(_ string) error  { return nil }
-func (m *statusMockPlatform) DisableMCP(_ string) error { return nil }
-
-func (m *statusMockPlatform) AgentDir() string                      { return "/mock/agents" }
-func (m *statusMockPlatform) InstallAgent(_ any, _ cli.Scope) error { return nil }
-func (m *statusMockPlatform) UninstallAgent(_ string, _ cli.Scope) error {
-	return errors.New("not implemented")
-}
-func (m *statusMockPlatform) ListAgents(_ cli.Scope) ([]cli.AgentInfo, error) {
-	return nil, errors.New("not implemented")
-}
-func (m *statusMockPlatform) GetAgent(_ string, _ cli.Scope) (any, error) {
-	return nil, errors.New("not implemented")
-}
-
-// Backup methods for cli.Platform interface
-func (m *statusMockPlatform) BackupPaths() []string { return []string{"/mock/backup"} }
 
 func TestValidateStatusFlags(t *testing.T) {
 	tests := []struct {
@@ -267,13 +199,10 @@ func TestMcpCounts(t *testing.T) {
 
 func TestCollectPlatformStatus(t *testing.T) {
 	t.Run("unavailable platform returns early", func(t *testing.T) {
-		mock := &statusMockPlatform{
-			name:        "test",
-			displayName: "Test Platform",
-			available:   false,
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("IsAvailable").Return(false)
 
-		status := collectPlatformStatus(mock)
+		status := collectPlatformStatus(mockP)
 
 		if status.Available {
 			t.Error("status.Available should be false for unavailable platform")
@@ -290,22 +219,19 @@ func TestCollectPlatformStatus(t *testing.T) {
 	})
 
 	t.Run("available platform collects all data", func(t *testing.T) {
-		mock := &statusMockPlatform{
-			name:        "test",
-			displayName: "Test Platform",
-			available:   true,
-			skills: []cli.SkillInfo{
-				{Name: "skill1", Description: "Skill 1"},
-			},
-			commands: []cli.CommandInfo{
-				{Name: "cmd1", Description: "Command 1"},
-			},
-			mcp: []cli.MCPInfo{
-				{Name: "mcp1", Transport: "stdio"},
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{
+			{Name: "skill1", Description: "Skill 1"},
+		}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{
+			{Name: "cmd1", Description: "Command 1"},
+		}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{
+			{Name: "mcp1", Transport: "stdio"},
+		}, nil)
 
-		status := collectPlatformStatus(mock)
+		status := collectPlatformStatus(mockP)
 
 		if !status.Available {
 			t.Error("status.Available should be true")
@@ -323,16 +249,13 @@ func TestCollectPlatformStatus(t *testing.T) {
 
 	t.Run("captures errors from list operations", func(t *testing.T) {
 		expectedErr := errors.New("test error")
-		mock := &statusMockPlatform{
-			name:        "test",
-			displayName: "Test Platform",
-			available:   true,
-			skillsErr:   expectedErr,
-			commandsErr: expectedErr,
-			mcpErr:      expectedErr,
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return(nil, expectedErr)
+		mockP.On("ListCommands", cli.ScopeDefault).Return(nil, expectedErr)
+		mockP.On("ListMCP", cli.ScopeDefault).Return(nil, expectedErr)
 
-		status := collectPlatformStatus(mock)
+		status := collectPlatformStatus(mockP)
 
 		if status.SkillsErr == nil {
 			t.Error("status.SkillsErr should not be nil")
@@ -348,22 +271,20 @@ func TestCollectPlatformStatus(t *testing.T) {
 
 func TestOutputStatusJSON(t *testing.T) {
 	t.Run("basic structure", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				skills: []cli.SkillInfo{
-					{Name: "debug", Description: "Debug skill"},
-				},
-				commands: []cli.CommandInfo{
-					{Name: "test", Description: "Test command"},
-				},
-				mcp: []cli.MCPInfo{
-					{Name: "github", Transport: "stdio", Command: "npx", Disabled: false},
-				},
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("Name").Return("claude")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{
+			{Name: "debug", Description: "Debug skill"},
+		}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{
+			{Name: "test", Description: "Test command"},
+		}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{
+			{Name: "github", Transport: "stdio", Command: "npx", Disabled: false},
+		}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusJSON(&buf, platforms)
@@ -400,13 +321,11 @@ func TestOutputStatusJSON(t *testing.T) {
 	})
 
 	t.Run("unavailable platform", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "opencode",
-				displayName: "OpenCode",
-				available:   false,
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("Name").Return("opencode")
+		mockP.On("IsAvailable").Return(false)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusJSON(&buf, platforms)
@@ -433,18 +352,18 @@ func TestOutputStatusJSON(t *testing.T) {
 	})
 
 	t.Run("mcp counts enabled and disabled", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				mcp: []cli.MCPInfo{
-					{Name: "server1", Disabled: false},
-					{Name: "server2", Disabled: true},
-					{Name: "server3", Disabled: false},
-				},
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("Name").Return("claude")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{
+			{Name: "server1", Disabled: false},
+			{Name: "server2", Disabled: true},
+			{Name: "server3", Disabled: false},
+		}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusJSON(&buf, platforms)
@@ -470,25 +389,25 @@ func TestOutputStatusJSON(t *testing.T) {
 	})
 
 	t.Run("credential redaction", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				mcp: []cli.MCPInfo{
-					{
-						Name:      "github",
-						Transport: "stdio",
-						Command:   "npx",
-						Env: map[string]string{
-							"GITHUB_TOKEN": "ghp_xxxxxxxxxxxx1234",
-							"DEBUG":        "true",
-							"API_KEY":      "sk-secret-key-value",
-						},
-					},
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("Name").Return("claude")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{
+			{
+				Name:      "github",
+				Transport: "stdio",
+				Command:   "npx",
+				Env: map[string]string{
+					"GITHUB_TOKEN": "ghp_xxxxxxxxxxxx1234",
+					"DEBUG":        "true",
+					"API_KEY":      "sk-secret-key-value",
 				},
 			},
-		}
+		}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusJSON(&buf, platforms)
@@ -523,16 +442,14 @@ func TestOutputStatusJSON(t *testing.T) {
 	})
 
 	t.Run("handles errors in platform data", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				skillsErr:   errors.New("skills error"),
-				commandsErr: errors.New("commands error"),
-				mcpErr:      errors.New("mcp error"),
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("Name").Return("claude")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return(nil, errors.New("skills error"))
+		mockP.On("ListCommands", cli.ScopeDefault).Return(nil, errors.New("commands error"))
+		mockP.On("ListMCP", cli.ScopeDefault).Return(nil, errors.New("mcp error"))
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusJSON(&buf, platforms)
@@ -560,25 +477,23 @@ func TestOutputStatusJSON(t *testing.T) {
 
 func TestOutputStatusQuiet(t *testing.T) {
 	t.Run("available platform with data", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				skills: []cli.SkillInfo{
-					{Name: "skill1"},
-					{Name: "skill2"},
-				},
-				commands: []cli.CommandInfo{
-					{Name: "cmd1"},
-				},
-				mcp: []cli.MCPInfo{
-					{Name: "mcp1"},
-					{Name: "mcp2"},
-					{Name: "mcp3"},
-				},
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("Name").Return("claude")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{
+			{Name: "skill1"},
+			{Name: "skill2"},
+		}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{
+			{Name: "cmd1"},
+		}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{
+			{Name: "mcp1"},
+			{Name: "mcp2"},
+			{Name: "mcp3"},
+		}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusQuiet(&buf, platforms)
@@ -602,13 +517,11 @@ func TestOutputStatusQuiet(t *testing.T) {
 	})
 
 	t.Run("unavailable platform", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "opencode",
-				displayName: "OpenCode",
-				available:   false,
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("Name").Return("opencode")
+		mockP.On("IsAvailable").Return(false)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusQuiet(&buf, platforms)
@@ -623,16 +536,14 @@ func TestOutputStatusQuiet(t *testing.T) {
 	})
 
 	t.Run("handles errors gracefully", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				skillsErr:   errors.New("skills error"),
-				commandsErr: errors.New("commands error"),
-				mcpErr:      errors.New("mcp error"),
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("Name").Return("claude")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return(nil, errors.New("skills error"))
+		mockP.On("ListCommands", cli.ScopeDefault).Return(nil, errors.New("commands error"))
+		mockP.On("ListMCP", cli.ScopeDefault).Return(nil, errors.New("mcp error"))
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusQuiet(&buf, platforms)
@@ -655,13 +566,14 @@ func TestOutputStatusQuiet(t *testing.T) {
 
 func TestOutputStatusCompact(t *testing.T) {
 	t.Run("includes version header", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusCompact(&buf, platforms)
@@ -676,13 +588,14 @@ func TestOutputStatusCompact(t *testing.T) {
 	})
 
 	t.Run("shows platform display name", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusCompact(&buf, platforms)
@@ -697,13 +610,11 @@ func TestOutputStatusCompact(t *testing.T) {
 	})
 
 	t.Run("unavailable platform shows not installed", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "opencode",
-				displayName: "OpenCode",
-				available:   false,
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("OpenCode")
+		mockP.On("IsAvailable").Return(false)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusCompact(&buf, platforms)
@@ -718,18 +629,18 @@ func TestOutputStatusCompact(t *testing.T) {
 	})
 
 	t.Run("shows disabled mcp count", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				mcp: []cli.MCPInfo{
-					{Name: "server1", Disabled: false},
-					{Name: "server2", Disabled: true},
-					{Name: "server3", Disabled: true},
-				},
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{
+			{Name: "server1", Disabled: false},
+			{Name: "server2", Disabled: true},
+			{Name: "server3", Disabled: true},
+		}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusCompact(&buf, platforms)
@@ -744,14 +655,14 @@ func TestOutputStatusCompact(t *testing.T) {
 	})
 
 	t.Run("handles errors", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				skillsErr:   errors.New("skills error"),
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return(nil, errors.New("skills error"))
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusCompact(&buf, platforms)
@@ -768,13 +679,14 @@ func TestOutputStatusCompact(t *testing.T) {
 
 func TestOutputStatusVerbose(t *testing.T) {
 	t.Run("includes version header", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusVerbose(&buf, platforms)
@@ -789,16 +701,16 @@ func TestOutputStatusVerbose(t *testing.T) {
 	})
 
 	t.Run("shows skill details", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				skills: []cli.SkillInfo{
-					{Name: "debug", Description: "Debug skill for testing"},
-				},
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{
+			{Name: "debug", Description: "Debug skill for testing"},
+		}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusVerbose(&buf, platforms)
@@ -816,16 +728,16 @@ func TestOutputStatusVerbose(t *testing.T) {
 	})
 
 	t.Run("shows command details with slash prefix", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				commands: []cli.CommandInfo{
-					{Name: "test", Description: "Test command"},
-				},
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{
+			{Name: "test", Description: "Test command"},
+		}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusVerbose(&buf, platforms)
@@ -840,23 +752,23 @@ func TestOutputStatusVerbose(t *testing.T) {
 	})
 
 	t.Run("shows mcp server details", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				mcp: []cli.MCPInfo{
-					{
-						Name:      "github",
-						Transport: "stdio",
-						Command:   "npx -y @modelcontextprotocol/server-github",
-						Env: map[string]string{
-							"DEBUG": "true",
-						},
-					},
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{
+			{
+				Name:      "github",
+				Transport: "stdio",
+				Command:   "npx -y @modelcontextprotocol/server-github",
+				Env: map[string]string{
+					"DEBUG": "true",
 				},
 			},
-		}
+		}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusVerbose(&buf, platforms)
@@ -877,20 +789,20 @@ func TestOutputStatusVerbose(t *testing.T) {
 	})
 
 	t.Run("shows url for sse transport", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				mcp: []cli.MCPInfo{
-					{
-						Name:      "api-gateway",
-						Transport: "sse",
-						URL:       "https://api.example.com/mcp",
-					},
-				},
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{
+			{
+				Name:      "api-gateway",
+				Transport: "sse",
+				URL:       "https://api.example.com/mcp",
 			},
-		}
+		}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusVerbose(&buf, platforms)
@@ -905,24 +817,24 @@ func TestOutputStatusVerbose(t *testing.T) {
 	})
 
 	t.Run("credential redaction in env vars", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				mcp: []cli.MCPInfo{
-					{
-						Name:      "github",
-						Transport: "stdio",
-						Command:   "npx",
-						Env: map[string]string{
-							"GITHUB_TOKEN": "ghp_secret_token_value",
-							"DEBUG":        "true",
-						},
-					},
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{
+			{
+				Name:      "github",
+				Transport: "stdio",
+				Command:   "npx",
+				Env: map[string]string{
+					"GITHUB_TOKEN": "ghp_secret_token_value",
+					"DEBUG":        "true",
 				},
 			},
-		}
+		}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusVerbose(&buf, platforms)
@@ -947,17 +859,17 @@ func TestOutputStatusVerbose(t *testing.T) {
 	})
 
 	t.Run("shows enabled/disabled status for mcp servers", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				mcp: []cli.MCPInfo{
-					{Name: "enabled-server", Transport: "stdio", Disabled: false},
-					{Name: "disabled-server", Transport: "stdio", Disabled: true},
-				},
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{
+			{Name: "enabled-server", Transport: "stdio", Disabled: false},
+			{Name: "disabled-server", Transport: "stdio", Disabled: true},
+		}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusVerbose(&buf, platforms)
@@ -976,16 +888,14 @@ func TestOutputStatusVerbose(t *testing.T) {
 	})
 
 	t.Run("empty sections show (none)", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-				available:   true,
-				skills:      []cli.SkillInfo{},
-				commands:    []cli.CommandInfo{},
-				mcp:         []cli.MCPInfo{},
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("IsAvailable").Return(true)
+		mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{}, nil)
+		mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+		mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{}, nil)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusVerbose(&buf, platforms)
@@ -1002,13 +912,11 @@ func TestOutputStatusVerbose(t *testing.T) {
 	})
 
 	t.Run("unavailable platform shows not installed", func(t *testing.T) {
-		platforms := []cli.Platform{
-			&statusMockPlatform{
-				name:        "opencode",
-				displayName: "OpenCode",
-				available:   false,
-			},
-		}
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("OpenCode")
+		mockP.On("IsAvailable").Return(false)
+
+		platforms := []cli.Platform{mockP}
 
 		var buf bytes.Buffer
 		err := outputStatusVerbose(&buf, platforms)
@@ -1025,16 +933,16 @@ func TestOutputStatusVerbose(t *testing.T) {
 
 func TestOutputStatusVerbose_LongDescriptionTruncation(t *testing.T) {
 	longDesc := strings.Repeat("a", 100)
-	platforms := []cli.Platform{
-		&statusMockPlatform{
-			name:        "claude",
-			displayName: "Claude Code",
-			available:   true,
-			skills: []cli.SkillInfo{
-				{Name: "test", Description: longDesc},
-			},
-		},
-	}
+	mockP := mocks.NewMockPlatform(t)
+	mockP.On("DisplayName").Return("Claude Code")
+	mockP.On("IsAvailable").Return(true)
+	mockP.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{
+		{Name: "test", Description: longDesc},
+	}, nil)
+	mockP.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+	mockP.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{}, nil)
+
+	platforms := []cli.Platform{mockP}
 
 	var buf bytes.Buffer
 	err := outputStatusVerbose(&buf, platforms)
@@ -1071,25 +979,28 @@ func TestStatusCommand_Metadata(t *testing.T) {
 }
 
 func TestMultiplePlatforms(t *testing.T) {
-	platforms := []cli.Platform{
-		&statusMockPlatform{
-			name:        "claude",
-			displayName: "Claude Code",
-			available:   true,
-			skills: []cli.SkillInfo{
-				{Name: "skill1"},
-			},
-		},
-		&statusMockPlatform{
-			name:        "opencode",
-			displayName: "OpenCode",
-			available:   true,
-			skills: []cli.SkillInfo{
-				{Name: "skill1"},
-				{Name: "skill2"},
-			},
-		},
-	}
+	mockP1 := mocks.NewMockPlatform(t)
+	mockP1.On("Name").Return("claude")
+	mockP1.On("DisplayName").Return("Claude Code")
+	mockP1.On("IsAvailable").Return(true)
+	mockP1.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{
+		{Name: "skill1"},
+	}, nil)
+	mockP1.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+	mockP1.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{}, nil)
+
+	mockP2 := mocks.NewMockPlatform(t)
+	mockP2.On("Name").Return("opencode")
+	mockP2.On("DisplayName").Return("OpenCode")
+	mockP2.On("IsAvailable").Return(true)
+	mockP2.On("ListSkills", cli.ScopeDefault).Return([]cli.SkillInfo{
+		{Name: "skill1"},
+		{Name: "skill2"},
+	}, nil)
+	mockP2.On("ListCommands", cli.ScopeDefault).Return([]cli.CommandInfo{}, nil)
+	mockP2.On("ListMCP", cli.ScopeDefault).Return([]cli.MCPInfo{}, nil)
+
+	platforms := []cli.Platform{mockP1, mockP2}
 
 	t.Run("JSON output includes all platforms", func(t *testing.T) {
 		var buf bytes.Buffer

@@ -5,7 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+
 	"github.com/thoreinstein/aix/internal/cli"
+	climocks "github.com/thoreinstein/aix/internal/cli/mocks"
 	"github.com/thoreinstein/aix/internal/errors"
 )
 
@@ -47,58 +50,24 @@ func TestDisableCommand_Metadata(t *testing.T) {
 	}
 }
 
-// enableMockPlatform extends mockPlatform for MCP enable/disable testing.
-type enableMockPlatform struct {
-	mockPlatform
-	mcpServers    map[string]any
-	enableErr     error
-	disableErr    error
-	enableCalled  bool
-	disableCalled bool
-	isAvailable   bool
-}
-
-func (m *enableMockPlatform) IsAvailable() bool {
-	return m.isAvailable
-}
-
-func (m *enableMockPlatform) GetMCP(name string, _ cli.Scope) (any, error) {
-	server, ok := m.mcpServers[name]
-	if !ok {
-		return nil, errors.New("MCP server not found")
-	}
-	return server, nil
-}
-
-func (m *enableMockPlatform) EnableMCP(_ string) error {
-	m.enableCalled = true
-	return m.enableErr
-}
-
-func (m *enableMockPlatform) DisableMCP(_ string) error {
-	m.disableCalled = true
-	return m.disableErr
-}
-
 func TestRunMCPSetEnabledWithIO_Enable(t *testing.T) {
 	tests := []struct {
 		name       string
 		serverName string
-		platforms  func() []cli.Platform
+		setupMock  func(t *testing.T) *climocks.MockPlatform
 		wantErr    bool
 		wantOutput []string
 	}{
 		{
 			name:       "enable existing server",
 			serverName: "github",
-			platforms: func() []cli.Platform {
-				return []cli.Platform{
-					&enableMockPlatform{
-						mockPlatform: mockPlatform{name: "claude"},
-						mcpServers:   map[string]any{"github": struct{}{}},
-						isAvailable:  true,
-					},
-				}
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().Name().Return("claude").Maybe()
+				m.EXPECT().IsAvailable().Return(true)
+				m.EXPECT().GetMCP("github", mock.Anything).Return(struct{}{}, nil)
+				m.EXPECT().EnableMCP("github").Return(nil)
+				return m
 			},
 			wantErr:    false,
 			wantOutput: []string{"Enabling", "github", "enabled"},
@@ -106,14 +75,12 @@ func TestRunMCPSetEnabledWithIO_Enable(t *testing.T) {
 		{
 			name:       "enable non-existent server",
 			serverName: "not-found",
-			platforms: func() []cli.Platform {
-				return []cli.Platform{
-					&enableMockPlatform{
-						mockPlatform: mockPlatform{name: "claude"},
-						mcpServers:   map[string]any{},
-						isAvailable:  true,
-					},
-				}
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().Name().Return("claude").Maybe()
+				m.EXPECT().IsAvailable().Return(true)
+				m.EXPECT().GetMCP("not-found", mock.Anything).Return(nil, errors.New("MCP server not found"))
+				return m
 			},
 			wantErr:    true,
 			wantOutput: []string{"not found"},
@@ -121,15 +88,13 @@ func TestRunMCPSetEnabledWithIO_Enable(t *testing.T) {
 		{
 			name:       "enable with platform error",
 			serverName: "github",
-			platforms: func() []cli.Platform {
-				return []cli.Platform{
-					&enableMockPlatform{
-						mockPlatform: mockPlatform{name: "claude"},
-						mcpServers:   map[string]any{"github": struct{}{}},
-						enableErr:    errors.New("permission denied"),
-						isAvailable:  true,
-					},
-				}
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().Name().Return("claude").Maybe()
+				m.EXPECT().IsAvailable().Return(true)
+				m.EXPECT().GetMCP("github", mock.Anything).Return(struct{}{}, nil)
+				m.EXPECT().EnableMCP("github").Return(errors.New("permission denied"))
+				return m
 			},
 			wantErr:    false, // The function continues and reports the error in output
 			wantOutput: []string{"error", "permission denied"},
@@ -137,34 +102,63 @@ func TestRunMCPSetEnabledWithIO_Enable(t *testing.T) {
 		{
 			name:       "skip unavailable platform",
 			serverName: "github",
-			platforms: func() []cli.Platform {
-				return []cli.Platform{
-					&enableMockPlatform{
-						mockPlatform: mockPlatform{name: "claude"},
-						mcpServers:   map[string]any{"github": struct{}{}},
-						isAvailable:  false,
-					},
-				}
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().Name().Return("claude").Maybe()
+				m.EXPECT().IsAvailable().Return(false)
+				return m
 			},
 			wantErr:    true, // Server not found on any available platform
 			wantOutput: []string{"github"},
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+
+			platforms := []cli.Platform{tt.setupMock(t)}
+			err := runMCPSetEnabledWithMockPlatforms(tt.serverName, true, &buf, platforms)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("runMCPSetEnabledWithIO() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			output := buf.String()
+			for _, want := range tt.wantOutput {
+				if !strings.Contains(output, want) {
+					t.Errorf("output should contain %q, got: %s", want, output)
+				}
+			}
+		})
+	}
+}
+
+func TestRunMCPSetEnabledWithIO_MultiplePlatforms(t *testing.T) {
+	tests := []struct {
+		name       string
+		serverName string
+		setupMocks func(t *testing.T) []cli.Platform
+		wantErr    bool
+		wantOutput []string
+	}{
 		{
 			name:       "enable across multiple platforms",
 			serverName: "github",
-			platforms: func() []cli.Platform {
-				return []cli.Platform{
-					&enableMockPlatform{
-						mockPlatform: mockPlatform{name: "claude"},
-						mcpServers:   map[string]any{"github": struct{}{}},
-						isAvailable:  true,
-					},
-					&enableMockPlatform{
-						mockPlatform: mockPlatform{name: "opencode"},
-						mcpServers:   map[string]any{"github": struct{}{}},
-						isAvailable:  true,
-					},
-				}
+			setupMocks: func(t *testing.T) []cli.Platform {
+				m1 := climocks.NewMockPlatform(t)
+				m1.EXPECT().Name().Return("claude").Maybe()
+				m1.EXPECT().IsAvailable().Return(true)
+				m1.EXPECT().GetMCP("github", mock.Anything).Return(struct{}{}, nil)
+				m1.EXPECT().EnableMCP("github").Return(nil)
+
+				m2 := climocks.NewMockPlatform(t)
+				m2.EXPECT().Name().Return("opencode").Maybe()
+				m2.EXPECT().IsAvailable().Return(true)
+				m2.EXPECT().GetMCP("github", mock.Anything).Return(struct{}{}, nil)
+				m2.EXPECT().EnableMCP("github").Return(nil)
+
+				return []cli.Platform{m1, m2}
 			},
 			wantErr:    false,
 			wantOutput: []string{"claude", "opencode", "enabled"},
@@ -172,19 +166,19 @@ func TestRunMCPSetEnabledWithIO_Enable(t *testing.T) {
 		{
 			name:       "partial success - one platform has server",
 			serverName: "github",
-			platforms: func() []cli.Platform {
-				return []cli.Platform{
-					&enableMockPlatform{
-						mockPlatform: mockPlatform{name: "claude"},
-						mcpServers:   map[string]any{"github": struct{}{}},
-						isAvailable:  true,
-					},
-					&enableMockPlatform{
-						mockPlatform: mockPlatform{name: "opencode"},
-						mcpServers:   map[string]any{}, // No github server here
-						isAvailable:  true,
-					},
-				}
+			setupMocks: func(t *testing.T) []cli.Platform {
+				m1 := climocks.NewMockPlatform(t)
+				m1.EXPECT().Name().Return("claude").Maybe()
+				m1.EXPECT().IsAvailable().Return(true)
+				m1.EXPECT().GetMCP("github", mock.Anything).Return(struct{}{}, nil)
+				m1.EXPECT().EnableMCP("github").Return(nil)
+
+				m2 := climocks.NewMockPlatform(t)
+				m2.EXPECT().Name().Return("opencode").Maybe()
+				m2.EXPECT().IsAvailable().Return(true)
+				m2.EXPECT().GetMCP("github", mock.Anything).Return(nil, errors.New("not found"))
+
+				return []cli.Platform{m1, m2}
 			},
 			wantErr:    false,
 			wantOutput: []string{"claude", "enabled", "opencode", "not found"},
@@ -195,8 +189,7 @@ func TestRunMCPSetEnabledWithIO_Enable(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
 
-			// Create a wrapper that bypasses ResolvePlatforms
-			platforms := tt.platforms()
+			platforms := tt.setupMocks(t)
 			err := runMCPSetEnabledWithMockPlatforms(tt.serverName, true, &buf, platforms)
 
 			if (err != nil) != tt.wantErr {
@@ -217,21 +210,20 @@ func TestRunMCPSetEnabledWithIO_Disable(t *testing.T) {
 	tests := []struct {
 		name       string
 		serverName string
-		platforms  func() []cli.Platform
+		setupMock  func(t *testing.T) *climocks.MockPlatform
 		wantErr    bool
 		wantOutput []string
 	}{
 		{
 			name:       "disable existing server",
 			serverName: "github",
-			platforms: func() []cli.Platform {
-				return []cli.Platform{
-					&enableMockPlatform{
-						mockPlatform: mockPlatform{name: "claude"},
-						mcpServers:   map[string]any{"github": struct{}{}},
-						isAvailable:  true,
-					},
-				}
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().Name().Return("claude").Maybe()
+				m.EXPECT().IsAvailable().Return(true)
+				m.EXPECT().GetMCP("github", mock.Anything).Return(struct{}{}, nil)
+				m.EXPECT().DisableMCP("github").Return(nil)
+				return m
 			},
 			wantErr:    false,
 			wantOutput: []string{"Disabling", "github", "disabled"},
@@ -239,14 +231,12 @@ func TestRunMCPSetEnabledWithIO_Disable(t *testing.T) {
 		{
 			name:       "disable non-existent server",
 			serverName: "not-found",
-			platforms: func() []cli.Platform {
-				return []cli.Platform{
-					&enableMockPlatform{
-						mockPlatform: mockPlatform{name: "claude"},
-						mcpServers:   map[string]any{},
-						isAvailable:  true,
-					},
-				}
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().Name().Return("claude").Maybe()
+				m.EXPECT().IsAvailable().Return(true)
+				m.EXPECT().GetMCP("not-found", mock.Anything).Return(nil, errors.New("MCP server not found"))
+				return m
 			},
 			wantErr:    true,
 			wantOutput: []string{"not found"},
@@ -254,15 +244,13 @@ func TestRunMCPSetEnabledWithIO_Disable(t *testing.T) {
 		{
 			name:       "disable with platform error",
 			serverName: "github",
-			platforms: func() []cli.Platform {
-				return []cli.Platform{
-					&enableMockPlatform{
-						mockPlatform: mockPlatform{name: "claude"},
-						mcpServers:   map[string]any{"github": struct{}{}},
-						disableErr:   errors.New("disk full"),
-						isAvailable:  true,
-					},
-				}
+			setupMock: func(t *testing.T) *climocks.MockPlatform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().Name().Return("claude").Maybe()
+				m.EXPECT().IsAvailable().Return(true)
+				m.EXPECT().GetMCP("github", mock.Anything).Return(struct{}{}, nil)
+				m.EXPECT().DisableMCP("github").Return(errors.New("disk full"))
+				return m
 			},
 			wantErr:    false, // The function continues and reports the error in output
 			wantOutput: []string{"error", "disk full"},
@@ -273,7 +261,7 @@ func TestRunMCPSetEnabledWithIO_Disable(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
 
-			platforms := tt.platforms()
+			platforms := []cli.Platform{tt.setupMock(t)}
 			err := runMCPSetEnabledWithMockPlatforms(tt.serverName, false, &buf, platforms)
 
 			if (err != nil) != tt.wantErr {
@@ -373,37 +361,23 @@ func TestMCPEnableDisableActionStrings(t *testing.T) {
 }
 
 func TestMCPEnableCallsEnableMCP(t *testing.T) {
-	mock := &enableMockPlatform{
-		mockPlatform: mockPlatform{name: "claude"},
-		mcpServers:   map[string]any{"github": struct{}{}},
-		isAvailable:  true,
-	}
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude").Maybe()
+	m.EXPECT().IsAvailable().Return(true)
+	m.EXPECT().GetMCP("github", mock.Anything).Return(struct{}{}, nil)
+	m.EXPECT().EnableMCP("github").Return(nil)
 
 	var buf bytes.Buffer
-	_ = runMCPSetEnabledWithMockPlatforms("github", true, &buf, []cli.Platform{mock})
-
-	if !mock.enableCalled {
-		t.Error("EnableMCP() should have been called")
-	}
-	if mock.disableCalled {
-		t.Error("DisableMCP() should not have been called")
-	}
+	_ = runMCPSetEnabledWithMockPlatforms("github", true, &buf, []cli.Platform{m})
 }
 
 func TestMCPDisableCallsDisableMCP(t *testing.T) {
-	mock := &enableMockPlatform{
-		mockPlatform: mockPlatform{name: "claude"},
-		mcpServers:   map[string]any{"github": struct{}{}},
-		isAvailable:  true,
-	}
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude").Maybe()
+	m.EXPECT().IsAvailable().Return(true)
+	m.EXPECT().GetMCP("github", mock.Anything).Return(struct{}{}, nil)
+	m.EXPECT().DisableMCP("github").Return(nil)
 
 	var buf bytes.Buffer
-	_ = runMCPSetEnabledWithMockPlatforms("github", false, &buf, []cli.Platform{mock})
-
-	if mock.enableCalled {
-		t.Error("EnableMCP() should not have been called")
-	}
-	if !mock.disableCalled {
-		t.Error("DisableMCP() should have been called")
-	}
+	_ = runMCPSetEnabledWithMockPlatforms("github", false, &buf, []cli.Platform{m})
 }

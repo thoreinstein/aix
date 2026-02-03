@@ -16,6 +16,8 @@ const (
 	ScopeUser Scope = iota
 	// ScopeProject resolves paths relative to <projectRoot>/.claude/
 	ScopeProject
+	// ScopeLocal resolves paths relative to ./.claude/ (local to CWD)
+	ScopeLocal
 )
 
 // ClaudePaths provides Claude-specific path resolution.
@@ -35,9 +37,28 @@ func NewClaudePaths(scope Scope, projectRoot string) *ClaudePaths {
 	}
 }
 
+// Opposing returns a new ClaudePaths instance for the opposing scope.
+// If the current scope is User, returns Project scope (if projectRoot is set).
+// If the current scope is Project or Local, returns User scope.
+// Returns nil if opposing scope is unavailable (e.g. User scope with no projectRoot).
+func (p *ClaudePaths) Opposing() *ClaudePaths {
+	switch p.scope {
+	case ScopeUser:
+		if p.projectRoot == "" {
+			return nil
+		}
+		return NewClaudePaths(ScopeProject, p.projectRoot)
+	case ScopeProject, ScopeLocal:
+		return NewClaudePaths(ScopeUser, p.projectRoot)
+	default:
+		return nil
+	}
+}
+
 // BaseDir returns the base configuration directory.
 // For ScopeUser: ~/.claude/
 // For ScopeProject: <projectRoot>/.claude/
+// For ScopeLocal: ./.claude/ (current working directory)
 // Returns empty string if projectRoot is empty for ScopeProject.
 func (p *ClaudePaths) BaseDir() string {
 	switch p.scope {
@@ -45,6 +66,12 @@ func (p *ClaudePaths) BaseDir() string {
 		return paths.GlobalConfigDir(paths.PlatformClaude)
 	case ScopeProject:
 		return paths.ProjectConfigDir(paths.PlatformClaude, p.projectRoot)
+	case ScopeLocal:
+		cwd, err := os.Getwd()
+		if err != nil {
+			return ""
+		}
+		return filepath.Join(cwd, ".claude")
 	default:
 		return ""
 	}
@@ -82,14 +109,15 @@ func (p *ClaudePaths) AgentDir() string {
 
 // MCPConfigPath returns the path to the MCP servers configuration file.
 //
-// For ScopeUser: ~/.claude.json (the main user config file, NOT ~/.claude/.mcp.json)
+// For ScopeUser and ScopeLocal: ~/.claude.json (the main user config file)
 // For ScopeProject: <projectRoot>/.claude/.mcp.json
 //
-// Note: Claude Code stores user-level MCP servers in the main user config file
-// at ~/.claude.json, not in a separate file within the .claude directory.
+// Note: Claude Code stores user-level and local-scoped MCP servers in the
+// main user config file at ~/.claude.json. Local-scoped servers are nested
+// under the absolute path of the project.
 func (p *ClaudePaths) MCPConfigPath() string {
 	switch p.scope {
-	case ScopeUser:
+	case ScopeUser, ScopeLocal:
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return ""

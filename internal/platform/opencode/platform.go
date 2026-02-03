@@ -240,6 +240,12 @@ func (p *OpenCodePlatform) BackupPaths() []string {
 	}
 }
 
+// IsLocalConfigIgnored checks if the local configuration is ignored by VCS.
+// OpenCode doesn't currently support local scope, so this always returns true.
+func (p *OpenCodePlatform) IsLocalConfigIgnored() (bool, error) {
+	return true, nil
+}
+
 // --- Status Methods ---
 
 // IsAvailable checks if OpenCode is available on this system.

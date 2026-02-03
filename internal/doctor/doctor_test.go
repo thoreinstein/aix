@@ -5,17 +5,6 @@ import (
 	"time"
 )
 
-// mockCheck is a test helper that implements Check interface.
-type mockCheck struct {
-	name     string
-	category string
-	result   *CheckResult
-}
-
-func (m *mockCheck) Name() string      { return m.name }
-func (m *mockCheck) Category() string  { return m.category }
-func (m *mockCheck) Run() *CheckResult { return m.result }
-
 func TestNewRunner(t *testing.T) {
 	r := NewRunner()
 	if r == nil {
@@ -29,7 +18,8 @@ func TestNewRunner(t *testing.T) {
 func TestRunner_AddCheck(t *testing.T) {
 	t.Run("single check", func(t *testing.T) {
 		r := NewRunner()
-		check := &mockCheck{name: "test-1", category: "cat-1"}
+		check := NewMockCheck(t)
+		check.EXPECT().Name().Return("test-1").Maybe()
 		r.AddCheck(check)
 
 		if len(r.checks) != 1 {
@@ -42,14 +32,10 @@ func TestRunner_AddCheck(t *testing.T) {
 
 	t.Run("multiple checks", func(t *testing.T) {
 		r := NewRunner()
-		checks := []*mockCheck{
-			{name: "test-1", category: "cat-1"},
-			{name: "test-2", category: "cat-2"},
-			{name: "test-3", category: "cat-1"},
-		}
 
-		for _, c := range checks {
-			r.AddCheck(c)
+		for range 3 {
+			check := NewMockCheck(t)
+			r.AddCheck(check)
 		}
 
 		if len(r.checks) != 3 {
@@ -59,17 +45,15 @@ func TestRunner_AddCheck(t *testing.T) {
 
 	t.Run("order preserved", func(t *testing.T) {
 		r := NewRunner()
-		checks := []*mockCheck{
-			{name: "first", category: "cat"},
-			{name: "second", category: "cat"},
-			{name: "third", category: "cat"},
+		names := []string{"first", "second", "third"}
+
+		for _, name := range names {
+			check := NewMockCheck(t)
+			check.EXPECT().Name().Return(name).Maybe()
+			r.AddCheck(check)
 		}
 
-		for _, c := range checks {
-			r.AddCheck(c)
-		}
-
-		for i, want := range []string{"first", "second", "third"} {
+		for i, want := range names {
 			if r.checks[i].Name() != want {
 				t.Errorf("AddCheck order: checks[%d].Name() = %q, want %q", i, r.checks[i].Name(), want)
 			}
@@ -80,7 +64,7 @@ func TestRunner_AddCheck(t *testing.T) {
 func TestRunner_Run(t *testing.T) {
 	tests := []struct {
 		name            string
-		checks          []*mockCheck
+		results         []*CheckResult
 		wantResultCount int
 		wantPassed      int
 		wantInfo        int
@@ -89,7 +73,7 @@ func TestRunner_Run(t *testing.T) {
 	}{
 		{
 			name:            "empty runner",
-			checks:          nil,
+			results:         nil,
 			wantResultCount: 0,
 			wantPassed:      0,
 			wantInfo:        0,
@@ -98,8 +82,8 @@ func TestRunner_Run(t *testing.T) {
 		},
 		{
 			name: "single pass",
-			checks: []*mockCheck{
-				{name: "test", category: "cat", result: &CheckResult{Status: SeverityPass}},
+			results: []*CheckResult{
+				{Status: SeverityPass},
 			},
 			wantResultCount: 1,
 			wantPassed:      1,
@@ -109,8 +93,8 @@ func TestRunner_Run(t *testing.T) {
 		},
 		{
 			name: "single info",
-			checks: []*mockCheck{
-				{name: "test", category: "cat", result: &CheckResult{Status: SeverityInfo}},
+			results: []*CheckResult{
+				{Status: SeverityInfo},
 			},
 			wantResultCount: 1,
 			wantPassed:      0,
@@ -120,8 +104,8 @@ func TestRunner_Run(t *testing.T) {
 		},
 		{
 			name: "single warning",
-			checks: []*mockCheck{
-				{name: "test", category: "cat", result: &CheckResult{Status: SeverityWarning}},
+			results: []*CheckResult{
+				{Status: SeverityWarning},
 			},
 			wantResultCount: 1,
 			wantPassed:      0,
@@ -131,8 +115,8 @@ func TestRunner_Run(t *testing.T) {
 		},
 		{
 			name: "single error",
-			checks: []*mockCheck{
-				{name: "test", category: "cat", result: &CheckResult{Status: SeverityError}},
+			results: []*CheckResult{
+				{Status: SeverityError},
 			},
 			wantResultCount: 1,
 			wantPassed:      0,
@@ -142,13 +126,13 @@ func TestRunner_Run(t *testing.T) {
 		},
 		{
 			name: "mixed severities",
-			checks: []*mockCheck{
-				{name: "pass-1", category: "cat", result: &CheckResult{Status: SeverityPass}},
-				{name: "pass-2", category: "cat", result: &CheckResult{Status: SeverityPass}},
-				{name: "info-1", category: "cat", result: &CheckResult{Status: SeverityInfo}},
-				{name: "warn-1", category: "cat", result: &CheckResult{Status: SeverityWarning}},
-				{name: "warn-2", category: "cat", result: &CheckResult{Status: SeverityWarning}},
-				{name: "err-1", category: "cat", result: &CheckResult{Status: SeverityError}},
+			results: []*CheckResult{
+				{Status: SeverityPass},
+				{Status: SeverityPass},
+				{Status: SeverityInfo},
+				{Status: SeverityWarning},
+				{Status: SeverityWarning},
+				{Status: SeverityError},
 			},
 			wantResultCount: 6,
 			wantPassed:      2,
@@ -158,10 +142,10 @@ func TestRunner_Run(t *testing.T) {
 		},
 		{
 			name: "all pass",
-			checks: []*mockCheck{
-				{name: "pass-1", category: "cat", result: &CheckResult{Status: SeverityPass}},
-				{name: "pass-2", category: "cat", result: &CheckResult{Status: SeverityPass}},
-				{name: "pass-3", category: "cat", result: &CheckResult{Status: SeverityPass}},
+			results: []*CheckResult{
+				{Status: SeverityPass},
+				{Status: SeverityPass},
+				{Status: SeverityPass},
 			},
 			wantResultCount: 3,
 			wantPassed:      3,
@@ -171,9 +155,9 @@ func TestRunner_Run(t *testing.T) {
 		},
 		{
 			name: "all errors",
-			checks: []*mockCheck{
-				{name: "err-1", category: "cat", result: &CheckResult{Status: SeverityError}},
-				{name: "err-2", category: "cat", result: &CheckResult{Status: SeverityError}},
+			results: []*CheckResult{
+				{Status: SeverityError},
+				{Status: SeverityError},
 			},
 			wantResultCount: 2,
 			wantPassed:      0,
@@ -186,8 +170,10 @@ func TestRunner_Run(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := NewRunner()
-			for _, c := range tt.checks {
-				r.AddCheck(c)
+			for _, result := range tt.results {
+				check := NewMockCheck(t)
+				check.EXPECT().Run().Return(result)
+				r.AddCheck(check)
 			}
 
 			before := time.Now().UTC()
@@ -224,20 +210,19 @@ func TestRunner_Run(t *testing.T) {
 
 func TestRunner_Run_ResultsOrder(t *testing.T) {
 	r := NewRunner()
-	checks := []*mockCheck{
-		{name: "first", category: "cat", result: &CheckResult{Name: "first", Status: SeverityPass}},
-		{name: "second", category: "cat", result: &CheckResult{Name: "second", Status: SeverityWarning}},
-		{name: "third", category: "cat", result: &CheckResult{Name: "third", Status: SeverityError}},
-	}
+	names := []string{"first", "second", "third"}
+	statuses := []Severity{SeverityPass, SeverityWarning, SeverityError}
 
-	for _, c := range checks {
-		r.AddCheck(c)
+	for i, name := range names {
+		check := NewMockCheck(t)
+		check.EXPECT().Run().Return(&CheckResult{Name: name, Status: statuses[i]})
+		r.AddCheck(check)
 	}
 
 	report := r.Run()
 
 	// Results should be in the same order as checks were added
-	for i, want := range []string{"first", "second", "third"} {
+	for i, want := range names {
 		if report.Results[i].Name != want {
 			t.Errorf("Results[%d].Name = %q, want %q", i, report.Results[i].Name, want)
 		}

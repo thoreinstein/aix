@@ -169,6 +169,28 @@ func (m *CommandManager) Uninstall(name string) error {
 	return nil
 }
 
+// CheckCollision checks if a command with the given name exists in the opposing scope.
+// Returns true if a collision is found.
+func (m *CommandManager) CheckCollision(name string) (bool, error) {
+	opposing := m.paths.Opposing()
+	if opposing == nil {
+		return false, nil
+	}
+
+	path := opposing.CommandPath(name)
+	if path == "" {
+		return false, nil
+	}
+
+	if _, err := os.Stat(path); err == nil {
+		return true, nil
+	} else if !os.IsNotExist(err) {
+		return false, errors.Wrap(err, "checking collision")
+	}
+
+	return false, nil
+}
+
 // parseCommandFile parses a command markdown file.
 // Supports optional YAML frontmatter delimited by "---".
 // If no frontmatter is present, the entire content is treated as Instructions.

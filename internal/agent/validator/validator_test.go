@@ -2,105 +2,88 @@ package validator
 
 import "testing"
 
-// mockAgent implements Agentable for testing.
-type mockAgent struct {
-	name         string
-	description  string
-	instructions string
-}
-
-func (m *mockAgent) GetName() string         { return m.name }
-func (m *mockAgent) GetDescription() string  { return m.description }
-func (m *mockAgent) GetInstructions() string { return m.instructions }
-
 func TestValidator_Validate(t *testing.T) {
 	tests := []struct {
-		name       string
-		agent      Agentable
-		strict     bool
-		wantErrors int
-		wantWarns  int
+		name         string
+		agentName    string
+		description  string
+		instructions string
+		strict       bool
+		wantErrors   int
+		wantWarns    int
 	}{
 		{
-			name: "valid agent with all fields",
-			agent: &mockAgent{
-				name:         "test-agent",
-				description:  "A test agent",
-				instructions: "Do something useful",
-			},
-			strict:     false,
-			wantErrors: 0,
-			wantWarns:  0,
+			name:         "valid agent with all fields",
+			agentName:    "test-agent",
+			description:  "A test agent",
+			instructions: "Do something useful",
+			strict:       false,
+			wantErrors:   0,
+			wantWarns:    0,
 		},
 		{
-			name: "valid agent minimal (name and instructions only)",
-			agent: &mockAgent{
-				name:         "minimal-agent",
-				instructions: "Just instructions",
-			},
-			strict:     false,
-			wantErrors: 0,
-			wantWarns:  0,
+			name:         "valid agent minimal (name and instructions only)",
+			agentName:    "minimal-agent",
+			instructions: "Just instructions",
+			strict:       false,
+			wantErrors:   0,
+			wantWarns:    0,
 		},
 		{
-			name: "strict mode missing description generates warning",
-			agent: &mockAgent{
-				name:         "strict-agent",
-				instructions: "Instructions present",
-			},
-			strict:     true,
-			wantErrors: 0,
-			wantWarns:  1,
+			name:         "strict mode missing description generates warning",
+			agentName:    "strict-agent",
+			instructions: "Instructions present",
+			strict:       true,
+			wantErrors:   0,
+			wantWarns:    1,
 		},
 		{
-			name: "strict mode with description no warning",
-			agent: &mockAgent{
-				name:         "strict-agent",
-				description:  "Has description",
-				instructions: "Instructions present",
-			},
-			strict:     true,
-			wantErrors: 0,
-			wantWarns:  0,
+			name:         "strict mode with description no warning",
+			agentName:    "strict-agent",
+			description:  "Has description",
+			instructions: "Instructions present",
+			strict:       true,
+			wantErrors:   0,
+			wantWarns:    0,
 		},
 		{
-			name: "missing name is error",
-			agent: &mockAgent{
-				description:  "Has description",
-				instructions: "Has instructions",
-			},
-			strict:     false,
-			wantErrors: 1,
-			wantWarns:  0,
+			name:         "missing name is error",
+			agentName:    "",
+			description:  "Has description",
+			instructions: "Has instructions",
+			strict:       false,
+			wantErrors:   1,
+			wantWarns:    0,
 		},
 		{
-			name: "empty file is error",
-			agent: &mockAgent{
-				name:         "",
-				description:  "",
-				instructions: "",
-			},
-			strict:     false,
-			wantErrors: 2, // missing name + empty file
-			wantWarns:  0,
+			name:         "empty file is error",
+			agentName:    "",
+			description:  "",
+			instructions: "",
+			strict:       false,
+			wantErrors:   2, // missing name + empty file
+			wantWarns:    0,
 		},
 		{
-			name: "empty file strict mode",
-			agent: &mockAgent{
-				name:         "",
-				description:  "",
-				instructions: "",
-			},
-			strict:     true,
-			wantErrors: 2, // missing name + empty file
-			wantWarns:  1, // missing description warning
+			name:         "empty file strict mode",
+			agentName:    "",
+			description:  "",
+			instructions: "",
+			strict:       true,
+			wantErrors:   2, // missing name + empty file
+			wantWarns:    1, // missing description warning
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockAgent := NewMockAgentable(t)
+			mockAgent.EXPECT().GetName().Return(tt.agentName)
+			mockAgent.EXPECT().GetDescription().Return(tt.description)
+			mockAgent.EXPECT().GetInstructions().Return(tt.instructions)
+
 			v := New(tt.strict)
-			result := v.Validate(tt.agent, "test.md")
+			result := v.Validate(mockAgent, "test.md")
 
 			if got := len(result.Errors); got != tt.wantErrors {
 				t.Errorf("Validate() errors = %d, want %d", got, tt.wantErrors)

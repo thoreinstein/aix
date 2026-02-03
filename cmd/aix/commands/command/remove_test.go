@@ -6,148 +6,133 @@ import (
 	"testing"
 
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/cli/mocks"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 func TestFindPlatformsWithCommand(t *testing.T) {
-	tests := []struct {
-		name        string
-		platforms   []cli.Platform
-		commandName string
-		wantCount   int
-	}{
-		{
-			name: "command found on one platform",
-			platforms: []cli.Platform{
-				&mockPlatform{name: "claude", commands: map[string]any{"review": struct{}{}}},
-				&mockPlatform{name: "opencode", commands: map[string]any{}},
-			},
-			commandName: "review",
-			wantCount:   1,
-		},
-		{
-			name: "command found on all platforms",
-			platforms: []cli.Platform{
-				&mockPlatform{name: "claude", commands: map[string]any{"review": struct{}{}}},
-				&mockPlatform{name: "opencode", commands: map[string]any{"review": struct{}{}}},
-			},
-			commandName: "review",
-			wantCount:   2,
-		},
-		{
-			name: "command not found on any platform",
-			platforms: []cli.Platform{
-				&mockPlatform{name: "claude", commands: map[string]any{}},
-				&mockPlatform{name: "opencode", commands: map[string]any{}},
-			},
-			commandName: "review",
-			wantCount:   0,
-		},
-		{
-			name:        "no platforms",
-			platforms:   []cli.Platform{},
-			commandName: "review",
-			wantCount:   0,
-		},
-		{
-			name: "different commands on different platforms",
-			platforms: []cli.Platform{
-				&mockPlatform{name: "claude", commands: map[string]any{"review": struct{}{}}},
-				&mockPlatform{name: "opencode", commands: map[string]any{"build": struct{}{}}},
-			},
-			commandName: "deploy",
-			wantCount:   0,
-		},
-	}
+	t.Run("command found on one platform", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("GetCommand", "review", cli.ScopeDefault).Return(struct{}{}, nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := findPlatformsWithCommand(tt.platforms, tt.commandName)
-			if len(got) != tt.wantCount {
-				t.Errorf("findPlatformsWithCommand() returned %d platforms, want %d", len(got), tt.wantCount)
-			}
-		})
-	}
+		mockP2 := mocks.NewMockPlatform(t)
+		mockP2.On("GetCommand", "review", cli.ScopeDefault).Return(nil, errors.New("not found"))
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		got := findPlatformsWithCommand(platforms, "review")
+		if len(got) != 1 {
+			t.Errorf("findPlatformsWithCommand() returned %d platforms, want 1", len(got))
+		}
+	})
+
+	t.Run("command found on all platforms", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("GetCommand", "review", cli.ScopeDefault).Return(struct{}{}, nil)
+
+		mockP2 := mocks.NewMockPlatform(t)
+		mockP2.On("GetCommand", "review", cli.ScopeDefault).Return(struct{}{}, nil)
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		got := findPlatformsWithCommand(platforms, "review")
+		if len(got) != 2 {
+			t.Errorf("findPlatformsWithCommand() returned %d platforms, want 2", len(got))
+		}
+	})
+
+	t.Run("command not found on any platform", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("GetCommand", "review", cli.ScopeDefault).Return(nil, errors.New("not found"))
+
+		mockP2 := mocks.NewMockPlatform(t)
+		mockP2.On("GetCommand", "review", cli.ScopeDefault).Return(nil, errors.New("not found"))
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		got := findPlatformsWithCommand(platforms, "review")
+		if len(got) != 0 {
+			t.Errorf("findPlatformsWithCommand() returned %d platforms, want 0", len(got))
+		}
+	})
+
+	t.Run("no platforms", func(t *testing.T) {
+		platforms := []cli.Platform{}
+		got := findPlatformsWithCommand(platforms, "review")
+		if len(got) != 0 {
+			t.Errorf("findPlatformsWithCommand() returned %d platforms, want 0", len(got))
+		}
+	})
+
+	t.Run("different commands on different platforms", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("GetCommand", "deploy", cli.ScopeDefault).Return(nil, errors.New("not found"))
+
+		mockP2 := mocks.NewMockPlatform(t)
+		mockP2.On("GetCommand", "deploy", cli.ScopeDefault).Return(nil, errors.New("not found"))
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		got := findPlatformsWithCommand(platforms, "deploy")
+		if len(got) != 0 {
+			t.Errorf("findPlatformsWithCommand() returned %d platforms, want 0", len(got))
+		}
+	})
 }
 
 func TestConfirmRemoval(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
-		platforms []cli.Platform
-		want      bool
+		name  string
+		input string
+		want  bool
 	}{
 		{
 			name:  "yes confirms",
 			input: "yes\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: true,
+			want:  true,
 		},
 		{
 			name:  "y confirms",
 			input: "y\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: true,
+			want:  true,
 		},
 		{
 			name:  "Y confirms (case insensitive)",
 			input: "Y\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: true,
+			want:  true,
 		},
 		{
 			name:  "YES confirms (case insensitive)",
 			input: "YES\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: true,
+			want:  true,
 		},
 		{
 			name:  "no rejects",
 			input: "no\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: false,
+			want:  false,
 		},
 		{
 			name:  "n rejects",
 			input: "n\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: false,
+			want:  false,
 		},
 		{
 			name:  "empty input rejects",
 			input: "\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: false,
+			want:  false,
 		},
 		{
 			name:  "random input rejects",
 			input: "maybe\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: false,
+			want:  false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockP := mocks.NewMockPlatform(t)
+			mockP.On("DisplayName").Return("Claude Code")
+
 			var out bytes.Buffer
 			in := strings.NewReader(tt.input)
 
-			got := confirmRemoval(&out, in, "test-command", tt.platforms)
+			got := confirmRemoval(&out, in, "test-command", []cli.Platform{mockP})
 			if got != tt.want {
 				t.Errorf("confirmRemoval() = %v, want %v", got, tt.want)
 			}
@@ -165,10 +150,13 @@ func TestConfirmRemoval(t *testing.T) {
 }
 
 func TestConfirmRemoval_ListsPlatforms(t *testing.T) {
-	platforms := []cli.Platform{
-		&mockPlatform{displayName: "Claude Code"},
-		&mockPlatform{displayName: "OpenCode"},
-	}
+	mockP1 := mocks.NewMockPlatform(t)
+	mockP1.On("DisplayName").Return("Claude Code")
+
+	mockP2 := mocks.NewMockPlatform(t)
+	mockP2.On("DisplayName").Return("OpenCode")
+
+	platforms := []cli.Platform{mockP1, mockP2}
 
 	var out bytes.Buffer
 	in := strings.NewReader("n\n")

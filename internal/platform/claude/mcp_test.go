@@ -570,3 +570,99 @@ func TestMCPManager_JSONFormatting(t *testing.T) {
 		t.Error("JSON should end with newline")
 	}
 }
+
+func TestMCPManager_ScopeLocal(t *testing.T) {
+	tmpHome := t.TempDir()
+	tmpProject := t.TempDir()
+
+	// Mock HOME for user/local scope resolution
+	t.Setenv("HOME", tmpHome)
+
+	// Ensure .claude.json doesn't exist
+	configPath := filepath.Join(tmpHome, ".claude.json")
+
+	// Create manager with ScopeLocal
+	paths := NewClaudePaths(ScopeLocal, tmpProject)
+	mgr := NewMCPManager(paths)
+
+	server := &MCPServer{
+		Name:    "local-server",
+		Command: "local-cmd",
+	}
+
+	// Add server in Local scope
+	if err := mgr.Add(server); err != nil {
+		t.Fatalf("Add() error = %v", err)
+	}
+
+	// Verify it was written nested under project path
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("failed to read global config: %v", err)
+	}
+
+	var fullConfig map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fullConfig); err != nil {
+		t.Fatalf("failed to parse global config: %v", err)
+	}
+
+	absProj, _ := filepath.Abs(tmpProject)
+	projectData, ok := fullConfig[absProj]
+	if !ok {
+		t.Fatalf("project path key %q not found in config", absProj)
+	}
+
+	var projectConfig MCPConfig
+	if err := json.Unmarshal(projectData, &projectConfig); err != nil {
+		t.Fatalf("failed to parse project config: %v", err)
+	}
+
+	if _, ok := projectConfig.MCPServers["local-server"]; !ok {
+		t.Error("local-server not found in project config")
+	}
+
+	// Verify List() in Local scope only returns local servers
+	servers, err := mgr.List()
+	if err != nil {
+		t.Fatalf("List() error = %v", err)
+	}
+	if len(servers) != 1 {
+		t.Errorf("List() returned %d servers, want 1", len(servers))
+	}
+	if servers[0].Name != "local-server" {
+		t.Errorf("List()[0].Name = %q, want %q", servers[0].Name, "local-server")
+	}
+
+	// Verify Get() in Local scope
+	got, err := mgr.Get("local-server")
+	if err != nil {
+		t.Fatalf("Get() error = %v", err)
+	}
+	if got.Name != "local-server" {
+		t.Errorf("Get().Name = %q, want %q", got.Name, "local-server")
+	}
+
+	// Now add a User scope server and verify separation
+	userPaths := NewClaudePaths(ScopeUser, tmpProject)
+	userMgr := NewMCPManager(userPaths)
+
+	userServer := &MCPServer{
+		Name:    "user-server",
+		Command: "user-cmd",
+	}
+	if err := userMgr.Add(userServer); err != nil {
+		t.Fatalf("userMgr.Add() error = %v", err)
+	}
+
+	// List in User scope should only show user server
+	userServers, _ := userMgr.List()
+	if len(userServers) != 1 || userServers[0].Name != "user-server" {
+		t.Errorf("userMgr.List() = %v, want [user-server]", userServers)
+	}
+
+	// List in Local scope should still only show local server
+	localServers, _ := mgr.List()
+	if len(localServers) != 1 || localServers[0].Name != "local-server" {
+		t.Errorf("mgr.List() = %v, want [local-server]", localServers)
+	}
+}
