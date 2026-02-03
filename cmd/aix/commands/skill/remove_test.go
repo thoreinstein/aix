@@ -6,228 +6,119 @@ import (
 	"testing"
 
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/cli/mocks"
 	"github.com/thoreinstein/aix/internal/errors"
 )
 
-// mockPlatform implements cli.Platform for testing.
-type mockPlatform struct {
-	name         string
-	displayName  string
-	skills       map[string]any
-	commands     map[string]any
-	uninstallErr error
-}
-
-func (m *mockPlatform) Name() string        { return m.name }
-func (m *mockPlatform) DisplayName() string { return m.displayName }
-func (m *mockPlatform) IsAvailable() bool   { return true }
-func (m *mockPlatform) SkillDir() string    { return "/mock/skills" }
-
-func (m *mockPlatform) InstallSkill(_ any, _ cli.Scope) error { return nil }
-
-func (m *mockPlatform) UninstallSkill(name string, _ cli.Scope) error {
-	if m.uninstallErr != nil {
-		return m.uninstallErr
-	}
-	delete(m.skills, name)
-	return nil
-}
-
-func (m *mockPlatform) ListSkills(_ cli.Scope) ([]cli.SkillInfo, error) {
-	skills := make([]cli.SkillInfo, 0, len(m.skills))
-	for name := range m.skills {
-		skills = append(skills, cli.SkillInfo{Name: name})
-	}
-	return skills, nil
-}
-
-func (m *mockPlatform) GetSkill(name string, _ cli.Scope) (any, error) {
-	skill, ok := m.skills[name]
-	if !ok {
-		return nil, errors.New("skill not found")
-	}
-	return skill, nil
-}
-
-func (m *mockPlatform) CommandDir() string { return "/mock/commands" }
-
-func (m *mockPlatform) InstallCommand(_ any, _ cli.Scope) error { return nil }
-
-func (m *mockPlatform) UninstallCommand(name string, _ cli.Scope) error {
-	delete(m.commands, name)
-	return nil
-}
-
-func (m *mockPlatform) ListCommands(_ cli.Scope) ([]cli.CommandInfo, error) {
-	commands := make([]cli.CommandInfo, 0, len(m.commands))
-	for name := range m.commands {
-		commands = append(commands, cli.CommandInfo{Name: name})
-	}
-	return commands, nil
-}
-
-func (m *mockPlatform) GetCommand(name string, _ cli.Scope) (any, error) {
-	cmd, ok := m.commands[name]
-	if !ok {
-		return nil, errors.New("command not found")
-	}
-	return cmd, nil
-}
-
-// MCP methods for cli.Platform interface
-func (m *mockPlatform) MCPConfigPath() string                      { return "/mock/mcp.json" }
-func (m *mockPlatform) AddMCP(_ any, _ cli.Scope) error            { return nil }
-func (m *mockPlatform) RemoveMCP(_ string, _ cli.Scope) error      { return nil }
-func (m *mockPlatform) ListMCP(_ cli.Scope) ([]cli.MCPInfo, error) { return nil, nil }
-func (m *mockPlatform) GetMCP(_ string, _ cli.Scope) (any, error) {
-	return nil, errors.New("not found")
-}
-func (m *mockPlatform) EnableMCP(_ string) error  { return nil }
-func (m *mockPlatform) DisableMCP(_ string) error { return nil }
-
-// Agent methods for cli.Platform interface
-func (m *mockPlatform) AgentDir() string                                { return "/mock/agents" }
-func (m *mockPlatform) InstallAgent(_ any, _ cli.Scope) error           { return nil }
-func (m *mockPlatform) UninstallAgent(_ string, _ cli.Scope) error      { return nil }
-func (m *mockPlatform) ListAgents(_ cli.Scope) ([]cli.AgentInfo, error) { return nil, nil }
-func (m *mockPlatform) GetAgent(_ string, _ cli.Scope) (any, error) {
-	return nil, errors.New("not found")
-}
-
-// Backup methods for cli.Platform interface
-func (m *mockPlatform) BackupPaths() []string { return []string{"/mock/backup"} }
-
 func TestFindPlatformsWithSkill(t *testing.T) {
-	tests := []struct {
-		name      string
-		platforms []cli.Platform
-		skillName string
-		wantCount int
-	}{
-		{
-			name: "skill found on one platform",
-			platforms: []cli.Platform{
-				&mockPlatform{name: "claude", skills: map[string]any{"debug": struct{}{}}},
-				&mockPlatform{name: "opencode", skills: map[string]any{}},
-			},
-			skillName: "debug",
-			wantCount: 1,
-		},
-		{
-			name: "skill found on all platforms",
-			platforms: []cli.Platform{
-				&mockPlatform{name: "claude", skills: map[string]any{"debug": struct{}{}}},
-				&mockPlatform{name: "opencode", skills: map[string]any{"debug": struct{}{}}},
-			},
-			skillName: "debug",
-			wantCount: 2,
-		},
-		{
-			name: "skill not found on any platform",
-			platforms: []cli.Platform{
-				&mockPlatform{name: "claude", skills: map[string]any{}},
-				&mockPlatform{name: "opencode", skills: map[string]any{}},
-			},
-			skillName: "debug",
-			wantCount: 0,
-		},
-		{
-			name:      "no platforms",
-			platforms: []cli.Platform{},
-			skillName: "debug",
-			wantCount: 0,
-		},
-	}
+	t.Run("skill found on one platform", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("GetSkill", "debug", cli.ScopeDefault).Return(struct{}{}, nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := findPlatformsWithSkill(tt.platforms, tt.skillName)
-			if len(got) != tt.wantCount {
-				t.Errorf("findPlatformsWithSkill() returned %d platforms, want %d", len(got), tt.wantCount)
-			}
-		})
-	}
+		mockP2 := mocks.NewMockPlatform(t)
+		mockP2.On("GetSkill", "debug", cli.ScopeDefault).Return(nil, errors.New("not found"))
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		got := findPlatformsWithSkill(platforms, "debug")
+		if len(got) != 1 {
+			t.Errorf("findPlatformsWithSkill() returned %d platforms, want 1", len(got))
+		}
+	})
+
+	t.Run("skill found on all platforms", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("GetSkill", "debug", cli.ScopeDefault).Return(struct{}{}, nil)
+
+		mockP2 := mocks.NewMockPlatform(t)
+		mockP2.On("GetSkill", "debug", cli.ScopeDefault).Return(struct{}{}, nil)
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		got := findPlatformsWithSkill(platforms, "debug")
+		if len(got) != 2 {
+			t.Errorf("findPlatformsWithSkill() returned %d platforms, want 2", len(got))
+		}
+	})
+
+	t.Run("skill not found on any platform", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("GetSkill", "debug", cli.ScopeDefault).Return(nil, errors.New("not found"))
+
+		mockP2 := mocks.NewMockPlatform(t)
+		mockP2.On("GetSkill", "debug", cli.ScopeDefault).Return(nil, errors.New("not found"))
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		got := findPlatformsWithSkill(platforms, "debug")
+		if len(got) != 0 {
+			t.Errorf("findPlatformsWithSkill() returned %d platforms, want 0", len(got))
+		}
+	})
+
+	t.Run("no platforms", func(t *testing.T) {
+		platforms := []cli.Platform{}
+		got := findPlatformsWithSkill(platforms, "debug")
+		if len(got) != 0 {
+			t.Errorf("findPlatformsWithSkill() returned %d platforms, want 0", len(got))
+		}
+	})
 }
 
 func TestConfirmRemoval(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
-		platforms []cli.Platform
-		want      bool
+		name  string
+		input string
+		want  bool
 	}{
 		{
 			name:  "yes confirms",
 			input: "yes\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: true,
+			want:  true,
 		},
 		{
 			name:  "y confirms",
 			input: "y\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: true,
+			want:  true,
 		},
 		{
 			name:  "Y confirms (case insensitive)",
 			input: "Y\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: true,
+			want:  true,
 		},
 		{
 			name:  "YES confirms (case insensitive)",
 			input: "YES\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: true,
+			want:  true,
 		},
 		{
 			name:  "no rejects",
 			input: "no\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: false,
+			want:  false,
 		},
 		{
 			name:  "n rejects",
 			input: "n\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: false,
+			want:  false,
 		},
 		{
 			name:  "empty input rejects",
 			input: "\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: false,
+			want:  false,
 		},
 		{
 			name:  "random input rejects",
 			input: "maybe\n",
-			platforms: []cli.Platform{
-				&mockPlatform{displayName: "Claude Code"},
-			},
-			want: false,
+			want:  false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockP := mocks.NewMockPlatform(t)
+			mockP.On("DisplayName").Return("Claude Code")
+
 			var out bytes.Buffer
 			in := strings.NewReader(tt.input)
 
-			got := confirmRemoval(&out, in, "test-skill", tt.platforms)
+			got := confirmRemoval(&out, in, "test-skill", []cli.Platform{mockP})
 			if got != tt.want {
 				t.Errorf("confirmRemoval() = %v, want %v", got, tt.want)
 			}
@@ -245,10 +136,13 @@ func TestConfirmRemoval(t *testing.T) {
 }
 
 func TestConfirmRemoval_ListsPlatforms(t *testing.T) {
-	platforms := []cli.Platform{
-		&mockPlatform{displayName: "Claude Code"},
-		&mockPlatform{displayName: "OpenCode"},
-	}
+	mockP1 := mocks.NewMockPlatform(t)
+	mockP1.On("DisplayName").Return("Claude Code")
+
+	mockP2 := mocks.NewMockPlatform(t)
+	mockP2.On("DisplayName").Return("OpenCode")
+
+	platforms := []cli.Platform{mockP1, mockP2}
 
 	var out bytes.Buffer
 	in := strings.NewReader("n\n")

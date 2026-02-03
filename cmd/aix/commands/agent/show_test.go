@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/cli/mocks"
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/platform/claude"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
@@ -375,20 +376,6 @@ func TestInstallLocationJSONTags(t *testing.T) {
 	}
 }
 
-// showMockPlatform extends mockPlatform with agent show-specific behavior.
-type showMockPlatform struct {
-	mockPlatform
-	agent    any
-	agentErr error
-}
-
-func (m *showMockPlatform) GetAgent(_ string, _ cli.Scope) (any, error) {
-	if m.agentErr != nil {
-		return nil, m.agentErr
-	}
-	return m.agent, nil
-}
-
 func TestIsAgentNotFoundError(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -455,154 +442,101 @@ func TestIsAgentNotFoundError(t *testing.T) {
 }
 
 func TestShowErrorHandling(t *testing.T) {
-	tests := []struct {
-		name        string
-		platforms   []cli.Platform
-		wantErr     bool
-		wantErrMsg  string
-		description string
-	}{
-		{
-			name: "not_found_continues_to_next_platform",
-			platforms: []cli.Platform{
-				&showMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "claude",
-						displayName: "Claude Code",
-					},
-					agentErr: claude.ErrAgentNotFound,
-				},
-				&showMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "opencode",
-						displayName: "OpenCode",
-					},
-					agent: &opencode.Agent{
-						Name:        "test-agent",
-						Description: "A test agent",
-					},
-				},
-			},
-			wantErr:     false,
-			description: "should continue to next platform when agent not found",
-		},
-		{
-			name: "not_found_on_all_platforms",
-			platforms: []cli.Platform{
-				&showMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "claude",
-						displayName: "Claude Code",
-					},
-					agentErr: claude.ErrAgentNotFound,
-				},
-				&showMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "opencode",
-						displayName: "OpenCode",
-					},
-					agentErr: opencode.ErrAgentNotFound,
-				},
-			},
-			wantErr:     true,
-			wantErrMsg:  "not found on any platform",
-			description: "should return not found error when missing from all platforms",
-		},
-		{
-			name: "permission_error_reported",
-			platforms: []cli.Platform{
-				&showMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "claude",
-						displayName: "Claude Code",
-					},
-					agentErr: errors.New("permission denied: ~/.claude/agents/test.md"),
-				},
-			},
-			wantErr:     true,
-			wantErrMsg:  "reading agent from Claude Code",
-			description: "should report permission errors instead of swallowing them",
-		},
-		{
-			name: "parse_error_reported",
-			platforms: []cli.Platform{
-				&showMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "opencode",
-						displayName: "OpenCode",
-					},
-					agentErr: errors.New("parsing agent: invalid yaml"),
-				},
-			},
-			wantErr:     true,
-			wantErrMsg:  "reading agent from OpenCode",
-			description: "should report parse errors instead of swallowing them",
-		},
-		{
-			name: "error_on_first_platform_stops_iteration",
-			platforms: []cli.Platform{
-				&showMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "claude",
-						displayName: "Claude Code",
-					},
-					agentErr: errors.New("disk I/O error"),
-				},
-				&showMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "opencode",
-						displayName: "OpenCode",
-					},
-					agent: &opencode.Agent{
-						Name: "test-agent",
-					},
-				},
-			},
-			wantErr:     true,
-			wantErrMsg:  "reading agent from Claude Code: disk I/O error",
-			description: "should fail fast on first real error",
-		},
+	t.Run("not_found_continues_to_next_platform", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("DisplayName").Return("Claude Code").Maybe()
+		mockP1.On("GetAgent", "test-agent", cli.ScopeDefault).Return(nil, claude.ErrAgentNotFound)
+
+		mockP2 := mocks.NewMockPlatform(t)
+		mockP2.On("DisplayName").Return("OpenCode").Maybe()
+		mockP2.On("GetAgent", "test-agent", cli.ScopeDefault).Return(&opencode.Agent{
+			Name:        "test-agent",
+			Description: "A test agent",
+		}, nil)
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		runErrorCheck(t, platforms, false, "", "should continue to next platform when agent not found")
+	})
+
+	t.Run("not_found_on_all_platforms", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("DisplayName").Return("Claude Code").Maybe()
+		mockP1.On("GetAgent", "test-agent", cli.ScopeDefault).Return(nil, claude.ErrAgentNotFound)
+
+		mockP2 := mocks.NewMockPlatform(t)
+		mockP2.On("DisplayName").Return("OpenCode").Maybe()
+		mockP2.On("GetAgent", "test-agent", cli.ScopeDefault).Return(nil, opencode.ErrAgentNotFound)
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		runErrorCheck(t, platforms, true, "not found on any platform", "should return not found error when missing from all platforms")
+	})
+
+	t.Run("permission_error_reported", func(t *testing.T) {
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("Claude Code")
+		mockP.On("GetAgent", "test-agent", cli.ScopeDefault).Return(nil, errors.New("permission denied: ~/.claude/agents/test.md"))
+
+		platforms := []cli.Platform{mockP}
+		runErrorCheck(t, platforms, true, "reading agent from Claude Code", "should report permission errors instead of swallowing them")
+	})
+
+	t.Run("parse_error_reported", func(t *testing.T) {
+		mockP := mocks.NewMockPlatform(t)
+		mockP.On("DisplayName").Return("OpenCode")
+		mockP.On("GetAgent", "test-agent", cli.ScopeDefault).Return(nil, errors.New("parsing agent: invalid yaml"))
+
+		platforms := []cli.Platform{mockP}
+		runErrorCheck(t, platforms, true, "reading agent from OpenCode", "should report parse errors instead of swallowing them")
+	})
+
+	t.Run("error_on_first_platform_stops_iteration", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("DisplayName").Return("Claude Code")
+		mockP1.On("GetAgent", "test-agent", cli.ScopeDefault).Return(nil, errors.New("disk I/O error"))
+
+		// mockP2 won't be called because first one fails
+		mockP2 := mocks.NewMockPlatform(t)
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		runErrorCheck(t, platforms, true, "reading agent from Claude Code: disk I/O error", "should fail fast on first real error")
+	})
+}
+
+func runErrorCheck(t *testing.T, platforms []cli.Platform, wantErr bool, wantErrMsg string, description string) {
+	t.Helper()
+
+	var foundAgent bool
+	var firstErr error
+
+	for _, p := range platforms {
+		_, err := p.GetAgent("test-agent", cli.ScopeDefault)
+		if err != nil {
+			if errors.Is(err, claude.ErrAgentNotFound) ||
+				errors.Is(err, opencode.ErrAgentNotFound) {
+				continue
+			}
+			firstErr = errors.Wrapf(err, "reading agent from %s", p.DisplayName())
+			break
+		}
+		foundAgent = true
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// We can't directly test runShowWithWriter because it calls
-			// cli.ResolvePlatforms. Instead, test the error classification logic
-			// by simulating what the loop does.
-			var foundAgent bool
-			var firstErr error
+	var gotErr error
+	if firstErr != nil {
+		gotErr = firstErr
+	} else if !foundAgent {
+		gotErr = errors.New("agent not found on any platform")
+	}
 
-			for _, p := range tt.platforms {
-				_, err := p.GetAgent("test-agent", cli.ScopeDefault)
-				if err != nil {
-					if errors.Is(err, claude.ErrAgentNotFound) ||
-						errors.Is(err, opencode.ErrAgentNotFound) {
-						continue
-					}
-					firstErr = errors.Wrapf(err, "reading agent from %s", p.DisplayName())
-					break
-				}
-				foundAgent = true
-			}
+	if (gotErr != nil) != wantErr {
+		t.Errorf("error = %v, wantErr %v; %s", gotErr, wantErr, description)
+		return
+	}
 
-			var gotErr error
-			if firstErr != nil {
-				gotErr = firstErr
-			} else if !foundAgent {
-				gotErr = errors.New("agent not found on any platform")
-			}
-
-			if (gotErr != nil) != tt.wantErr {
-				t.Errorf("error = %v, wantErr %v; %s", gotErr, tt.wantErr, tt.description)
-				return
-			}
-
-			if tt.wantErr && gotErr != nil {
-				if !strings.Contains(gotErr.Error(), tt.wantErrMsg) {
-					t.Errorf("error = %q, want to contain %q; %s",
-						gotErr.Error(), tt.wantErrMsg, tt.description)
-				}
-			}
-		})
+	if wantErr && gotErr != nil {
+		if !strings.Contains(gotErr.Error(), wantErrMsg) {
+			t.Errorf("error = %q, want to contain %q; %s",
+				gotErr.Error(), wantErrMsg, description)
+		}
 	}
 }

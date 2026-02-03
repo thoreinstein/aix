@@ -690,3 +690,56 @@ func TestAgentManager_AgentPath(t *testing.T) {
 		t.Errorf("AgentPath() = %q, want %q", got, expected)
 	}
 }
+
+func TestAgentManager_CheckCollision(t *testing.T) {
+	homeDir := t.TempDir()
+	projectDir := t.TempDir()
+
+	// Mock HOME for user scope resolution
+	t.Setenv("HOME", homeDir)
+
+	// User scope paths (aware of project root)
+	userPaths := NewClaudePaths(ScopeUser, projectDir)
+	userMgr := NewAgentManager(userPaths)
+
+	// Project scope paths
+	projectPaths := NewClaudePaths(ScopeProject, projectDir)
+	projectMgr := NewAgentManager(projectPaths)
+
+	// Case 1: No collision initially
+	found, err := projectMgr.CheckCollision("collision-agent")
+	if err != nil {
+		t.Fatalf("CheckCollision() error = %v", err)
+	}
+	if found {
+		t.Error("CheckCollision() = true, want false")
+	}
+
+	// Case 2: Create agent in User scope, check from Project scope
+	agent := &Agent{Name: "collision-agent", Description: "User agent"}
+	if err := userMgr.Install(agent); err != nil {
+		t.Fatalf("userMgr.Install() error = %v", err)
+	}
+
+	found, err = projectMgr.CheckCollision("collision-agent")
+	if err != nil {
+		t.Fatalf("CheckCollision() error = %v", err)
+	}
+	if !found {
+		t.Error("CheckCollision() = false, want true (collision with user scope)")
+	}
+
+	// Case 3: Create agent in Project scope, check from User scope
+	projAgent := &Agent{Name: "project-agent", Description: "Project agent"}
+	if err := projectMgr.Install(projAgent); err != nil {
+		t.Fatalf("projectMgr.Install() error = %v", err)
+	}
+
+	found, err = userMgr.CheckCollision("project-agent")
+	if err != nil {
+		t.Fatalf("CheckCollision() error = %v", err)
+	}
+	if !found {
+		t.Error("CheckCollision() = false, want true (collision with project scope)")
+	}
+}

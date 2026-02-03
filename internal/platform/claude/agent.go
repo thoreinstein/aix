@@ -120,6 +120,10 @@ func (m *AgentManager) Install(a *Agent) error {
 		return ErrInvalidAgent
 	}
 
+	if m.paths.scope == ScopeLocal {
+		return errors.New("agents cannot be installed in local scope; use project or user scope instead")
+	}
+
 	agentDir := m.paths.AgentDir()
 	if agentDir == "" {
 		return ErrAgentDirUnresolved
@@ -160,6 +164,28 @@ func (m *AgentManager) Uninstall(name string) error {
 	}
 
 	return nil
+}
+
+// CheckCollision checks if an agent with the given name exists in the opposing scope.
+// Returns true if a collision is found.
+func (m *AgentManager) CheckCollision(name string) (bool, error) {
+	opposing := m.paths.Opposing()
+	if opposing == nil {
+		return false, nil
+	}
+
+	path := opposing.AgentPath(name)
+	if path == "" {
+		return false, nil
+	}
+
+	if _, err := os.Stat(path); err == nil {
+		return true, nil
+	} else if !os.IsNotExist(err) {
+		return false, errors.Wrap(err, "checking collision")
+	}
+
+	return false, nil
 }
 
 // parseAgentContent parses markdown content with optional YAML frontmatter.

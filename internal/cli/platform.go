@@ -186,6 +186,9 @@ type Platform interface {
 	// BackupPaths returns all config files/directories that should be backed up.
 	// This includes MCP config files and platform-specific directories (skills, commands, agents).
 	BackupPaths() []string
+
+	// IsLocalConfigIgnored checks if the local configuration is ignored by VCS.
+	IsLocalConfigIgnored() (bool, error)
 }
 
 // basePlatform defines the interface for common platform methods that don't require
@@ -199,6 +202,7 @@ type basePlatform interface {
 	AgentDir() string
 	MCPConfigPath() string
 	BackupPaths() []string
+	IsLocalConfigIgnored() (bool, error)
 }
 
 // baseAdapter implements the simple pass-through methods of the Platform interface
@@ -216,6 +220,13 @@ func (a *baseAdapter) CommandDir() string    { return a.p.CommandDir() }
 func (a *baseAdapter) AgentDir() string      { return a.p.AgentDir() }
 func (a *baseAdapter) MCPConfigPath() string { return a.p.MCPConfigPath() }
 func (a *baseAdapter) BackupPaths() []string { return a.p.BackupPaths() }
+func (a *baseAdapter) IsLocalConfigIgnored() (bool, error) {
+	ignored, err := a.p.IsLocalConfigIgnored()
+	if err != nil {
+		return false, errors.Wrap(err, "checking if local config is ignored")
+	}
+	return ignored, nil
+}
 
 // claudeAdapter wraps ClaudePlatform to implement the Platform interface.
 type claudeAdapter struct {
@@ -382,6 +393,14 @@ func (a *claudeAdapter) GetAgent(name string, scope Scope) (any, error) {
 	return ag, nil
 }
 
+func (a *claudeAdapter) IsLocalConfigIgnored() (bool, error) {
+	ignored, err := a.p.IsLocalConfigIgnored()
+	if err != nil {
+		return false, errors.Wrap(err, "checking if Claude local config is ignored")
+	}
+	return ignored, nil
+}
+
 // opencodeAdapter wraps OpenCodePlatform to implement the Platform interface.
 type opencodeAdapter struct {
 	baseAdapter
@@ -545,6 +564,14 @@ func (a *opencodeAdapter) GetAgent(name string, scope Scope) (any, error) {
 	return ag, nil
 }
 
+func (a *opencodeAdapter) IsLocalConfigIgnored() (bool, error) {
+	ignored, err := a.p.IsLocalConfigIgnored()
+	if err != nil {
+		return false, errors.Wrap(err, "checking if OpenCode local config is ignored")
+	}
+	return ignored, nil
+}
+
 // geminiAdapter wraps GeminiPlatform to implement the Platform interface.
 type geminiAdapter struct {
 	baseAdapter
@@ -692,6 +719,14 @@ func inferTransport(serverType, url string) string {
 		return "sse"
 	}
 	return "stdio"
+}
+
+func (a *geminiAdapter) IsLocalConfigIgnored() (bool, error) {
+	ignored, err := a.p.IsLocalConfigIgnored()
+	if err != nil {
+		return false, errors.Wrap(err, "checking if Gemini local config is ignored")
+	}
+	return ignored, nil
 }
 
 func NewPlatform(name string) (Platform, error) {

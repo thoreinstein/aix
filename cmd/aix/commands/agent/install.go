@@ -166,7 +166,6 @@ func runInstall(_ *cobra.Command, args []string) error {
 	return fmt.Errorf("agent %q not found in any configured repository", source)
 }
 
-
 // installFromLocal installs an agent from a local file or directory.
 func installFromLocal(source string, scope cli.Scope) error {
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())

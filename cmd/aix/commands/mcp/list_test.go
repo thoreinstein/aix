@@ -6,22 +6,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+
 	"github.com/thoreinstein/aix/internal/cli"
+	climocks "github.com/thoreinstein/aix/internal/cli/mocks"
 )
-
-// listMockPlatform extends mockPlatform with MCP list-specific behavior.
-type listMockPlatform struct {
-	mockPlatform
-	mcpServers []cli.MCPInfo
-	mcpErr     error
-}
-
-func (m *listMockPlatform) ListMCP(_ cli.Scope) ([]cli.MCPInfo, error) {
-	if m.mcpErr != nil {
-		return nil, m.mcpErr
-	}
-	return m.mcpServers, nil
-}
 
 // Note: MaskSecrets unit tests are in internal/doctor/redact_test.go.
 // The integration tests below verify the command behavior including masking.
@@ -45,15 +34,12 @@ func TestListCommand_Metadata(t *testing.T) {
 }
 
 func TestOutputTabular_EmptyState(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			mcpServers: []cli.MCPInfo{},
-		},
-	}
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude").Maybe()
+	m.EXPECT().DisplayName().Return("Claude Code")
+	m.EXPECT().ListMCP(mock.Anything).Return([]cli.MCPInfo{}, nil)
+
+	platforms := []cli.Platform{m}
 
 	var buf bytes.Buffer
 	err := outputTabular(&buf, platforms, cli.ScopeUser)
@@ -71,34 +57,31 @@ func TestOutputTabular_EmptyState(t *testing.T) {
 }
 
 func TestOutputTabular_WithServers(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			mcpServers: []cli.MCPInfo{
-				{
-					Name:      "github",
-					Transport: "stdio",
-					Command:   "npx",
-					Disabled:  false,
-				},
-				{
-					Name:      "api-gw",
-					Transport: "sse",
-					URL:       "https://api.example.com/mcp",
-					Disabled:  false,
-				},
-				{
-					Name:      "disabled-server",
-					Transport: "stdio",
-					Command:   "/usr/bin/disabled-server",
-					Disabled:  true,
-				},
-			},
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude").Maybe()
+	m.EXPECT().DisplayName().Return("Claude Code")
+	m.EXPECT().ListMCP(mock.Anything).Return([]cli.MCPInfo{
+		{
+			Name:      "github",
+			Transport: "stdio",
+			Command:   "npx",
+			Disabled:  false,
 		},
-	}
+		{
+			Name:      "api-gw",
+			Transport: "sse",
+			URL:       "https://api.example.com/mcp",
+			Disabled:  false,
+		},
+		{
+			Name:      "disabled-server",
+			Transport: "stdio",
+			Command:   "/usr/bin/disabled-server",
+			Disabled:  true,
+		},
+	}, nil)
+
+	platforms := []cli.Platform{m}
 
 	var buf bytes.Buffer
 	err := outputTabular(&buf, platforms, cli.ScopeUser)
@@ -141,26 +124,21 @@ func TestOutputTabular_WithServers(t *testing.T) {
 }
 
 func TestOutputTabular_MultiplePlatforms(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			mcpServers: []cli.MCPInfo{
-				{Name: "github", Transport: "stdio", Command: "npx"},
-			},
-		},
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "opencode",
-				displayName: "OpenCode",
-			},
-			mcpServers: []cli.MCPInfo{
-				{Name: "github", Transport: "stdio", Command: "npx"},
-			},
-		},
-	}
+	m1 := climocks.NewMockPlatform(t)
+	m1.EXPECT().Name().Return("claude").Maybe()
+	m1.EXPECT().DisplayName().Return("Claude Code")
+	m1.EXPECT().ListMCP(mock.Anything).Return([]cli.MCPInfo{
+		{Name: "github", Transport: "stdio", Command: "npx"},
+	}, nil)
+
+	m2 := climocks.NewMockPlatform(t)
+	m2.EXPECT().Name().Return("opencode").Maybe()
+	m2.EXPECT().DisplayName().Return("OpenCode")
+	m2.EXPECT().ListMCP(mock.Anything).Return([]cli.MCPInfo{
+		{Name: "github", Transport: "stdio", Command: "npx"},
+	}, nil)
+
+	platforms := []cli.Platform{m1, m2}
 
 	var buf bytes.Buffer
 	err := outputTabular(&buf, platforms, cli.ScopeUser)
@@ -178,22 +156,17 @@ func TestOutputTabular_MultiplePlatforms(t *testing.T) {
 }
 
 func TestOutputTabular_NoServersAcrossPlatforms(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			mcpServers: []cli.MCPInfo{},
-		},
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "opencode",
-				displayName: "OpenCode",
-			},
-			mcpServers: []cli.MCPInfo{},
-		},
-	}
+	m1 := climocks.NewMockPlatform(t)
+	m1.EXPECT().Name().Return("claude").Maybe()
+	m1.EXPECT().DisplayName().Return("Claude Code")
+	m1.EXPECT().ListMCP(mock.Anything).Return([]cli.MCPInfo{}, nil)
+
+	m2 := climocks.NewMockPlatform(t)
+	m2.EXPECT().Name().Return("opencode").Maybe()
+	m2.EXPECT().DisplayName().Return("OpenCode")
+	m2.EXPECT().ListMCP(mock.Anything).Return([]cli.MCPInfo{}, nil)
+
+	platforms := []cli.Platform{m1, m2}
 
 	var buf bytes.Buffer
 	err := outputTabular(&buf, platforms, cli.ScopeUser)
@@ -213,27 +186,23 @@ func TestOutputJSON(t *testing.T) {
 	defer func() { listShowSecrets = oldShowSecrets }()
 	listShowSecrets = false
 
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			mcpServers: []cli.MCPInfo{
-				{
-					Name:      "github",
-					Transport: "stdio",
-					Command:   "npx",
-					Disabled:  false,
-					Env: map[string]string{
-						"GITHUB_TOKEN": "ghp_xxxxxxxxxxxx1234",
-						"DEBUG":        "true",
-						"API_KEY":      "sk-secret-key-value",
-					},
-				},
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude")
+	m.EXPECT().ListMCP(mock.Anything).Return([]cli.MCPInfo{
+		{
+			Name:      "github",
+			Transport: "stdio",
+			Command:   "npx",
+			Disabled:  false,
+			Env: map[string]string{
+				"GITHUB_TOKEN": "ghp_xxxxxxxxxxxx1234",
+				"DEBUG":        "true",
+				"API_KEY":      "sk-secret-key-value",
 			},
 		},
-	}
+	}, nil)
+
+	platforms := []cli.Platform{m}
 
 	var buf bytes.Buffer
 	err := outputJSON(&buf, platforms, cli.ScopeUser)
@@ -293,24 +262,20 @@ func TestOutputJSON_ShowSecrets(t *testing.T) {
 	defer func() { listShowSecrets = oldShowSecrets }()
 	listShowSecrets = true
 
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			mcpServers: []cli.MCPInfo{
-				{
-					Name:      "github",
-					Transport: "stdio",
-					Command:   "npx",
-					Env: map[string]string{
-						"GITHUB_TOKEN": "ghp_xxxxxxxxxxxx1234",
-					},
-				},
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude")
+	m.EXPECT().ListMCP(mock.Anything).Return([]cli.MCPInfo{
+		{
+			Name:      "github",
+			Transport: "stdio",
+			Command:   "npx",
+			Env: map[string]string{
+				"GITHUB_TOKEN": "ghp_xxxxxxxxxxxx1234",
 			},
 		},
-	}
+	}, nil)
+
+	platforms := []cli.Platform{m}
 
 	var buf bytes.Buffer
 	err := outputJSON(&buf, platforms, cli.ScopeUser)
@@ -331,15 +296,11 @@ func TestOutputJSON_ShowSecrets(t *testing.T) {
 }
 
 func TestOutputJSON_EmptyServers(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			mcpServers: []cli.MCPInfo{},
-		},
-	}
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude")
+	m.EXPECT().ListMCP(mock.Anything).Return([]cli.MCPInfo{}, nil)
+
+	platforms := []cli.Platform{m}
 
 	var buf bytes.Buffer
 	err := outputJSON(&buf, platforms, cli.ScopeUser)

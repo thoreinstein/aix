@@ -7,22 +7,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+
 	"github.com/thoreinstein/aix/internal/cli"
+	climocks "github.com/thoreinstein/aix/internal/cli/mocks"
 )
-
-// listMockPlatform extends mockPlatform with agent list-specific behavior.
-type listMockPlatform struct {
-	mockPlatform
-	agents   []cli.AgentInfo
-	agentErr error
-}
-
-func (m *listMockPlatform) ListAgents(_ cli.Scope) ([]cli.AgentInfo, error) {
-	if m.agentErr != nil {
-		return nil, m.agentErr
-	}
-	return m.agents, nil
-}
 
 func TestListCommand_Metadata(t *testing.T) {
 	if listCmd.Use != "list" {
@@ -40,15 +29,12 @@ func TestListCommand_Metadata(t *testing.T) {
 }
 
 func TestOutputListTabular_EmptyState(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			agents: []cli.AgentInfo{},
-		},
-	}
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude").Maybe()
+	m.EXPECT().DisplayName().Return("Claude Code")
+	m.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{}, nil)
+
+	platforms := []cli.Platform{m}
 
 	var buf bytes.Buffer
 	err := outputListTabular(&buf, platforms, cli.ScopeUser)
@@ -66,24 +52,21 @@ func TestOutputListTabular_EmptyState(t *testing.T) {
 }
 
 func TestOutputListTabular_WithAgents(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			agents: []cli.AgentInfo{
-				{
-					Name:        "code-reviewer",
-					Description: "Reviews code for quality and best practices",
-				},
-				{
-					Name:        "test-generator",
-					Description: "Generates unit tests for functions",
-				},
-			},
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude").Maybe()
+	m.EXPECT().DisplayName().Return("Claude Code")
+	m.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{
+		{
+			Name:        "code-reviewer",
+			Description: "Reviews code for quality and best practices",
 		},
-	}
+		{
+			Name:        "test-generator",
+			Description: "Generates unit tests for functions",
+		},
+	}, nil)
+
+	platforms := []cli.Platform{m}
 
 	var buf bytes.Buffer
 	err := outputListTabular(&buf, platforms, cli.ScopeUser)
@@ -114,26 +97,21 @@ func TestOutputListTabular_WithAgents(t *testing.T) {
 }
 
 func TestOutputListTabular_MultiplePlatforms(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			agents: []cli.AgentInfo{
-				{Name: "code-reviewer", Description: "Reviews code"},
-			},
-		},
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "opencode",
-				displayName: "OpenCode",
-			},
-			agents: []cli.AgentInfo{
-				{Name: "test-generator", Description: "Generates tests"},
-			},
-		},
-	}
+	m1 := climocks.NewMockPlatform(t)
+	m1.EXPECT().Name().Return("claude").Maybe()
+	m1.EXPECT().DisplayName().Return("Claude Code")
+	m1.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{
+		{Name: "code-reviewer", Description: "Reviews code"},
+	}, nil)
+
+	m2 := climocks.NewMockPlatform(t)
+	m2.EXPECT().Name().Return("opencode").Maybe()
+	m2.EXPECT().DisplayName().Return("OpenCode")
+	m2.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{
+		{Name: "test-generator", Description: "Generates tests"},
+	}, nil)
+
+	platforms := []cli.Platform{m1, m2}
 
 	var buf bytes.Buffer
 	err := outputListTabular(&buf, platforms, cli.ScopeUser)
@@ -151,22 +129,17 @@ func TestOutputListTabular_MultiplePlatforms(t *testing.T) {
 }
 
 func TestOutputListTabular_NoAgentsAcrossPlatforms(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			agents: []cli.AgentInfo{},
-		},
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "opencode",
-				displayName: "OpenCode",
-			},
-			agents: []cli.AgentInfo{},
-		},
-	}
+	m1 := climocks.NewMockPlatform(t)
+	m1.EXPECT().Name().Return("claude").Maybe()
+	m1.EXPECT().DisplayName().Return("Claude Code")
+	m1.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{}, nil)
+
+	m2 := climocks.NewMockPlatform(t)
+	m2.EXPECT().Name().Return("opencode").Maybe()
+	m2.EXPECT().DisplayName().Return("OpenCode")
+	m2.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{}, nil)
+
+	platforms := []cli.Platform{m1, m2}
 
 	var buf bytes.Buffer
 	err := outputListTabular(&buf, platforms, cli.ScopeUser)
@@ -182,17 +155,14 @@ func TestOutputListTabular_NoAgentsAcrossPlatforms(t *testing.T) {
 
 func TestOutputListTabular_TruncatesLongDescriptions(t *testing.T) {
 	longDesc := strings.Repeat("a", 100)
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			agents: []cli.AgentInfo{
-				{Name: "agent", Description: longDesc},
-			},
-		},
-	}
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude").Maybe()
+	m.EXPECT().DisplayName().Return("Claude Code")
+	m.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{
+		{Name: "agent", Description: longDesc},
+	}, nil)
+
+	platforms := []cli.Platform{m}
 
 	var buf bytes.Buffer
 	err := outputListTabular(&buf, platforms, cli.ScopeUser)
@@ -212,20 +182,16 @@ func TestOutputListTabular_TruncatesLongDescriptions(t *testing.T) {
 }
 
 func TestOutputListJSON(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			agents: []cli.AgentInfo{
-				{
-					Name:        "code-reviewer",
-					Description: "Reviews code for quality",
-				},
-			},
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude")
+	m.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{
+		{
+			Name:        "code-reviewer",
+			Description: "Reviews code for quality",
 		},
-	}
+	}, nil)
+
+	platforms := []cli.Platform{m}
 
 	var buf bytes.Buffer
 	err := outputListJSON(&buf, platforms, cli.ScopeUser)
@@ -257,26 +223,19 @@ func TestOutputListJSON(t *testing.T) {
 }
 
 func TestOutputListJSON_MultiplePlatforms(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			agents: []cli.AgentInfo{
-				{Name: "agent1", Description: "Agent 1"},
-			},
-		},
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "opencode",
-				displayName: "OpenCode",
-			},
-			agents: []cli.AgentInfo{
-				{Name: "agent2", Description: "Agent 2"},
-			},
-		},
-	}
+	m1 := climocks.NewMockPlatform(t)
+	m1.EXPECT().Name().Return("claude")
+	m1.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{
+		{Name: "agent1", Description: "Agent 1"},
+	}, nil)
+
+	m2 := climocks.NewMockPlatform(t)
+	m2.EXPECT().Name().Return("opencode")
+	m2.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{
+		{Name: "agent2", Description: "Agent 2"},
+	}, nil)
+
+	platforms := []cli.Platform{m1, m2}
 
 	var buf bytes.Buffer
 	err := outputListJSON(&buf, platforms, cli.ScopeUser)
@@ -298,15 +257,11 @@ func TestOutputListJSON_MultiplePlatforms(t *testing.T) {
 }
 
 func TestOutputListJSON_EmptyAgents(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			agents: []cli.AgentInfo{},
-		},
-	}
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude")
+	m.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{}, nil)
+
+	platforms := []cli.Platform{m}
 
 	var buf bytes.Buffer
 	err := outputListJSON(&buf, platforms, cli.ScopeUser)
@@ -325,17 +280,13 @@ func TestOutputListJSON_EmptyAgents(t *testing.T) {
 }
 
 func TestOutputListJSON_FormattedOutput(t *testing.T) {
-	platforms := []cli.Platform{
-		&listMockPlatform{
-			mockPlatform: mockPlatform{
-				name:        "claude",
-				displayName: "Claude Code",
-			},
-			agents: []cli.AgentInfo{
-				{Name: "agent", Description: "Test agent"},
-			},
-		},
-	}
+	m := climocks.NewMockPlatform(t)
+	m.EXPECT().Name().Return("claude")
+	m.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{
+		{Name: "agent", Description: "Test agent"},
+	}, nil)
+
+	platforms := []cli.Platform{m}
 
 	var buf bytes.Buffer
 	err := outputListJSON(&buf, platforms, cli.ScopeUser)
@@ -356,66 +307,50 @@ func TestOutputListJSON_FormattedOutput(t *testing.T) {
 func TestOutputListTabular_Error(t *testing.T) {
 	tests := []struct {
 		name        string
-		platforms   []cli.Platform
+		setupMocks  func(t *testing.T) []cli.Platform
 		wantErrMsg  string
 		description string
 	}{
 		{
 			name: "permission_error",
-			platforms: []cli.Platform{
-				&listMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "claude",
-						displayName: "Claude Code",
-					},
-					agentErr: errors.New("permission denied: ~/.claude/agents"),
-				},
+			setupMocks: func(t *testing.T) []cli.Platform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().Name().Return("claude")
+				m.EXPECT().ListAgents(mock.Anything).Return(nil, errors.New("permission denied: ~/.claude/agents"))
+				return []cli.Platform{m}
 			},
 			wantErrMsg:  "listing agents for claude: permission denied",
 			description: "should wrap permission errors with platform context",
 		},
 		{
 			name: "first_platform_error",
-			platforms: []cli.Platform{
-				&listMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "claude",
-						displayName: "Claude Code",
-					},
-					agentErr: errors.New("directory not found"),
-				},
-				&listMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "opencode",
-						displayName: "OpenCode",
-					},
-					agents: []cli.AgentInfo{
-						{Name: "agent", Description: "Test"},
-					},
-				},
+			setupMocks: func(t *testing.T) []cli.Platform {
+				m1 := climocks.NewMockPlatform(t)
+				m1.EXPECT().Name().Return("claude")
+				m1.EXPECT().ListAgents(mock.Anything).Return(nil, errors.New("directory not found"))
+
+				m2 := climocks.NewMockPlatform(t)
+				// m2 won't be called because we fail fast on first error
+				return []cli.Platform{m1, m2}
 			},
 			wantErrMsg:  "listing agents for claude",
 			description: "should fail fast on first platform error",
 		},
 		{
 			name: "second_platform_error",
-			platforms: []cli.Platform{
-				&listMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "claude",
-						displayName: "Claude Code",
-					},
-					agents: []cli.AgentInfo{
-						{Name: "agent", Description: "Test"},
-					},
-				},
-				&listMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "opencode",
-						displayName: "OpenCode",
-					},
-					agentErr: errors.New("read error"),
-				},
+			setupMocks: func(t *testing.T) []cli.Platform {
+				m1 := climocks.NewMockPlatform(t)
+				m1.EXPECT().Name().Return("claude").Maybe()
+				m1.EXPECT().DisplayName().Return("Claude Code").Maybe()
+				m1.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{
+					{Name: "agent", Description: "Test"},
+				}, nil)
+
+				m2 := climocks.NewMockPlatform(t)
+				m2.EXPECT().Name().Return("opencode")
+				m2.EXPECT().ListAgents(mock.Anything).Return(nil, errors.New("read error"))
+
+				return []cli.Platform{m1, m2}
 			},
 			wantErrMsg:  "listing agents for opencode: read error",
 			description: "should propagate errors from subsequent platforms",
@@ -425,7 +360,7 @@ func TestOutputListTabular_Error(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			err := outputListTabular(&buf, tt.platforms, cli.ScopeUser)
+			err := outputListTabular(&buf, tt.setupMocks(t), cli.ScopeUser)
 
 			if err == nil {
 				t.Fatalf("expected error, got nil; %s", tt.description)
@@ -442,66 +377,49 @@ func TestOutputListTabular_Error(t *testing.T) {
 func TestOutputListJSON_Error(t *testing.T) {
 	tests := []struct {
 		name        string
-		platforms   []cli.Platform
+		setupMocks  func(t *testing.T) []cli.Platform
 		wantErrMsg  string
 		description string
 	}{
 		{
 			name: "permission_error",
-			platforms: []cli.Platform{
-				&listMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "claude",
-						displayName: "Claude Code",
-					},
-					agentErr: errors.New("permission denied: ~/.claude/agents"),
-				},
+			setupMocks: func(t *testing.T) []cli.Platform {
+				m := climocks.NewMockPlatform(t)
+				m.EXPECT().Name().Return("claude")
+				m.EXPECT().ListAgents(mock.Anything).Return(nil, errors.New("permission denied: ~/.claude/agents"))
+				return []cli.Platform{m}
 			},
 			wantErrMsg:  "listing agents for claude: permission denied",
 			description: "should wrap permission errors with platform context",
 		},
 		{
 			name: "first_platform_error",
-			platforms: []cli.Platform{
-				&listMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "claude",
-						displayName: "Claude Code",
-					},
-					agentErr: errors.New("directory not found"),
-				},
-				&listMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "opencode",
-						displayName: "OpenCode",
-					},
-					agents: []cli.AgentInfo{
-						{Name: "agent", Description: "Test"},
-					},
-				},
+			setupMocks: func(t *testing.T) []cli.Platform {
+				m1 := climocks.NewMockPlatform(t)
+				m1.EXPECT().Name().Return("claude")
+				m1.EXPECT().ListAgents(mock.Anything).Return(nil, errors.New("directory not found"))
+
+				m2 := climocks.NewMockPlatform(t)
+				// m2 won't be called because we fail fast on first error
+				return []cli.Platform{m1, m2}
 			},
 			wantErrMsg:  "listing agents for claude",
 			description: "should fail fast on first platform error",
 		},
 		{
 			name: "second_platform_error",
-			platforms: []cli.Platform{
-				&listMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "claude",
-						displayName: "Claude Code",
-					},
-					agents: []cli.AgentInfo{
-						{Name: "agent", Description: "Test"},
-					},
-				},
-				&listMockPlatform{
-					mockPlatform: mockPlatform{
-						name:        "opencode",
-						displayName: "OpenCode",
-					},
-					agentErr: errors.New("read error"),
-				},
+			setupMocks: func(t *testing.T) []cli.Platform {
+				m1 := climocks.NewMockPlatform(t)
+				m1.EXPECT().Name().Return("claude")
+				m1.EXPECT().ListAgents(mock.Anything).Return([]cli.AgentInfo{
+					{Name: "agent", Description: "Test"},
+				}, nil)
+
+				m2 := climocks.NewMockPlatform(t)
+				m2.EXPECT().Name().Return("opencode")
+				m2.EXPECT().ListAgents(mock.Anything).Return(nil, errors.New("read error"))
+
+				return []cli.Platform{m1, m2}
 			},
 			wantErrMsg:  "listing agents for opencode: read error",
 			description: "should propagate errors from subsequent platforms",
@@ -511,7 +429,7 @@ func TestOutputListJSON_Error(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			err := outputListJSON(&buf, tt.platforms, cli.ScopeUser)
+			err := outputListJSON(&buf, tt.setupMocks(t), cli.ScopeUser)
 
 			if err == nil {
 				t.Fatalf("expected error, got nil; %s", tt.description)

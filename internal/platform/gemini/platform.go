@@ -218,6 +218,12 @@ func (p *GeminiPlatform) BackupPaths() []string {
 	}
 }
 
+// IsLocalConfigIgnored checks if the local configuration is ignored by VCS.
+// Gemini CLI doesn't currently support local scope, so this always returns true.
+func (p *GeminiPlatform) IsLocalConfigIgnored() (bool, error) {
+	return true, nil
+}
+
 // Status Methods
 
 func (p *GeminiPlatform) IsAvailable() bool {

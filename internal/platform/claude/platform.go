@@ -3,6 +3,8 @@ package claude
 import (
 	"os"
 
+	"github.com/thoreinstein/aix/internal/errors"
+	"github.com/thoreinstein/aix/internal/git"
 	"github.com/thoreinstein/aix/internal/paths"
 )
 
@@ -15,6 +17,35 @@ type ClaudePlatform struct {
 	commands *CommandManager
 	agents   *AgentManager
 	mcp      *MCPManager
+}
+
+// IsLocalConfigIgnored checks if the local configuration file is ignored by VCS.
+func (p *ClaudePlatform) IsLocalConfigIgnored() (bool, error) {
+	if p.paths.scope != ScopeLocal {
+		return true, nil // Only applies to local scope
+	}
+
+	configPath := p.paths.MCPConfigPath()
+	if configPath == "" {
+		return true, nil
+	}
+
+	// Assuming projectRoot is the git repo root for now.
+	// If projectRoot is empty, we use CWD.
+	repoPath := p.paths.projectRoot
+	if repoPath == "" {
+		var err error
+		repoPath, err = os.Getwd()
+		if err != nil {
+			return false, errors.Wrap(err, "getting current working directory for repo path")
+		}
+	}
+
+	ignored, err := git.IsIgnored(repoPath, configPath)
+	if err != nil {
+		return false, errors.Wrapf(err, "checking if %q is ignored in %q", configPath, repoPath)
+	}
+	return ignored, nil
 }
 
 // Option configures a ClaudePlatform instance.
@@ -132,6 +163,11 @@ func (p *ClaudePlatform) GetSkill(name string) (*Skill, error) {
 	return p.skills.Get(name)
 }
 
+// CheckCollisionSkill checks if a skill exists in the opposing scope.
+func (p *ClaudePlatform) CheckCollisionSkill(name string) (bool, error) {
+	return p.skills.CheckCollision(name)
+}
+
 // --- Command Operations ---
 
 // InstallCommand installs a slash command.
@@ -154,6 +190,11 @@ func (p *ClaudePlatform) GetCommand(name string) (*Command, error) {
 	return p.commands.Get(name)
 }
 
+// CheckCollisionCommand checks if a command exists in the opposing scope.
+func (p *ClaudePlatform) CheckCollisionCommand(name string) (bool, error) {
+	return p.commands.CheckCollision(name)
+}
+
 // --- Agent Operations ---
 
 // InstallAgent installs an agent.
@@ -174,6 +215,11 @@ func (p *ClaudePlatform) ListAgents() ([]*Agent, error) {
 // GetAgent retrieves an agent by name.
 func (p *ClaudePlatform) GetAgent(name string) (*Agent, error) {
 	return p.agents.Get(name)
+}
+
+// CheckCollisionAgent checks if an agent exists in the opposing scope.
+func (p *ClaudePlatform) CheckCollisionAgent(name string) (bool, error) {
+	return p.agents.CheckCollision(name)
 }
 
 // --- MCP Operations ---

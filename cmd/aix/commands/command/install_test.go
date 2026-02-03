@@ -161,51 +161,6 @@ func TestInstallSentinelErrors(t *testing.T) {
 	}
 }
 
-func Test_looksLikePath(t *testing.T) {
-	tests := []struct {
-		name   string
-		source string
-		want   bool
-	}{
-		{"dot slash", "./command.md", true},
-		{"slash", "/path/to/command.md", true},
-		{"simple name", "review", false},
-		{"name with dash", "code-review", false},
-		{"path separator", "dir/command", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := looksLikePath(tt.source)
-			if got != tt.want {
-				t.Errorf("looksLikePath(%q) = %v, want %v", tt.source, got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_mightBePath(t *testing.T) {
-	tests := []struct {
-		name string
-		s    string
-		want bool
-	}{
-		{"md extension", "command.md", true},
-		{"MD extension", "command.MD", true},
-		{"simple name", "review", false},
-		{"path with backslash", "path\\to\\command", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := mightBePath(tt.s)
-			if got != tt.want {
-				t.Errorf("mightBePath(%q) = %v, want %v", tt.s, got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_installFromLocal_DirWithCommandMd(t *testing.T) {
 	tempDir := t.TempDir()
 	cmdPath := filepath.Join(tempDir, "command.md")

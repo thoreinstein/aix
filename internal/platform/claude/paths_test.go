@@ -42,14 +42,81 @@ func TestClaudePaths_BaseDir(t *testing.T) {
 			projectRoot: "",
 			want:        "",
 		},
+		{
+			name:        "local scope returns .claude in CWD",
+			scope:       ScopeLocal,
+			projectRoot: "",
+			// Note: want will be checked dynamically in the test loop for ScopeLocal
+			want: "CWD",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.want == "CWD" {
+				cwd, _ := os.Getwd()
+				tt.want = filepath.Join(cwd, ".claude")
+			}
+			p := NewClaudePaths(tt.scope, tt.projectRoot)
+			got := p.BaseDir()
+			if got != tt.want {
+				t.Errorf("BaseDir() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestClaudePaths_Opposing(t *testing.T) {
+	tests := []struct {
+		name        string
+		scope       Scope
+		projectRoot string
+		wantScope   Scope
+		wantNil     bool
+	}{
+		{
+			name:        "user scope with root returns project scope",
+			scope:       ScopeUser,
+			projectRoot: "/root",
+			wantScope:   ScopeProject,
+			wantNil:     false,
+		},
+		{
+			name:        "user scope without root returns nil",
+			scope:       ScopeUser,
+			projectRoot: "",
+			wantNil:     true,
+		},
+		{
+			name:        "project scope returns user scope",
+			scope:       ScopeProject,
+			projectRoot: "/root",
+			wantScope:   ScopeUser,
+			wantNil:     false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewClaudePaths(tt.scope, tt.projectRoot)
-			got := p.BaseDir()
-			if got != tt.want {
-				t.Errorf("BaseDir() = %q, want %q", got, tt.want)
+			got := p.Opposing()
+
+			if tt.wantNil {
+				if got != nil {
+					t.Errorf("Opposing() = %v, want nil", got)
+				}
+				return
+			}
+
+			if got == nil {
+				t.Fatal("Opposing() = nil, want non-nil")
+			}
+
+			if got.scope != tt.wantScope {
+				t.Errorf("Opposing().scope = %v, want %v", got.scope, tt.wantScope)
+			}
+			if got.projectRoot != tt.projectRoot {
+				t.Errorf("Opposing().projectRoot = %q, want %q", got.projectRoot, tt.projectRoot)
 			}
 		})
 	}
@@ -214,10 +281,20 @@ func TestClaudePaths_MCPConfigPath(t *testing.T) {
 			projectRoot: "",
 			want:        "",
 		},
+		{
+			name:        "local scope returns ~/.claude.json (main user config)",
+			scope:       ScopeLocal,
+			projectRoot: "",
+			want:        "HOME_CLAUDE",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.want == "HOME_CLAUDE" {
+				home, _ := os.UserHomeDir()
+				tt.want = filepath.Join(home, ".claude.json")
+			}
 			p := NewClaudePaths(tt.scope, tt.projectRoot)
 			got := p.MCPConfigPath()
 			if got != tt.want {

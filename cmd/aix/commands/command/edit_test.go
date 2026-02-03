@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/thoreinstein/aix/internal/cli"
+	"github.com/thoreinstein/aix/internal/cli/mocks"
+	"github.com/thoreinstein/aix/internal/errors"
 )
 
 func TestEditCommand_Metadata(t *testing.T) {
@@ -23,80 +25,102 @@ func TestEditCommand_Metadata(t *testing.T) {
 }
 
 func TestRunEditWithPlatforms(t *testing.T) {
-	tests := []struct {
-		name        string
-		commandName string
-		platforms   []cli.Platform
-		wantPath    string
-		wantErr     string
-	}{
-		{
-			name:        "command found on first platform",
-			commandName: "review",
-			platforms: []cli.Platform{
-				&mockPlatform{name: "claude", commands: map[string]any{"review": struct{}{}}},
-				&mockPlatform{name: "opencode", commands: map[string]any{}},
-			},
-			wantPath: "/mock/commands/review.md",
-		},
-		{
-			name:        "command found on second platform",
-			commandName: "review",
-			platforms: []cli.Platform{
-				&mockPlatform{name: "claude", commands: map[string]any{}},
-				&mockPlatform{name: "opencode", commands: map[string]any{"review": struct{}{}}},
-			},
-			wantPath: "/mock/commands/review.md",
-		},
-		{
-			name:        "command found on both, opens first",
-			commandName: "review",
-			platforms: []cli.Platform{
-				&mockPlatform{name: "claude", commands: map[string]any{"review": struct{}{}}},
-				&mockPlatform{name: "opencode", commands: map[string]any{"review": struct{}{}}},
-			},
-			wantPath: "/mock/commands/review.md",
-		},
-		{
-			name:        "command not found",
-			commandName: "review",
-			platforms: []cli.Platform{
-				&mockPlatform{name: "claude", commands: map[string]any{}},
-				&mockPlatform{name: "opencode", commands: map[string]any{}},
-			},
-			wantErr: `command "review" not found on any platform`,
-		},
-	}
+	t.Run("command found on first platform", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("GetCommand", "review", cli.ScopeUser).Return(struct{}{}, nil)
+		mockP1.On("CommandDir").Return("/mock/commands")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var openedPath string
-			mockOpener := func(path string) error {
-				openedPath = path
-				return nil
-			}
+		mockP2 := mocks.NewMockPlatform(t)
 
-			err := runEditWithPlatforms(tt.commandName, tt.platforms, cli.ScopeUser, mockOpener)
+		platforms := []cli.Platform{mockP1, mockP2}
+		wantPath := "/mock/commands/review.md"
 
-			if tt.wantErr != "" {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
-				if !strings.Contains(err.Error(), tt.wantErr) {
-					t.Errorf("error = %q, want to contain %q", err.Error(), tt.wantErr)
-				}
-				return
-			}
+		var openedPath string
+		mockOpener := func(path string) error {
+			openedPath = path
+			return nil
+		}
 
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+		err := runEditWithPlatforms("review", platforms, cli.ScopeUser, mockOpener)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 
-			// filepath.Clean used to handle platform differences if any,
-			// though here we use forward slashes in mocks
-			if filepath.Clean(openedPath) != filepath.Clean(tt.wantPath) {
-				t.Errorf("openedPath = %q, want %q", openedPath, tt.wantPath)
-			}
-		})
-	}
+		if filepath.Clean(openedPath) != filepath.Clean(wantPath) {
+			t.Errorf("openedPath = %q, want %q", openedPath, wantPath)
+		}
+	})
+
+	t.Run("command found on second platform", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("GetCommand", "review", cli.ScopeUser).Return(nil, errors.New("not found"))
+
+		mockP2 := mocks.NewMockPlatform(t)
+		mockP2.On("GetCommand", "review", cli.ScopeUser).Return(struct{}{}, nil)
+		mockP2.On("CommandDir").Return("/mock/commands")
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		wantPath := "/mock/commands/review.md"
+
+		var openedPath string
+		mockOpener := func(path string) error {
+			openedPath = path
+			return nil
+		}
+
+		err := runEditWithPlatforms("review", platforms, cli.ScopeUser, mockOpener)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if filepath.Clean(openedPath) != filepath.Clean(wantPath) {
+			t.Errorf("openedPath = %q, want %q", openedPath, wantPath)
+		}
+	})
+
+	t.Run("command found on both, opens first", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("GetCommand", "review", cli.ScopeUser).Return(struct{}{}, nil)
+		mockP1.On("CommandDir").Return("/mock/commands")
+
+		mockP2 := mocks.NewMockPlatform(t)
+		// mockP2 won't be called
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		wantPath := "/mock/commands/review.md"
+
+		var openedPath string
+		mockOpener := func(path string) error {
+			openedPath = path
+			return nil
+		}
+
+		err := runEditWithPlatforms("review", platforms, cli.ScopeUser, mockOpener)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if filepath.Clean(openedPath) != filepath.Clean(wantPath) {
+			t.Errorf("openedPath = %q, want %q", openedPath, wantPath)
+		}
+	})
+
+	t.Run("command not found", func(t *testing.T) {
+		mockP1 := mocks.NewMockPlatform(t)
+		mockP1.On("GetCommand", "review", cli.ScopeUser).Return(nil, errors.New("not found"))
+
+		mockP2 := mocks.NewMockPlatform(t)
+		mockP2.On("GetCommand", "review", cli.ScopeUser).Return(nil, errors.New("not found"))
+
+		platforms := []cli.Platform{mockP1, mockP2}
+		wantErr := `command "review" not found on any platform`
+
+		err := runEditWithPlatforms("review", platforms, cli.ScopeUser, func(s string) error { return nil })
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), wantErr) {
+			t.Errorf("error = %q, want to contain %q", err.Error(), wantErr)
+		}
+	})
 }

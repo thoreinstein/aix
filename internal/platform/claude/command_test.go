@@ -579,3 +579,56 @@ func TestFormatCommandFile(t *testing.T) {
 		})
 	}
 }
+
+func TestCommandManager_CheckCollision(t *testing.T) {
+	homeDir := t.TempDir()
+	projectDir := t.TempDir()
+
+	// Mock HOME for user scope resolution
+	t.Setenv("HOME", homeDir)
+
+	// User scope paths (aware of project root)
+	userPaths := NewClaudePaths(ScopeUser, projectDir)
+	userMgr := NewCommandManager(userPaths)
+
+	// Project scope paths
+	projectPaths := NewClaudePaths(ScopeProject, projectDir)
+	projectMgr := NewCommandManager(projectPaths)
+
+	// Case 1: No collision initially
+	found, err := projectMgr.CheckCollision("collision-cmd")
+	if err != nil {
+		t.Fatalf("CheckCollision() error = %v", err)
+	}
+	if found {
+		t.Error("CheckCollision() = true, want false")
+	}
+
+	// Case 2: Create command in User scope, check from Project scope
+	cmd := &Command{Name: "collision-cmd", Description: "User command"}
+	if err := userMgr.Install(cmd); err != nil {
+		t.Fatalf("userMgr.Install() error = %v", err)
+	}
+
+	found, err = projectMgr.CheckCollision("collision-cmd")
+	if err != nil {
+		t.Fatalf("CheckCollision() error = %v", err)
+	}
+	if !found {
+		t.Error("CheckCollision() = false, want true (collision with user scope)")
+	}
+
+	// Case 3: Create command in Project scope, check from User scope
+	projCmd := &Command{Name: "project-cmd", Description: "Project command"}
+	if err := projectMgr.Install(projCmd); err != nil {
+		t.Fatalf("projectMgr.Install() error = %v", err)
+	}
+
+	found, err = userMgr.CheckCollision("project-cmd")
+	if err != nil {
+		t.Fatalf("CheckCollision() error = %v", err)
+	}
+	if !found {
+		t.Error("CheckCollision() = false, want true (collision with project scope)")
+	}
+}
