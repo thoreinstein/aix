@@ -1,3 +1,76 @@
+# Release v0.7.0
+
+## Summary
+
+This minor release introduces configuration scoping, enabling users to manage AI assistant configurations at the User, Project, or Local level. It also brings significant updates to the Gemini CLI adapter, including TOML support and sub-agent management, along with critical security hardening and bug fixes for backup operations.
+
+## Features
+
+- **Configuration Scoping**: Introduced `--scope` flag (User, Project, Local, Managed) across all resource commands (`install`, `remove`, `list`, `show`, `edit`). This allows for project-specific MCP servers and skills.
+- **Gemini CLI Support**:
+    - Full support for TOML-based configuration (`settings.toml`).
+    - Support for experimental sub-agents using Markdown/YAML format.
+    - Automatic management of the `enableAgents` flag.
+    - Support for `{{selection}}` variable translation.
+- **Claude Adapter Updates**:
+    - Implementation of local scopes and collision detection for agents, skills, and commands.
+- **Git Integration**: New helper for `git check-ignore` to support local scoping logic.
+- **Shared Installation Logic**: Centralized resource installation logic in `internal/install` to improve maintainability and consistency.
+
+## Bug Fixes
+
+- **Backup Logic**: Resolved critical "is a directory" error during Gemini backups by correctly handling symlinked directories and resolving root symlinks.
+- **Editor Handling**: Improved parsing for editor commands with quoted arguments.
+- **File Management**: Ensured log file handles are closed on command completion.
+
+## Security
+
+- **Path Traversal Protection**: Hardened home directory expansion and repository extraction against path traversal attacks.
+- **Symlink Protection**: Implemented strict validation to reject unexpected symlinks in resource copying and MCP file installation.
+
+## Operations
+
+- No breaking changes for existing configurations.
+- Users can now use `aix mcp add --scope project ...` to manage project-level settings.
+
+---
+# Release v0.7.0
+
+## Summary
+
+This minor release introduces configuration scoping, enabling users to manage AI assistant configurations at the User, Project, or Local level. It also brings significant updates to the Gemini CLI adapter, including TOML support and sub-agent management, along with critical security hardening and bug fixes for backup operations.
+
+## Features
+
+- **Configuration Scoping**: Introduced `--scope` flag (User, Project, Local, Managed) across all resource commands (`install`, `remove`, `list`, `show`, `edit`). This allows for project-specific MCP servers and skills.
+- **Gemini CLI Support**:
+    - Full support for TOML-based configuration (`settings.toml`).
+    - Support for experimental sub-agents using Markdown/YAML format.
+    - Automatic management of the `enableAgents` flag.
+    - Support for `{{selection}}` variable translation.
+- **Claude Adapter Updates**:
+    - Implementation of local scopes and collision detection for agents, skills, and commands.
+- **Git Integration**: New helper for `git check-ignore` to support local scoping logic.
+- **Shared Installation Logic**: Centralized resource installation logic in `internal/install` to improve maintainability and consistency.
+
+## Bug Fixes
+
+- **Backup Logic**: Resolved critical "is a directory" error during Gemini backups by correctly handling symlinked directories and resolving root symlinks.
+- **Editor Handling**: Improved parsing for editor commands with quoted arguments.
+- **File Management**: Ensured log file handles are closed on command completion.
+
+## Security
+
+- **Path Traversal Protection**: Hardened home directory expansion and repository extraction against path traversal attacks.
+- **Symlink Protection**: Implemented strict validation to reject unexpected symlinks in resource copying and MCP file installation.
+
+## Operations
+
+- No breaking changes for existing configurations.
+- Users can now use `aix mcp add --scope project ...` to manage project-level settings.
+
+---
+
 # Release v0.6.1
 
 ## Summary

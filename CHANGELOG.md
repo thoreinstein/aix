@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.7.0] - 2026-02-08
+
+- `8bcf3c5` fix: Handle symlinked directories in backup
+- `052265e` chore(deps): bump @isaacs/brace-expansion in /aix-docs
+- `e1e5154` Feat: Implement local scopes and collision detection for Claude
+- `7c4b5b4` Build: Add stretchr/testify dependency
+- `bc44d99` Feat: Add IsIgnored git helper
+- `1a9b72a` feat(cli): implement scope flag and support
+- `b2a9298` feat(core): update Platform interface for configuration scopes
+- `0f0f549` ci: bump anchore/sbom-action from 0.22.0 to 0.22.1 in the actions group
+- `435b753` FEAT: implement Gemini CLI platform adapter updates
+- `258fec5` FEAT: add TOML support for Gemini CLI configuration
+- `32b8a0a` REFACTOR: use shared install logic in resource commands
+- `eb275a9` FEAT: extract shared install logic to internal/install
+- `c697ec6` FIX security bugs and refactor platform adapters
+- `0dafda3` Update docs
+
 ## [v0.6.1] - 2026-01-28
 
 - `7065195` FIX repo path resolution and agent naming
