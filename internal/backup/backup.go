@@ -96,8 +96,16 @@ func (m *Manager) Backup(platform string, paths []string) (*BackupManifest, erro
 		}
 
 		if info.IsDir() {
+			walkRoot := expanded
+			// If it's a symlink to a directory, WalkDir won't recurse unless we pass the real path.
+			if linfo, lerr := os.Lstat(expanded); lerr == nil && linfo.Mode()&os.ModeSymlink != 0 {
+				if realPath, rerr := filepath.EvalSymlinks(expanded); rerr == nil {
+					walkRoot = realPath
+				}
+			}
+
 			// Recursively back up directory
-			dirFiles, err := m.backupDirectory(expanded, backupPath)
+			dirFiles, err := m.backupDirectory(walkRoot, backupPath)
 			if err != nil {
 				return nil, errors.Wrapf(err, "backing up directory %s", p)
 			}
@@ -171,9 +179,19 @@ func (m *Manager) backupDirectory(srcDir, backupPath string) ([]BackupFile, erro
 			return err
 		}
 
-		// Skip directories themselves (we only track files)
+		// Skip directories themselves (we only track files).
+		// d.IsDir() returns true for directories, but false for symlinks to directories.
+		// We want to skip both to avoid trying to copy a directory as a file.
 		if d.IsDir() {
 			return nil
+		}
+
+		// Check if it's a symlink to a directory
+		if d.Type()&fs.ModeSymlink != 0 {
+			info, err := os.Stat(path)
+			if err == nil && info.IsDir() {
+				return nil
+			}
 		}
 
 		bf, err := m.backupFile(path, backupPath)
@@ -382,6 +400,9 @@ func copyFile(src, dst string) (hash string, mode fs.FileMode, err error) {
 	srcInfo, err := srcFile.Stat()
 	if err != nil {
 		return "", 0, errors.Wrap(err, "stat source file")
+	}
+	if srcInfo.IsDir() {
+		return "", 0, errors.Newf("source %s is a directory", src)
 	}
 	mode = srcInfo.Mode()
 
