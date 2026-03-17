@@ -471,6 +471,32 @@ func TestCopyDir_Exported(t *testing.T) {
 	}
 }
 
+func TestCopyDir_SameSourceAndDest(t *testing.T) {
+	dir := t.TempDir()
+	err := CopyDir(dir, dir)
+	if err == nil {
+		t.Fatal("CopyDir() expected error when src == dst")
+	}
+	if !strings.Contains(err.Error(), "must differ") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestCopyDir_DestInsideSource(t *testing.T) {
+	srcDir := t.TempDir()
+	dstDir := filepath.Join(srcDir, "subdir")
+	if err := os.MkdirAll(dstDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	err := CopyDir(srcDir, dstDir)
+	if err == nil {
+		t.Fatal("CopyDir() expected error when dst is inside src")
+	}
+	if !strings.Contains(err.Error(), "cannot be inside source") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
 func TestCopyDir_NestedDirectories(t *testing.T) {
 	srcDir := t.TempDir()
 	dstDir := t.TempDir()

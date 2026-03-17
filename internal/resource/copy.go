@@ -91,7 +91,26 @@ func CopyToTempFromCache(res *Resource, cacheDir string) (string, error) {
 
 // CopyDir recursively copies a directory from src to dst.
 // dst is expected to already exist.
+// Returns an error if src and dst are the same path, or if dst is inside src.
 func CopyDir(src, dst string) error {
+	srcAbs, err := filepath.Abs(src)
+	if err != nil {
+		return fmt.Errorf("resolving source path: %w", err)
+	}
+	dstAbs, err := filepath.Abs(dst)
+	if err != nil {
+		return fmt.Errorf("resolving destination path: %w", err)
+	}
+
+	if srcAbs == dstAbs {
+		return fmt.Errorf("source and destination must differ: %s", srcAbs)
+	}
+
+	rel, err := filepath.Rel(srcAbs, dstAbs)
+	if err == nil && rel != "." && !strings.HasPrefix(rel, "..") {
+		return fmt.Errorf("destination cannot be inside source: %s", dstAbs)
+	}
+
 	return copyDir(src, dst)
 }
 
