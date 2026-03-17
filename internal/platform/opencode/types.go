@@ -180,6 +180,10 @@ type Skill struct {
 	// Instructions contains the skill's markdown body content.
 	// This field is not part of the YAML frontmatter.
 	Instructions string `yaml:"-" json:"-"`
+
+	// SourceDir is the local directory the skill was installed from.
+	// Set during installation from local/git paths; not serialized.
+	SourceDir string `yaml:"-" json:"-"`
 }
 
 // Command represents an OpenCode slash command definition.

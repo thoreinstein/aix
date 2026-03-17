@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/thoreinstein/aix/internal/errors"
+	"github.com/thoreinstein/aix/internal/resource"
 	"github.com/thoreinstein/aix/pkg/fileutil"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
@@ -128,6 +129,13 @@ func (m *SkillManager) Install(s *Skill) error {
 	skillDir := filepath.Dir(skillPath)
 	if err := os.MkdirAll(skillDir, 0o755); err != nil {
 		return errors.Wrap(err, "creating skill directory")
+	}
+
+	// Copy supporting files from source directory (e.g., scripts, assets)
+	if s.SourceDir != "" {
+		if err := resource.CopyDir(s.SourceDir, skillDir); err != nil {
+			return errors.Wrap(err, "copying skill files")
+		}
 	}
 
 	// Translate variables to Gemini format before formatting

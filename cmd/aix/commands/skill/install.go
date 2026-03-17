@@ -197,6 +197,9 @@ func installFromLocal(skillPath string) error {
 		return errInstallFailed
 	}
 
+	// Record source directory so supporting files can be copied during install
+	skill.SourceDir = absPath
+
 	// Get target platforms
 	platforms, err := cli.ResolvePlatforms(flags.GetPlatformFlag())
 	if err != nil {
@@ -274,6 +277,7 @@ func convertToGeminiSkill(s *claude.Skill) *gemini.Skill {
 		Metadata:      s.Metadata,
 		AllowedTools:  gemini.ToolList(s.AllowedTools),
 		Instructions:  s.Instructions,
+		SourceDir:     s.SourceDir,
 	}
 }
 
@@ -322,5 +326,6 @@ func convertToOpenCodeSkill(s *claude.Skill) *opencode.Skill {
 		Compatibility: opencode.CompatibilityMap(compatibility),
 		Metadata:      metadata,
 		Instructions:  s.Instructions,
+		SourceDir:     s.SourceDir,
 	}
 }
