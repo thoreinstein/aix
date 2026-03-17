@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/thoreinstein/aix/internal/errors"
+	"github.com/thoreinstein/aix/internal/resource"
 	"github.com/thoreinstein/aix/pkg/fileutil"
 	"github.com/thoreinstein/aix/pkg/frontmatter"
 )
@@ -138,13 +139,20 @@ func (m *SkillManager) Install(s *Skill) error {
 		return errors.Wrap(err, "creating skill directory")
 	}
 
+	// Copy supporting files from source directory (e.g., scripts, assets)
+	if s.SourceDir != "" {
+		if err := resource.CopyDir(s.SourceDir, skillDir); err != nil {
+			return errors.Wrap(err, "copying skill files")
+		}
+	}
+
 	// Generate skill file content
 	content, err := formatSkillFile(s)
 	if err != nil {
 		return errors.Wrap(err, "formatting skill file")
 	}
 
-	// Write skill file
+	// Write skill file (overwrites any raw SKILL.md copied above)
 	if err := fileutil.AtomicWriteFile(skillPath, content, 0o644); err != nil {
 		return errors.Wrap(err, "writing skill file")
 	}

@@ -436,6 +436,41 @@ func TestIsDirectoryResource(t *testing.T) {
 	}
 }
 
+func TestCopyDir_Exported(t *testing.T) {
+	srcDir := t.TempDir()
+	dstDir := t.TempDir()
+
+	files := map[string]string{
+		"file.txt":      "root file",
+		"sub/nested.md": "nested file",
+	}
+	for relPath, content := range files {
+		fullPath := filepath.Join(srcDir, relPath)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := CopyDir(srcDir, dstDir); err != nil {
+		t.Fatalf("CopyDir() error = %v", err)
+	}
+
+	for relPath, expectedContent := range files {
+		fullPath := filepath.Join(dstDir, relPath)
+		content, err := os.ReadFile(fullPath)
+		if err != nil {
+			t.Errorf("failed to read copied file %s: %v", relPath, err)
+			continue
+		}
+		if string(content) != expectedContent {
+			t.Errorf("file %s content mismatch: got %q, want %q", relPath, string(content), expectedContent)
+		}
+	}
+}
+
 func TestCopyDir_NestedDirectories(t *testing.T) {
 	srcDir := t.TempDir()
 	dstDir := t.TempDir()

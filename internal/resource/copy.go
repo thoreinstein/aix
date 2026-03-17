@@ -89,6 +89,12 @@ func CopyToTempFromCache(res *Resource, cacheDir string) (string, error) {
 	return resultPath, nil
 }
 
+// CopyDir recursively copies a directory from src to dst.
+// dst is expected to already exist.
+func CopyDir(src, dst string) error {
+	return copyDir(src, dst)
+}
+
 // copyDir recursively copies a directory from src to dst.
 // dst is expected to already exist.
 func copyDir(src, dst string) error {

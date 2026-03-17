@@ -373,6 +373,61 @@ func TestSkillManager_Uninstall_NonExistentSkill(t *testing.T) {
 	}
 }
 
+func TestSkillManager_Install_WithSourceDir(t *testing.T) {
+	// Create a source skill directory with extra supporting files
+	srcDir := t.TempDir()
+	files := map[string]string{
+		"SKILL.md":       "---\nname: src-skill\ndescription: raw\n---\n\nRaw instructions",
+		"helper.sh":      "#!/bin/bash\necho hello",
+		"sub/data.txt":   "some data",
+	}
+	for relPath, content := range files {
+		fullPath := filepath.Join(srcDir, relPath)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	tmpDir := t.TempDir()
+	paths := NewClaudePaths(ScopeProject, tmpDir)
+	mgr := NewSkillManager(paths)
+
+	skill := &Skill{
+		Name:         "src-skill",
+		Description:  "formatted description",
+		Instructions: "Formatted instructions",
+		SourceDir:    srcDir,
+	}
+
+	if err := mgr.Install(skill); err != nil {
+		t.Fatalf("Install() error = %v", err)
+	}
+
+	skillDir := filepath.Dir(paths.SkillPath("src-skill"))
+
+	// Extra files were copied
+	for _, relPath := range []string{"helper.sh", "sub/data.txt"} {
+		if _, err := os.Stat(filepath.Join(skillDir, relPath)); err != nil {
+			t.Errorf("expected file %q to exist after install: %v", relPath, err)
+		}
+	}
+
+	// SKILL.md should contain the formatted content, not the raw source copy
+	got, err := mgr.Get("src-skill")
+	if err != nil {
+		t.Fatalf("Get() error = %v", err)
+	}
+	if got.Description != "formatted description" {
+		t.Errorf("Description = %q, want %q", got.Description, "formatted description")
+	}
+	if got.Instructions != "Formatted instructions" {
+		t.Errorf("Instructions = %q, want %q", got.Instructions, "Formatted instructions")
+	}
+}
+
 func TestSkillManager_Uninstall_EmptyName(t *testing.T) {
 	tmpDir := t.TempDir()
 	paths := NewClaudePaths(ScopeProject, tmpDir)
