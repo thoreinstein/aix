@@ -7,7 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.6.1] - 2026-01-28
+## [v0.8.0] - 2026-03-18
+
+- `32f501f` ci: bump the actions group across 1 directory with 5 updates
+- `c279119` deps: bump golang.org/x/term from 0.39.0 to 0.41.0
+- `c5b21e2` chore(deps-dev): bump rollup from 4.56.0 to 4.59.0 in /aix-docs
+- `bc65a4f` chore(deps): bump minimatch in /aix-docs
+- `df1ff24` fix: format files
+- `59b2c4c` fix: guard CopyDir against same-path and dst-inside-src copies
+- `0c6c988` FEAT: copy all supporting files during skill installation
+- `4a19e46` ci: bump anchore/sbom-action from 0.22.0 to 0.22.1 in the actions group
+- `43dc97d` FEAT: implement Gemini CLI platform adapter updates
+- `129bcd1` FEAT: add TOML support for Gemini CLI configuration
+- `72a3039` REFACTOR: use shared install logic in resource commands
+- `e2b6110` FEAT: extract shared install logic to internal/install
+- `67d71a1` FIX security bugs and refactor platform adapters
+- `246e8fe` Update docs
+
+## [v0.7.0] - 2026-03-18
 
 - `7065195` FIX repo path resolution and agent naming
 - `eb8a2c9` FIX config path resolution priority

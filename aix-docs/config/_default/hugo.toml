@@ -43,10 +43,10 @@ copyRight = "Copyright (c) 2026 aix contributors"
   filename = "sitemap.xml"
   priority = 0.5
 
-[caches]
-  [caches.getjson]
-    dir = ":cacheDir/:project"
-    maxAge = -1 # "30m"
+#[caches]
+#  [caches.getjson]
+#    dir = ":cacheDir/:project"
+#    maxAge = -1 # "30m"
 
 [taxonomies]
   contributor = "contributors"

@@ -17,7 +17,7 @@ import (
 
 // version is set at build time via ldflags.
 // Default to a development version for local builds.
-const version = "0.1.0"
+const version = "0.8.0"
 
 // platformFlag holds the value of the --platform flag.
 var platformFlag []string

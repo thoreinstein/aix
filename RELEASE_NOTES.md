@@ -1,4 +1,26 @@
-# Release v0.6.1
+# Release v0.8.0
+
+## Summary
+This release introduces significant updates to the Gemini CLI platform adapter, including TOML configuration support and improved skill installation logic. It also addresses security vulnerabilities and refactors shared installation logic for better maintainability.
+
+## New Features
+- **Gemini CLI Updates**: Full support for Gemini CLI platform adapter updates.
+- **TOML Support**: Added TOML support for Gemini CLI configuration files.
+- **Skill Installation Enhancements**: All supporting files are now copied during skill installation.
+- **Refactored Install Logic**: Extracted shared installation logic to `internal/install` to unify resource management.
+
+## Bug Fixes
+- **Security**: Fixed identified security bugs and performed deep refactoring of platform adapters.
+- **CopyDir Guard**: Added safety checks to `CopyDir` to prevent same-path and recursive source-into-destination copies.
+- **Formatting**: General file formatting and cleanup.
+
+## Operations
+- Updated dependencies and CI workflows to use latest action versions.
+
+---
+
+# Release v0.7.0
+
 
 ## Summary
 
