@@ -377,9 +377,9 @@ func TestSkillManager_Install_WithSourceDir(t *testing.T) {
 	// Create a source skill directory with extra supporting files
 	srcDir := t.TempDir()
 	files := map[string]string{
-		"SKILL.md":       "---\nname: src-skill\ndescription: raw\n---\n\nRaw instructions",
-		"helper.sh":      "#!/bin/bash\necho hello",
-		"sub/data.txt":   "some data",
+		"SKILL.md":     "---\nname: src-skill\ndescription: raw\n---\n\nRaw instructions",
+		"helper.sh":    "#!/bin/bash\necho hello",
+		"sub/data.txt": "some data",
 	}
 	for relPath, content := range files {
 		fullPath := filepath.Join(srcDir, relPath)
