@@ -13,6 +13,7 @@ import (
 	"github.com/thoreinstein/aix/internal/cli"
 	"github.com/thoreinstein/aix/internal/errors"
 	"github.com/thoreinstein/aix/internal/platform/claude"
+	"github.com/thoreinstein/aix/internal/platform/gemini"
 	"github.com/thoreinstein/aix/internal/platform/opencode"
 )
 
@@ -389,6 +390,24 @@ func addMCPToPlatform(
 			Headers:     headers,
 		}
 		return errors.Wrap(plat.AddMCP(server), "adding MCP server to OpenCode")
+
+	case "gemini":
+		// Gemini does not support platform restrictions
+		if len(mcpAddPlatforms) > 0 {
+			fmt.Printf("\n  Warning: Gemini CLI does not support platform restrictions; "+
+				"--platform %s will be ignored\n", strings.Join(mcpAddPlatforms, ", "))
+		}
+
+		server := &gemini.MCPServer{
+			Name:    name,
+			Command: command,
+			Args:    args,
+			URL:     mcpAddURL,
+			Env:     env,
+			Headers: headers,
+			Enabled: true,
+		}
+		return errors.Wrap(plat.AddMCP(server), "adding MCP server to Gemini CLI")
 
 	default:
 		return errors.Newf("unsupported platform: %s", plat.Name())
