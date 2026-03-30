@@ -1,3 +1,21 @@
+# Release v0.8.1
+
+## Summary
+
+Patch release that closes a hard blocker for Gemini CLI users: `aix mcp add` was returning "unsupported platform: gemini" for every invocation because the command handler switch statement was never wired to the completed Gemini platform layer. All users on the Gemini CLI platform were unable to add MCP servers via `aix`.
+
+## Bug Fixes
+
+- **Gemini CLI — mcp add**: Wired Gemini CLI into the `mcp add` command handler. The platform adapter was fully implemented in v0.8.0 but the switch case was absent, causing every call to fall through to an unsupported-platform error. (PR #41 / `cb8908f`, `921bfff`)
+
+## Operations
+
+- Updated `--platform` flag help text to include `gemini` as a valid value.
+- Added Gemini-specific test coverage for `mcp add`.
+- Routine dependency and CI workflow bumps (color, yaml, picomatch, brace-expansion, actions group).
+
+---
+
 # Release v0.8.0
 
 ## Summary

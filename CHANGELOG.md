@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.8.1] - 2026-03-30
+
+- `cb8908f` fix: wire Gemini CLI into mcp add command
+- `921bfff` fix: address PR review nits
+- `c8759cb` deps: bump github.com/fatih/color from 1.18.0 to 1.19.0
+- `7532b0a` ci: bump the actions group with 3 updates
+- `7b36f38` chore(deps): bump yaml from 2.8.2 to 2.8.3 in /aix-docs
+- `5a44d40` chore(deps): bump picomatch in /aix-docs
+- `799c6b7` chore(deps): bump brace-expansion in /aix-docs
+
 ## [v0.8.0] - 2026-03-18
 
 - `32f501f` ci: bump the actions group across 1 directory with 5 updates
