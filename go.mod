@@ -7,7 +7,7 @@ require (
 	github.com/cockroachdb/errors v1.12.0
 	github.com/fatih/color v1.19.0
 	github.com/ktr0731/go-fuzzyfinder v0.9.0
-	github.com/pelletier/go-toml/v2 v2.2.4
+	github.com/pelletier/go-toml/v2 v2.3.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	golang.org/x/term v0.41.0
