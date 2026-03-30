@@ -45,7 +45,7 @@ func init() {
 
 	// Add persistent flags
 	rootCmd.PersistentFlags().StringSliceVarP(&platformFlag, "platform", "p", nil,
-		`target platform(s): claude, opencode (default: all detected)`)
+		`target platform(s): claude, opencode, codex, gemini (default: all detected)`)
 	rootCmd.PersistentFlags().CountVarP(&verbosity, "verbose", "v",
 		"increase verbosity level (e.g., -v, -vv)")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false,

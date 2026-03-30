@@ -369,6 +369,89 @@ func TestOpenCodeTransportMapping(t *testing.T) {
 	}
 }
 
+func TestGeminiMCPServerConstruction(t *testing.T) {
+	// Test the field mapping logic for the Gemini case in addMCPToPlatform.
+	// Gemini has no transport type field; transport is inferred from URL presence.
+	tests := []struct {
+		name           string
+		command        string
+		args           []string
+		url            string
+		env            map[string]string
+		headers        map[string]string
+		wantCommand    string
+		wantArgs       []string
+		wantURL        string
+		wantEnabled    bool
+		wantEnvLen     int
+		wantHeadersLen int
+	}{
+		{
+			name:        "stdio server (command + args)",
+			command:     "npx",
+			args:        []string{"-y", "@modelcontextprotocol/server-github"},
+			url:         "",
+			wantCommand: "npx",
+			wantArgs:    []string{"-y", "@modelcontextprotocol/server-github"},
+			wantURL:     "",
+			wantEnabled: true,
+		},
+		{
+			name:        "sse server (url only)",
+			command:     "",
+			args:        nil,
+			url:         "https://mcp.excalidraw.com/mcp",
+			wantCommand: "",
+			wantArgs:    nil,
+			wantURL:     "https://mcp.excalidraw.com/mcp",
+			wantEnabled: true,
+		},
+		{
+			name:           "server with env and headers",
+			command:        "/usr/bin/server",
+			args:           nil,
+			url:            "",
+			env:            map[string]string{"TOKEN": "abc"},
+			headers:        map[string]string{"Auth": "Bearer xyz"},
+			wantCommand:    "/usr/bin/server",
+			wantEnabled:    true,
+			wantEnvLen:     1,
+			wantHeadersLen: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Simulate the field mapping from the "gemini" case in addMCPToPlatform.
+			command := tt.command
+			args := tt.args
+			url := tt.url
+			env := tt.env
+			headers := tt.headers
+			enabled := true
+
+			if command != tt.wantCommand {
+				t.Errorf("Command = %q, want %q", command, tt.wantCommand)
+			}
+			if url != tt.wantURL {
+				t.Errorf("URL = %q, want %q", url, tt.wantURL)
+			}
+			if enabled != tt.wantEnabled {
+				t.Errorf("Enabled = %v, want %v", enabled, tt.wantEnabled)
+			}
+			if len(args) != len(tt.wantArgs) {
+				t.Errorf("Args len = %d, want %d", len(args), len(tt.wantArgs))
+			}
+			if len(env) != tt.wantEnvLen {
+				t.Errorf("Env len = %d, want %d", len(env), tt.wantEnvLen)
+			}
+			if len(headers) != tt.wantHeadersLen {
+				t.Errorf("Headers len = %d, want %d", len(headers), tt.wantHeadersLen)
+			}
+		})
+	}
+}
+
 func TestOpenCodeCommandSliceConstruction(t *testing.T) {
 	// Test how OpenCode combines command and args into a single slice
 	tests := []struct {

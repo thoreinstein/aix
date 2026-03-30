@@ -60,7 +60,7 @@ aix backup [flags]
 ```
       --log-file string     write logs to file in JSON format
       --log-format string   log format: text, json (default "text")
-  -p, --platform strings    target platform(s): claude, opencode (default: all detected)
+  -p, --platform strings    target platform(s): claude, opencode, codex, gemini (default: all detected)
   -q, --quiet               suppress non-error output
   -v, --verbose count       increase verbosity level (e.g., -v, -vv)
 ```
