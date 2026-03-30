@@ -66,7 +66,7 @@ See Also: aix status, aix config
 ```
       --log-file string     write logs to file in JSON format
       --log-format string   log format: text, json (default "text")
-  -p, --platform strings    target platform(s): claude, opencode (default: all detected)
+  -p, --platform strings    target platform(s): claude, opencode, codex, gemini (default: all detected)
 ```
 
 ### SEE ALSO
