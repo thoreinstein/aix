@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/adrg/xdg v0.5.3
-	github.com/cockroachdb/errors v1.12.0
+	github.com/cockroachdb/errors v1.13.0
 	github.com/fatih/color v1.19.0
 	github.com/ktr0731/go-fuzzyfinder v0.9.0
 	github.com/pelletier/go-toml/v2 v2.3.0
@@ -21,7 +21,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
 	github.com/gdamore/tcell/v2 v2.6.0 // indirect
-	github.com/getsentry/sentry-go v0.27.0 // indirect
+	github.com/getsentry/sentry-go v0.46.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
